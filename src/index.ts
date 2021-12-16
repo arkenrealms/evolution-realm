@@ -249,9 +249,14 @@ io.on('connection', function(socket) {
 
     clients.push(currentClient)
 
-    // Use by GS to tell RS it's loaded
-    socket.on('GS_Load', function() {
-      emitDirect(socket, 'OnLoaded')
+    // Use by GS to tell RD it's connected
+    socket.on('RD_Connect', function() {
+      emitDirect(socket, 'OnConnected')
+    })
+
+    // Use by GS to tell RS it's connected
+    socket.on('GS_Connect', function() {
+      emitDirect(socket, 'OnConnected')
     })
 
     socket.on('GS_SaveRoundResult', function(msg) {
