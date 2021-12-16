@@ -382,7 +382,7 @@ async function cloneGsCodebase() {
     console.log(e2)
   }
 
-  const { stdout, stderr } = await execPromise('git clone git@github.com-gs:RuneFarm/rune-infinite-game-server.git game-server')
+  const { stdout, stderr } = await execPromise('git clone git@github.com:RuneFarm/rune-infinite-game-server.git game-server')
 
   console.log(stderr, stdout)
 
