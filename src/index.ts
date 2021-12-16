@@ -251,7 +251,7 @@ io.on('connection', function(socket) {
 
     // Use by GS to tell RS it's loaded
     socket.on('GS_Load', function() {
-      emitDirect(socket, 'OnLoaded', 'ptr1.runeinfinite.com', 7777)
+      emitDirect(socket, 'OnLoaded')
     })
 
     socket.on('GS_SaveRoundResult', function(msg) {
@@ -265,8 +265,8 @@ io.on('connection', function(socket) {
       }
     })
 
-    socket.on('JoinServer', function() {
-      emitDirect(socket, 'onJoinServer', 1)
+    socket.on('FindGameServer', function() {
+      emitDirect(socket, 'OnFoundGameServer', 'ptr1.runeinfinite.com', 7777)
     })
 
     socket.on('disconnect', function() {
