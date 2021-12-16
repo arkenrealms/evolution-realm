@@ -448,7 +448,7 @@ const initRoutes = async () => {
           setTimeout(startGameServer, 5 * 1000)
   
           res.json({ success: 1 })
-        }, 60 * 1000)
+        }, 5 * 1000)
       } catch (e) {
         console.log(e)
         res.json({ success: 0 })
