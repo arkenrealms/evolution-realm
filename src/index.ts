@@ -382,7 +382,7 @@ async function cloneGsCodebase() {
     console.log(e2)
   }
 
-  const { stdout, stderr } = await execPromise('git clone git@github.com:RuneFarm/rune-infinite-game-server.git game-server')
+  const { stdout, stderr } = await execPromise('git clone git@github.com-gs:RuneFarm/rune-infinite-game-server.git game-server')
 
   console.log(stderr, stdout)
 
@@ -393,11 +393,9 @@ const initRoutes = async () => {
   try {
     server.get('/upgrade', async function(req, res) {
       try {
-        setTimeout(async () => {
-          upgradeCodebase()
-  
-          res.json({ success: 1 })
-        }, 60 * 1000)
+        upgradeCodebase()
+
+        res.json({ success: 1 })
       } catch (e) {
         console.log(e)
         res.json({ success: 0 })
@@ -429,8 +427,7 @@ const initRoutes = async () => {
     server.get('/gs/reboot', function(req, res) {
       try {
         killSubProcesses()
-
-        setTimeout(startGameServer, 1000)
+        setTimeout(startGameServer, 5 * 1000)
 
         res.json({ success: 1 })
       } catch (e) {
@@ -444,9 +441,11 @@ const initRoutes = async () => {
         // Tell players and game servers to shut down
         emitAll('ServerUpgrade')
 
+        upgradeGsCodebase()
+
         setTimeout(async () => {
           killSubProcesses()
-          upgradeGsCodebase()
+          setTimeout(startGameServer, 5 * 1000)
   
           res.json({ success: 1 })
         }, 60 * 1000)
@@ -458,15 +457,9 @@ const initRoutes = async () => {
 
     server.get('/gs/clone', async function(req, res) {
       try {
-        // Tell players and game servers to shut down
-        emitAll('ServerUpgrade')
+        cloneGsCodebase()
 
-        setTimeout(async () => {
-          killSubProcesses()
-          cloneGsCodebase()
-  
-          res.json({ success: 1 })
-        }, 60 * 1000)
+        res.json({ success: 1 })
       } catch (e) {
         console.log(e)
         res.json({ success: 0 })
