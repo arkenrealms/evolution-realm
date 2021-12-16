@@ -286,8 +286,8 @@ export function wait(ms) {
 
 function startGameServer() {
   const binaryPath = {
-    linux: '../unity-linux-server/RuneInfinite.x86_64',
-    darwin: '../unity-mac-server/RuneInfinite.app/Contents/MacOS/Evolution_\[2\]___Client',
+    linux: '../game-server/linux/RuneInfinite.x86_64',
+    darwin: '../game-server/mac/RuneInfinite.app/Contents/MacOS/Evolution_\[2\]___Client',
     win32: ''
   }[process.platform]
 
