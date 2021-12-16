@@ -365,7 +365,7 @@ async function upgradeGsCodebase() {
     console.log(e2)
   }
 
-  const { stdout, stderr } = await execPromise('cd game-server && git add -A && git stash && git pull')
+  const { stdout, stderr } = await execPromise('/bin/su -c "cd game-server && git add -A && git stash && git pull" - dev')
 
   console.log(stderr, stdout)
 
@@ -382,7 +382,7 @@ async function cloneGsCodebase() {
     console.log(e2)
   }
 
-  const { stdout, stderr } = await execPromise('git clone git@github.com:RuneFarm/rune-infinite-game-server.git game-server')
+  const { stdout, stderr } = await execPromise('/bin/su -c "git clone git@github.com:RuneFarm/rune-infinite-game-server.git game-server" - dev')
 
   console.log(stderr, stdout)
 
