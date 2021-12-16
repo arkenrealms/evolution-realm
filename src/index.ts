@@ -251,7 +251,7 @@ io.on('connection', function(socket) {
 
     // Use by GS to tell RS it's loaded
     socket.on('GS_Load', function() {
-      emitDirect(socket, 'OnLoaded', 1)
+      emitDirect(socket, 'OnLoaded', 'ptr1.runeinfinite.com', 7777)
     })
 
     socket.on('GS_SaveRoundResult', function(msg) {
