@@ -24,8 +24,6 @@ import * as secrets from './secrets'
 const subProcesses = []
 
 function killSubProcesses() {
-  // process.kill(-unityProcess.pid)
-
   console.log('killing', subProcesses.length, 'child processes')
   
   for (const i in subProcesses) {
@@ -38,6 +36,8 @@ function killSubProcesses() {
 
 function cleanExit() {
   killSubProcesses()
+
+  process.kill(0)
 }
 
 process.on('exit', cleanExit)
@@ -347,7 +347,7 @@ async function upgradeCodebase() {
     console.log(e2)
   }
 
-  const { stdout, stderr } = await execPromise('git add -A && git stash && git pull')
+  const { stdout, stderr } = await execPromise('git add -A && git stash && git pull', {uid: 1000})
 
   console.log(stderr, stdout)
 
@@ -359,7 +359,7 @@ async function upgradeGsCodebase() {
   const execPromise = util.promisify(exec)
   
   try {
-    await execPromise('cd game-server && rm .git/index.lock')
+    await execPromise('cd game-server && rm .git/index.lock', {uid: 1000})
     await wait(1000)
   } catch(e2) {
     console.log(e2)
@@ -377,7 +377,7 @@ async function cloneGsCodebase() {
   const execPromise = util.promisify(exec)
   
   try {
-    await execPromise('rm -rf game-server')
+    await execPromise('rm -rf game-server', {uid: 1000})
   } catch(e2) {
     console.log(e2)
   }
