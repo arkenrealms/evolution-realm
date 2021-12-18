@@ -37,7 +37,7 @@ function killSubProcesses() {
 function cleanExit() {
   killSubProcesses()
 
-  process.kill(0)
+  // process.kill(0)
 }
 
 process.on('exit', cleanExit)
