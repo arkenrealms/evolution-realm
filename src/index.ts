@@ -370,7 +370,7 @@ async function upgradeGsCodebase() {
     console.log(e2)
   }
 
-  const { stdout, stderr } = await execPromise('cd game-server && git add -A && git stash && git pull', {uid: 1000})
+  const { stdout, stderr } = await execPromise('cd game-server && git add -A && git stash && git pull origin master', {uid: 1000})
 
   console.log(stderr, stdout)
 
