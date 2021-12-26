@@ -32,6 +32,13 @@ function killSubProcesses() {
     subProcesses[i].kill()
     subProcesses[i] = undefined
   }
+
+  try {
+    const execPromise = util.promisify(exec)
+    execPromise('kill -9 `ps -aux | grep /usr/bin/node | grep -v grep | awk \'{ print $2 }\'` && kill -9 `ps -aux | grep RuneInfinite | grep -v grep | awk \'{ print $2 }\'` && pkill -f Infinite')
+  } catch(e2) {
+    console.log(e2)
+  }
 }
 
 function cleanExit() {
