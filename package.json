@@ -1,5 +1,5 @@
 {
-  "name": "rune-evolution-game-server",
+  "name": "rune-evolution-realm-server",
   "version": "0.2.1",
   "description": "",
   "main": "build/index.js",
@@ -21,6 +21,7 @@
     "cors": "^2.8.5",
     "dd-trace": "^1.4.0",
     "ethereum-protocol": "^1.0.1",
+    "socket.io-client": "^4.1.2",
     "ethers": "^5.3.1",
     "express": "^4.17.1",
     "express-rate-limit": "^5.2.6",
