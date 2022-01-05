@@ -12,9 +12,9 @@ import util from 'util'
 import crypto from 'crypto'
 import jetpack from 'fs-jetpack'
 import semver from 'semver/preload.js'
+import { io as ioClient } from 'socket.io-client'
 import axios from 'axios'
 import {spawn, exec} from 'child_process'
-
 import ArcaneItems from './contracts/ArcaneItems.json'
 import BEP20Contract from './contracts/BEP20.json'
 import { decodeItem } from './decodeItem'
@@ -35,21 +35,21 @@ function killSubProcesses() {
 
   try {
     const execPromise = util.promisify(exec)
-    execPromise('kill -9 `ps -aux | grep /usr/bin/node | grep -v grep | awk \'{ print $2 }\'` && kill -9 `ps -aux | grep RuneInfinite | grep -v grep | awk \'{ print $2 }\'` && pkill -f Infinite')
+    execPromise('kill -9 `ps aux | grep /usr/bin/node | grep -v grep | awk \'{ print $2 }\'` && kill -9 `ps aux | grep RuneInfinite | grep -v grep | awk \'{ print $2 }\'` && pkill -f Infinite').catch(() => {})
   } catch(e2) {
     console.log(e2)
   }
 }
 
 function cleanExit() {
-  killSubProcesses()
+  // killSubProcesses()
 
-  // process.kill(0)
+  process.kill(0)
 }
 
-process.on('exit', cleanExit)
-process.on('SIGINT', cleanExit) // catch ctrl-c
-process.on('SIGTERM', cleanExit) // catch kill
+// process.on('exit', cleanExit)
+// process.on('SIGINT', cleanExit) // catch ctrl-c
+// process.on('SIGTERM', cleanExit) // catch kill
 
 const path = require('path')
 
@@ -57,7 +57,7 @@ let clients = [] // to storage clients
 const clientLookup = {}
 const sockets = {} // to storage sockets
 const serverVersion = "1.0.0"
-const debug = false // !(process.env.SUDO_USER === 'dev' || process.env.OS_FLAVOUR === 'debian-10')
+const debug = process.env.HOME === '/Users/dev'
 
 const log = (...msgs) => {
   if (debug) {
@@ -96,6 +96,9 @@ function logError(err) {
   jetpack.write(path.resolve('./public/data/errors.json'), JSON.stringify(errorLog, null, 2), { atomic: true })
 }
 
+const gameServer = {
+  socket: undefined
+}
 
 process
   .on("unhandledRejection", (reason, p) => {
@@ -137,21 +140,7 @@ const signer = new ethers.Wallet(secrets.key, provider) //web3Provider.getSigner
 
 const arcaneItemsContract = new ethers.Contract(getAddress(contracts.items), ArcaneItems.abi, signer)
 
-let unityProcess = null
-
-const db: any = {}
-
-db.config = jetpack.read(path.resolve('./public/data/config.json'), 'json')
-db.rewardHistory = jetpack.read(path.resolve('./public/data/rewardHistory.json'), 'json')
-db.rewards = jetpack.read(path.resolve('./public/data/rewards.json'), 'json')
-db.leaderboardHistory = jetpack.read(path.resolve('./public/data/leaderboardHistory.json'), 'json')
-db.modList = jetpack.read(path.resolve('./public/data/modList.json'), 'json') || []
-db.banList = jetpack.read(path.resolve('./public/data/banList.json'), 'json') || []
-db.reportList = jetpack.read(path.resolve('./public/data/playerReports.json'), 'json') || {}
-db.playerRewards = jetpack.read(path.resolve('./public/data/playerRewards.json'), 'json')
-db.map = jetpack.read(path.resolve('./public/data/map.json'), 'json')
-db.log = jetpack.read(path.resolve('./public/data/log.json'), 'json') || []
-db.quests = jetpack.read(path.resolve('./public/data/quests.json'), 'json') || []
+let gameProcess = null
 
 function getTime() {
   return new Date().getTime()
@@ -278,7 +267,7 @@ io.on('connection', function(socket) {
     })
 
     socket.on('FindGameServer', function() {
-      emitDirect(socket, 'OnFoundGameServer', 'ptr1.runeinfinite.com', 7777)
+      emitDirect(socket, 'OnFoundGameServer', 'ptr1.runeevolution.com', 7777)
     })
 
     socket.on('disconnect', function() {
@@ -298,26 +287,26 @@ export function wait(ms) {
 
 function startGameServer() {
   const binaryPath = {
-    linux: '../game-server/linux/RuneInfinite.x86_64',
-    darwin: '../game-server/mac/RuneInfinite.app/Contents/MacOS/Evolution_\[2\]___Client',
+    linux: '../game-server/build/index.js',
+    darwin: '../game-server/build/index.js',
     win32: ''
   }[process.platform]
 
   // Start the server
-  unityProcess = spawn(path.join(__dirname, binaryPath),
-    [], 
-    {cwd: path.dirname(path.join(__dirname, binaryPath)), stdio: ['ignore', 'pipe', 'pipe'], detached: true}
+  gameProcess = spawn('node',
+    ['build/index.js'], 
+    {cwd: path.join(__dirname, '../game-server'), env: { ...process.env, SUDO_USER: 'dev2', PORT: '3001', SSL_PORT: '4001' }, stdio: ['ignore', 'pipe', 'pipe']}
   )
 
-  unityProcess.stdout.pipe(process.stdout)
-  unityProcess.stderr.pipe(process.stderr)
+  gameProcess.stdout.pipe(process.stdout)
+  gameProcess.stderr.pipe(process.stderr)
 
-  unityProcess.on('exit', function (code, signal) {
-  console.log('child process exited with ' +
+  gameProcess.on('exit', function (code, signal) {
+    console.log('child process exited with ' +
               `code ${code} and signal ${signal}`)
   })
 
-  subProcesses.push(unityProcess)
+  subProcesses.push(gameProcess)
 }
 
 async function initWebServer() {
@@ -346,7 +335,7 @@ async function initWebServer() {
   // Logging
   server.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 
-  server.use(express.static(path.join(__dirname, '/../public')))
+  server.use(express.static(path.join(__dirname, '/../game-server/public')))
 }
 
 async function upgradeCodebase() {
@@ -394,16 +383,89 @@ async function cloneGsCodebase() {
     console.log(e2)
   }
 
-  const { stdout, stderr } = await execPromise('git clone git@github.com:RuneFarm/rune-infinite-game-server.git game-server', {uid: 1000})
+  const { stdout, stderr } = await execPromise('git clone git@github.com:RuneFarm/rune-evolution-game-server.git game-server', {uid: 1000})
 
   console.log(stderr, stdout)
 
   await wait(100)
 }
 
+const getSocket = (endpoint) => {
+  console.log('Connecting to', endpoint)
+  return ioClient(endpoint, {
+    transports: ['websocket'],
+    upgrade: false,
+    autoConnect: false,
+    // pingInterval: 5000,
+    // pingTimeout: 20000
+    // extraHeaders: {
+    //   "my-custom-header": "1234"
+    // }
+  })
+}
+
+function initGameServerConnection() {
+  const server = {
+    endpoint: 'localhost:3001',
+    key: 'local1'
+  }
+
+  const socket = getSocket('http://' + server.endpoint)
+
+  socket.on('connect', () => {
+    console.log('Connected: ' + server.key)
+
+    socket.emit('ObserverJoin')
+  })
+
+  socket.on('disconnect', () => {
+    console.log('Disconnected: ' + server.key)
+  })
+
+  socket.on('OnObserverPing', function (msg) {
+    console.log(msg)
+  })
+
+  socket.on('OnObserverInit', function (msg) {
+    console.log(msg)
+  })
+
+  socket.on('OnObserverRoundFinished', function (msg) {
+    console.log(msg)
+  })
+
+  socket.onAny(function(eventName, res) {
+    console.log(eventName, res)
+    if (gsCallbacks[res.id]) {
+      console.log('Running callback handler for ' + eventName)
+      gsCallbacks[res.id](res)
+
+      delete gsCallbacks[res.id]
+    }
+  })
+
+  socket.connect()
+
+  gameServer.socket = socket
+}
+
+initGameServerConnection()
+
+const gsCallbacks = {}
+
+async function gsCall(name, data = {}) {
+  return new Promise(resolve => {
+    const id = shortId()
+    
+    gsCallbacks[id] = resolve
+
+    gameServer.socket.emit(name, { id, data })
+  })
+}
+
 const initRoutes = async () => {
   try {
-    server.get('/upgrade', async function(req, res) {
+    server.get('/admin/upgrade', async function(req, res) {
       try {
         upgradeCodebase()
 
@@ -414,7 +476,7 @@ const initRoutes = async () => {
       }
     })
 
-    server.get('/gs/start', function(req, res) {
+    server.get('/admin/gs/start', function(req, res) {
       try {
         startGameServer()
 
@@ -425,7 +487,7 @@ const initRoutes = async () => {
       }
     })
 
-    server.get('/gs/stop', function(req, res) {
+    server.get('/admin/gs/stop', function(req, res) {
       try {
         killSubProcesses()
 
@@ -436,7 +498,7 @@ const initRoutes = async () => {
       }
     })
 
-    server.get('/gs/reboot', function(req, res) {
+    server.get('/admin/gs/reboot', function(req, res) {
       try {
         killSubProcesses()
         setTimeout(startGameServer, 5 * 1000)
@@ -448,7 +510,7 @@ const initRoutes = async () => {
       }
     })
 
-    server.get('/gs/upgrade', async function(req, res) {
+    server.get('/admin/gs/upgrade', async function(req, res) {
       try {
         // Tell players and game servers to shut down
         emitAll('ServerUpgrade')
@@ -467,7 +529,7 @@ const initRoutes = async () => {
       }
     })
 
-    server.get('/gs/clone', async function(req, res) {
+    server.get('/admin/gs/clone', async function(req, res) {
       try {
         cloneGsCodebase()
 
@@ -478,6 +540,252 @@ const initRoutes = async () => {
       }
     })
 
+    server.get('/info', async function(req, res) {
+      const response = await gsCall('ServerInfoRequest')
+
+      res.json(response)
+    })
+
+    server.get('/db', async function(req, res) {
+      const response = await gsCall('DbRequest')
+
+      res.json(response)
+    })
+
+    server.get('/config', async function(req, res) {
+      const response = await gsCall('ConfigRequest')
+
+      res.json(response)
+    })
+
+    server.post('/maintenance', async function(req, res) {
+      const response = await gsCall('MaintenanceRequest', {
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    server.post('/unmaintenance', async function(req, res) {
+      const response = await gsCall('UnmaintenanceRequest', {
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    server.post('/startBattleRoyale', async function(req, res) {
+      const response = await gsCall('StartBattleRoyaleRequest', {
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    server.post('/stopBattleRoyale', async function(req, res) {
+      const response = await gsCall('StopBattleRoyaleRequest', {
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    server.post('/pauseRound', async function(req, res) {
+      const response = await gsCall('PauseRoundRequest', {
+        address: req.body.address,
+        signature: req.body.signature,
+        gameMode: req.body.gameMode
+      })
+
+      res.json(response)
+    })
+
+    server.post('/startRound', async function(req, res) {
+      const response = await gsCall('StartRoundRequest', {
+        address: req.body.address,
+        signature: req.body.signature,
+        gameMode: req.body.gameMode
+      })
+
+      res.json(response)
+    })
+
+    server.post('/enableForceLevel2', async function(req, res) {
+      const response = await gsCall('EnableForceLevel2Request', {
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    server.post('/disableForceLevel2', async function(req, res) {
+      const response = await gsCall('DisableForceLevel2Request', {
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    server.post('/startGodParty', async function(req, res) {
+      const response = await gsCall('StartGodPartyRequest', {
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    server.post('/stopGodParty', async function(req, res) {
+      const response = await gsCall('StopGodPartyRequest', {
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    server.post('/makeBattleHarder', async function(req, res) {
+      const response = await gsCall('MakeBattleHarderRequest', {
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    server.post('/makeBattleEasier', async function(req, res) {
+      const response = await gsCall('MakeBattleEasierRequest', {
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    server.post('/resetBattleDifficulty', async function(req, res) {
+      const response = await gsCall('ResetBattleDifficultyRequest', {
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    server.post('/addMod/:address', async function(req, res) {
+      const response = await gsCall('AddModRequest', {
+        target: req.params.address,
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    server.post('/removeMod/:address', async function(req, res) {
+      const response = await gsCall('RemoveModRequest', {
+        target: req.params.address,
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    server.post('/setConfig/:key/:value', async function(req, res) {
+      const response = await gsCall('SetConfigRequest', {
+        key: req.params.key,
+        value: req.params.value,
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    server.post('/report/:address', async function(req, res) {
+      const response = await gsCall('ReportUserRequest', {
+        target: req.params.address,
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    server.post('/ban/:address', async function(req, res) {
+      const response = await gsCall('BanUserRequest', {
+        target: req.params.address,
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    server.post('/unban/:address', async function(req, res) {
+      const response = await gsCall('UnbanUserRequest', {
+        target: req.params.address,
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    server.post('/message/:address', async function(req, res) {
+      const response = await gsCall('MessageUserRequest', {
+        target: req.params.address,
+        address: req.body.address,
+        signature: req.body.signature,
+        message: req.body.message
+      })
+
+      res.json(response)
+    })
+
+    server.post('/broadcast', async function(req, res) {
+      const response = await gsCall('BoradcastRequest', {
+        address: req.body.address,
+        signature: req.body.signature,
+        message: req.body.message
+      })
+
+      res.json(response)
+    })
+
+    server.get('/user/:address/details', async function(req, res) {
+      const response = await gsCall('UserDetailsRequest', {
+        address: req.params.address
+      })
+
+      res.json(response)
+    })
+
+    server.get('/user/:address', async function(req, res) {
+      const response = await gsCall('UserRequest', {
+        address: req.params.address
+      })
+
+      res.json(response)
+    })
+
+    server.get('/admin/claim/:address/:symbol/:amount/:tx', async function(req, res) {
+      const response = await gsCall('AdminClaimRequest', {
+        address: req.params.address,
+        symbol: req.params.symbol,
+        amount: req.params.amount,
+        tx: req.params.tx
+      })
+
+      res.json(response)
+    })
+    
     server.get('/readiness_check', (req, res) => res.sendStatus(200))
     server.get('/liveness_check', (req, res) => res.sendStatus(200))
 
@@ -492,12 +800,12 @@ const init = async () => {
     await initWebServer()
     await initRoutes()
 
-    https.listen(443, function() {
-      log(`:: Backend ready and listening on *:443`)
+    const sslPort = process.env.SSL_PORT || 443
+    https.listen(sslPort, function() {
+      log(`:: Backend ready and listening on *:${sslPort}`)
     })
 
     const port = process.env.PORT || 80
-
     http.listen(port, function() {
       log(`:: Backend ready and listening on *:${port}`)
     })
