@@ -4,5 +4,12 @@
   "Error: Command failed: kill -9 `ps -aux | grep /usr/bin/node | grep -v grep | awk '{ print $2 }'` && kill -9 `ps -aux | grep RuneInfinite | grep -v grep | awk '{ print $2 }'` && pkill -f Infinite\nps: No user named 'x'\nkill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]\n. Unhandled Rejection at Promise:[object Promise]",
   "Error: Command failed: kill -9 `ps -aux | grep /usr/bin/node | grep -v grep | awk '{ print $2 }'` && kill -9 `ps -aux | grep RuneInfinite | grep -v grep | awk '{ print $2 }'` && pkill -f Infinite\nps: No user named 'x'\nkill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]\n. Unhandled Rejection at Promise:[object Promise]",
   "Error: Command failed: kill -9 `ps -aux | grep /usr/bin/node | grep -v grep | awk '{ print $2 }'` && kill -9 `ps -aux | grep RuneInfinite | grep -v grep | awk '{ print $2 }'` && pkill -f Infinite\nps: No user named 'x'\nkill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]\n. Unhandled Rejection at Promise:[object Promise]",
-  "Error: Command failed: kill -9 `ps -aux | grep /usr/bin/node | grep -v grep | awk '{ print $2 }'` && kill -9 `ps -aux | grep RuneInfinite | grep -v grep | awk '{ print $2 }'` && pkill -f Infinite\nps: No user named 'x'\nkill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]\n. Unhandled Rejection at Promise:[object Promise]"
+  "Error: Command failed: kill -9 `ps -aux | grep /usr/bin/node | grep -v grep | awk '{ print $2 }'` && kill -9 `ps -aux | grep RuneInfinite | grep -v grep | awk '{ print $2 }'` && pkill -f Infinite\nps: No user named 'x'\nkill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]\n. Unhandled Rejection at Promise:[object Promise]",
+  "Could not connect.",
+  "Could not connect.",
+  "Could not connect.",
+  "Could not connect.",
+  "TypeError: Cannot read property 'emit' of undefined. Unhandled Rejection at Promise:[object Promise]",
+  "Not connected to realm server.",
+  "Not connected to realm server."
 ]
