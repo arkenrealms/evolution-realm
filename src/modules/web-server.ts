@@ -5,13 +5,13 @@ import cors from 'cors'
 import RateLimit from 'express-rate-limit'
 import bodyParser from 'body-parser'
 import morgan from 'morgan'
-import { logError } from './util'
-import { emitAll } from './util/websocket'
-import { killSubProcesses } from './util/process'
+import { log, logError } from '../util'
+import { emitAll } from '../util/websocket'
+import { killSubProcesses } from '../util/process'
 
 const path = require('path')
 
-async function initRoutes(app) {
+function initRoutes(app) {
   try {
     app.server.get('/admin/upgrade', async function(req, res) {
       try {
@@ -345,6 +345,20 @@ async function initRoutes(app) {
 
       res.json(response)
     })
+
+    app.server.get('/admin/test/:testName', async function(req, res) {
+      try {
+        if (!app.tests[req.params.testName]) {
+          logError('Test doesnt exist')
+          res.json({ success: 0 })
+        }
+        
+        res.json(await app.tests[req.params.testName](app))
+      } catch (e) {
+        logError(e)
+        res.json({ success: 0 })
+      }
+    })
     
     app.server.get('/readiness_check', (req, res) => res.sendStatus(200))
     app.server.get('/liveness_check', (req, res) => res.sendStatus(200))
@@ -383,5 +397,16 @@ export async function initWebServer(app) {
 
   app.server.use(express.static(path.join(__dirname, '/../game-server/public')))
 
-  await initRoutes(app)
+  initRoutes(app)
+
+  // Finalize
+  const port = process.env.PORT || 80
+  app.http.listen(port, function() {
+    log(`:: Backend ready and listening on *:${port}`)
+  })
+
+  const sslPort = process.env.SSL_PORT || 443
+  app.https.listen(sslPort, function() {
+    log(`:: Backend ready and listening on *:${sslPort}`)
+  })
 }
