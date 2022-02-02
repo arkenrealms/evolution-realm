@@ -3,17 +3,24 @@ import fs from 'fs'
 import express from 'express'
 import { log, logError } from './util'
 import { catchExceptions } from './util/process'
-import { initRealmServer } from './realm-server'
-import { initWebServer } from './web-server'
-import { initGameBridge } from './game-bridge'
+import { initRealmServer } from './modules/realm-server'
+import { initWebServer } from './modules/web-server'
+import { initGameBridge } from './modules/game-bridge'
+import * as tests from './tests'
 
 const path = require('path')
 
 async function init() {
-  try {
-    catchExceptions()
+  catchExceptions()
 
+  try {
     const app = {} as any
+
+    app.flags = {
+      testBanSystem: false
+    }
+
+    app.tests = tests
 
     app.server = express()
 
@@ -44,15 +51,8 @@ async function init() {
     await initWebServer(app)
     await initGameBridge(app)
 
-    const port = process.env.PORT || 80
-    app.http.listen(port, function() {
-      log(`:: Backend ready and listening on *:${port}`)
-    })
-
-    const sslPort = process.env.SSL_PORT || 443
-    app.https.listen(sslPort, function() {
-      log(`:: Backend ready and listening on *:${sslPort}`)
-    })
+    if (app.flags.testBanSystem)
+      app.tests.testBanSystem(app)
   } catch(e) {
     logError(e)
   }

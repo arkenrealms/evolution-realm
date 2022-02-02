@@ -1,5 +1,6 @@
 build
 secrets.js
+secrets.ts
 secrets.ptr.js
 nohup.out
 

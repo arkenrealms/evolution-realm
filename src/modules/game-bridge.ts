@@ -1,17 +1,16 @@
 import { spawn } from 'child_process'
 import jetpack from 'fs-jetpack'
 import { io as ioClient } from 'socket.io-client'
-import { log, logError, random, getTime } from './util'
-import { web3 } from './util/web3'
-import { emitDirect } from './util/websocket'
-import { upgradeGsCodebase, cloneGsCodebase } from './util/codebase'
-import { decodeItem } from './decodeItem'
+import { log, logError, random, getTime } from '../util'
+import { web3 } from '../util/web3'
+import { emitDirect } from '../util/websocket'
+import { upgradeGsCodebase, cloneGsCodebase } from '../util/codebase'
 
 const path = require('path')
 const shortId = require('shortid')
 
 function getSocket(endpoint) {
-  console.log('Connecting to', endpoint)
+  log('Connecting to', endpoint)
   return ioClient(endpoint, {
     transports: ['websocket'],
     upgrade: false,
@@ -40,19 +39,21 @@ function startGameServer(app) {
   app.gameBridge.process.stdout.pipe(process.stdout)
   app.gameBridge.process.stderr.pipe(process.stderr)
 
-  app.gameBridge.process.on('exit', function (code, signal) {
-    console.log('child process exited with ' +
-              `code ${code} and signal ${signal}`)
-  })
+  app.gameBridge.process.on('exit', (code, signal) => log(`Child process exited with code ${code} and signal ${signal}`))
 
   app.subProcesses.push(app.gameBridge.process)
 }
 
 async function callGameServer(app, name, data = {}) {
+  if (!app.gameBridge.state.socket?.connected) {
+    log(`Can't send GS message, not connected.`)
+    return Promise.resolve()
+  }
+
   return new Promise(resolve => {
     const id = shortId()
     
-    app.gameBridge.state.gsCallbacks[id] = resolve
+    app.gameBridge.state.ioCallbacks[id] = resolve
 
     app.gameBridge.state.socket.emit(name, { id, data })
   })
@@ -98,9 +99,7 @@ function connectGameServer(app) {
 
   socket.on('GS_SaveRoundRequest', function(req) {
     try {
-      log('GS_SaveRound', {
-        caller: req.data.address
-      })
+      log('GS_SaveRound', req)
 
       // Update player stat DB
 
@@ -398,11 +397,11 @@ function connectGameServer(app) {
   })
 
   socket.onAny(function(eventName, res) {
-    if (app.gameBridge.state.gsCallbacks[res.id]) {
+    if (app.gameBridge.state.ioCallbacks[res.id]) {
       log('Callback', eventName)
-      app.gameBridge.state.gsCallbacks[res.id](res.data)
+      app.gameBridge.state.ioCallbacks[res.id](res.data)
 
-      delete app.gameBridge.state.gsCallbacks[res.id]
+      delete app.gameBridge.state.ioCallbacks[res.id]
     }
   })
 
@@ -426,7 +425,7 @@ export function initGameBridge(app) {
 
   app.gameBridge.state.playerRewards = {} as any
 
-  app.gameBridge.state.gsCallbacks = {}
+  app.gameBridge.state.ioCallbacks = {}
 
   app.gameBridge.state.rewards = {
     "runes": [

@@ -14,6 +14,16 @@ export function log(...msgs) {
   }
 }
 
+export function logError(err) {
+  console.log("[RS]", err)
+
+  const errorLog = jetpack.read(path.resolve('./public/data/errors.json'), 'json') || []
+
+  errorLog.push(err + '')
+  
+  jetpack.write(path.resolve('./public/data/errors.json'), JSON.stringify(errorLog, null, 2), { atomic: true })
+}
+
 export function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -51,14 +61,4 @@ export function binaryAgent(str) {
 
 export function random(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min
-}
-
-export function logError(err) {
-  console.log("[RS]", err)
-
-  const errorLog = jetpack.read(path.resolve('./public/data/errors.json'), 'json') || []
-
-  errorLog.push(err + '')
-  
-  jetpack.write(path.resolve('./public/data/errors.json'), JSON.stringify(errorLog, null, 2), { atomic: true })
 }
