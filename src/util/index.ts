@@ -8,15 +8,19 @@ if (isDebug) {
   console.log('Running RS in DEBUG mode')
 }
 
+const writeLogs = false
+
 export function log(...msgs) {
+  if (isDebug) {
+    console.log('[RS]', ...msgs)
+  }
+
+  if (!writeLogs) return
+
   const logData = jetpack.read(path.resolve('../public/data/log.json'), 'json') || []
   
   for (const msg of msgs) {
     logData.push(JSON.stringify(msg))
-  }
-
-  if (isDebug) {
-    console.log('[RS]', ...msgs)
   }
 
   jetpack.write(path.resolve('../public/data/log.json'), JSON.stringify(logData, null, 2))
@@ -24,6 +28,8 @@ export function log(...msgs) {
 
 export function logError(err) {
   console.log("[RS]", err)
+
+  if (!writeLogs) return
 
   const errorLog = jetpack.read(path.resolve('./public/data/errors.json'), 'json') || []
 
