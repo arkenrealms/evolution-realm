@@ -1,0 +1,2622 @@
+[
+  {
+    "Id": "153048",
+    "Name": "Level2Divider",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "153316",
+      "Position": [
+        -18.1486969,
+        -9.273676,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -18.1486969,
+        -9.273676,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -18.8391266,
+          -9.617678,
+          0.0
+        ],
+        "Max": [
+          -17.83065,
+          0.08911705,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -18.6964035,
+          -21.60193,
+          0.0
+        ],
+        "Max": [
+          -17.7981567,
+          -8.962023,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "150744",
+    "Name": "Chara01frame01",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "153048",
+      "Position": [
+        -17.8886967,
+        0.18632412,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        0.065,
+        2.365,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -18.6886959,
+          -0.6136759,
+          0.0
+        ],
+        "Max": [
+          -17.0886974,
+          0.986324131,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "148900",
+    "Name": "Land1",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "153034",
+      "Position": [
+        0.638906,
+        -14.6986761,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        0.638906,
+        -14.6986761,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        3.62264156,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -1.311094,
+          -16.0028267,
+          0.0
+        ],
+        "Max": [
+          1.6550467,
+          -12.6121025,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -0.364614964,
+          -16.0028267,
+          0.0
+        ],
+        "Max": [
+          1.68028641,
+          -12.4228058,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "149848",
+    "Name": "Land2",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "153034",
+      "Position": [
+        -3.371094,
+        -17.1986771,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -3.371094,
+        -17.1986771,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        2.70769238,
+        2.91823888,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -4.62255144,
+          -18.0449657,
+          0.0
+        ],
+        "Max": [
+          -2.47755527,
+          -15.09115,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "152534",
+    "Name": "Land3",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "153034",
+      "Position": [
+        -2.51,
+        -14.7186756,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -2.51,
+        -14.7186756,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -4.35904264,
+          -16.3086758,
+          0.0
+        ],
+        "Max": [
+          -0.559999943,
+          -12.9898586,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -4.19498634,
+          -16.3086758,
+          0.0
+        ],
+        "Max": [
+          -0.282365918,
+          -12.5986462,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "151512",
+    "Name": "Land4",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "153034",
+      "Position": [
+        -1.49439383,
+        -16.7975769,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -1.49439383,
+        -16.7975769,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -4.241928,
+          -20.5359917,
+          0.0
+        ],
+        "Max": [
+          1.29567528,
+          -13.1385622,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "148944",
+    "Name": "Land5",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "153034",
+      "Position": [
+        -30.131094,
+        -17.8126755,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -30.131094,
+        -17.8126755,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -32.6377754,
+          -19.7326756,
+          0.0
+        ],
+        "Max": [
+          -27.349575,
+          -16.8309727,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -32.1301956,
+          -19.3526764,
+          0.0
+        ],
+        "Max": [
+          -27.980175,
+          -16.3485832,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -32.6362534,
+          -19.3526764,
+          0.0
+        ],
+        "Max": [
+          -27.7398,
+          -16.5257034,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "153538",
+    "Name": "Land6",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "153034",
+      "Position": [
+        -16.3321953,
+        -18.7521763,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -16.3321953,
+        -18.7521763,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -17.7190418,
+          -21.4377327,
+          0.0
+        ],
+        "Max": [
+          -14.9248905,
+          -16.0822487,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "152368",
+    "Name": "Land7",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "153034",
+      "Position": [
+        -5.971092,
+        -19.3326759,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -5.971092,
+        -19.3326759,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -8.334724,
+          -22.7166176,
+          0.0
+        ],
+        "Max": [
+          -3.60090423,
+          -15.9721909,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "151194",
+    "Name": "Land8",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "153034",
+      "Position": [
+        -12.3910942,
+        -17.1286774,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -12.3910942,
+        -17.1286774,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        3.62264156,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -14.2963476,
+          -18.4328289,
+          0.0
+        ],
+        "Max": [
+          -10.4410944,
+          -15.1645145,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -14.1732941,
+          -18.43283,
+          0.0
+        ],
+        "Max": [
+          -10.0607471,
+          -14.8065424,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "151660",
+    "Name": "Land9",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "153034",
+      "Position": [
+        -16.3300934,
+        -17.4016762,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -16.3300934,
+        -17.4016762,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.51282024,
+        5.433963,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -17.5055275,
+          -18.8009224,
+          0.0
+        ],
+        "Max": [
+          -13.5885315,
+          -16.1478577,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -17.6733265,
+          -18.8009224,
+          0.0
+        ],
+        "Max": [
+          -14.908556,
+          -16.5393867,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "152292",
+    "Name": "Land10",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "153034",
+      "Position": [
+        -5.60109425,
+        -17.2486763,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -5.60109425,
+        -17.2486763,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.51282024,
+        5.433963,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -9.975904,
+          -18.6479225,
+          0.0
+        ],
+        "Max": [
+          -4.179555,
+          -16.0145378,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "151930",
+    "Name": "Land11",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "153034",
+      "Position": [
+        -20.4810944,
+        -18.3986759,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -20.4810944,
+        -18.3986759,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -24.1643333,
+          -19.9886761,
+          0.0
+        ],
+        "Max": [
+          -18.6449547,
+          -16.3026218,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "150972",
+    "Name": "Land12",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "153034",
+      "Position": [
+        -23.1410942,
+        -18.6186752,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -23.1410942,
+        -18.6186752,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        3.62264132,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -25.0025368,
+          -19.9228249,
+          0.0
+        ],
+        "Max": [
+          -21.1910934,
+          -16.4668846,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "152170",
+    "Name": "Land13",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "153034",
+      "Position": [
+        -25.6210938,
+        -18.3586769,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -25.6210938,
+        -18.3586769,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        2.23589754,
+        2.71698117,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -25.7749252,
+          -19.0922623,
+          0.0
+        ],
+        "Max": [
+          -24.4931068,
+          -16.66359,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -26.673172,
+          -19.0922623,
+          0.0
+        ],
+        "Max": [
+          -25.01181,
+          -17.0178261,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "150502",
+    "Name": "Land14",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "153034",
+      "Position": [
+        -26.9110947,
+        -19.5386772,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -26.9110947,
+        -19.5386772,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        2.70769238,
+        2.91823888,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -27.9058456,
+          -20.3849678,
+          0.0
+        ],
+        "Max": [
+          -26.0175552,
+          -17.4525566,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "153966",
+    "Name": "Island1",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -26.9199982,
+        -5.91,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -26.9199982,
+        -5.91,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -27.9532928,
+          -6.802558,
+          0.0
+        ],
+        "Max": [
+          -26.0497475,
+          -5.00081635,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -28.1306953,
+          -6.146701,
+          0.0
+        ],
+        "Max": [
+          -26.0497475,
+          -5.317993,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -28.028553,
+          -6.840189,
+          0.0
+        ],
+        "Max": [
+          -27.3614616,
+          -5.328745,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "150664",
+    "Name": "Island2",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -31.6640949,
+        -9.988676,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -31.6640949,
+        -9.988676,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -33.36986,
+          -11.3351879,
+          0.0
+        ],
+        "Max": [
+          -30.3070259,
+          -8.505198,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -32.8053131,
+          -11.4710979,
+          0.0
+        ],
+        "Max": [
+          -31.0911255,
+          -8.505198,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -33.5475922,
+          -10.4256363,
+          0.0
+        ],
+        "Max": [
+          -30.3070259,
+          -8.818836,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "149970",
+    "Name": "Island3",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -12.5750885,
+        -11.5246735,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -12.5750885,
+        -11.5246735,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -12.89378,
+          -12.59086,
+          0.0
+        ],
+        "Max": [
+          -12.6408882,
+          -10.5406456,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "152402",
+    "Name": "Island4",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -13.8010941,
+        -9.989676,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -13.8010941,
+        -9.989676,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -14.6254015,
+          -10.1246433,
+          0.0
+        ],
+        "Max": [
+          -13.46416,
+          -9.785444,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -14.118042,
+          -10.191267,
+          0.0
+        ],
+        "Max": [
+          -13.4334106,
+          -10.0002518,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "150596",
+    "Name": "Island5",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -11.0640945,
+        -12.0467758,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -11.0640945,
+        -12.0467758,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -12.18589,
+          -12.1351051,
+          0.0
+        ],
+        "Max": [
+          -10.4600334,
+          -11.8268833,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -12.166708,
+          -12.2890224,
+          0.0
+        ],
+        "Max": [
+          -11.459528,
+          -11.8771,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "152628",
+    "Name": "Island6",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -13.3950958,
+        -10.9316759,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -13.3950958,
+        -10.9316759,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -13.792531,
+          -11.3740692,
+          0.0
+        ],
+        "Max": [
+          -13.2179728,
+          -10.4454536,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -13.9094448,
+          -11.0207834,
+          0.0
+        ],
+        "Max": [
+          -13.2317753,
+          -10.4487295,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "151134",
+    "Name": "Island7",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -13.1190948,
+        -9.020279,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -13.1190948,
+        -9.020279,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -13.3810349,
+          -9.55909,
+          0.0
+        ],
+        "Max": [
+          -13.1085434,
+          -8.519295,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "152180",
+    "Name": "Island8",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -23.23,
+        -5.24,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -23.23,
+        -5.24,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -25.1081352,
+          -5.74321747,
+          0.0
+        ],
+        "Max": [
+          -22.1814232,
+          -4.136421,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -24.2706833,
+          -6.489642,
+          0.0
+        ],
+        "Max": [
+          -22.18142,
+          -3.89974976,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -25.0080051,
+          -6.489643,
+          0.0
+        ],
+        "Max": [
+          -21.741972,
+          -4.53694153,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "150648",
+    "Name": "Island9",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -12.565094,
+        -9.468674,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -12.565094,
+        -9.468674,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -12.7185163,
+          -10.1395645,
+          0.0
+        ],
+        "Max": [
+          -12.4569788,
+          -8.693623,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -12.8938475,
+          -9.718164,
+          0.0
+        ],
+        "Max": [
+          -12.4569788,
+          -8.845045,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "152794",
+    "Name": "Island10",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -10.7010937,
+        -10.2076759,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -10.7010937,
+        -10.2076759,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -11.767417,
+          -11.2017488,
+          0.0
+        ],
+        "Max": [
+          -10.0224352,
+          -9.846107,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -11.9708757,
+          -10.5866508,
+          0.0
+        ],
+        "Max": [
+          -10.0485334,
+          -9.145256,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "149110",
+    "Name": "Island11",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -5.350006,
+        -8.26741,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -5.350006,
+        -8.26741,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -5.9082427,
+          -9.189214,
+          0.0
+        ],
+        "Max": [
+          -5.148066,
+          -6.473235,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -5.70754147,
+          -9.939204,
+          0.0
+        ],
+        "Max": [
+          -5.09525,
+          -8.57532,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "153518",
+    "Name": "Island12",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -2.94001,
+        -8.927406,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -2.94001,
+        -8.927406,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -3.498054,
+          -9.884689,
+          0.0
+        ],
+        "Max": [
+          -2.9983573,
+          -7.98535538,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "151982",
+    "Name": "Island13",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -8.276094,
+        -7.218676,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -8.276094,
+        -7.218676,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -8.326049,
+          -7.419387,
+          0.0
+        ],
+        "Max": [
+          -7.49119663,
+          -7.06325436,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -9.989749,
+          -7.38831854,
+          0.0
+        ],
+        "Max": [
+          -7.49254131,
+          -6.98291349,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "152594",
+    "Name": "Island14",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -11.0500031,
+        -5.32167625,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -11.0500031,
+        -5.32167625,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -11.5925245,
+          -6.239109,
+          0.0
+        ],
+        "Max": [
+          -10.830966,
+          -3.53697968,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -11.3885183,
+          -6.941017,
+          0.0
+        ],
+        "Max": [
+          -10.7764463,
+          -5.618601,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "150842",
+    "Name": "Island15",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -27.0610943,
+        -10.0386763,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -27.0610943,
+        -10.0386763,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -27.6193314,
+          -11.6286564,
+          0.0
+        ],
+        "Max": [
+          -26.84859,
+          -8.297316,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "149026",
+    "Name": "Island16",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -23.2010937,
+        -7.318676,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -23.2010937,
+        -7.318676,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -23.251049,
+          -7.51938629,
+          0.0
+        ],
+        "Max": [
+          -22.4161949,
+          -7.163254,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -24.91475,
+          -7.45749664,
+          0.0
+        ],
+        "Max": [
+          -22.4175415,
+          -7.0829134,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "151786",
+    "Name": "Island17",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -25.5810947,
+        -9.208676,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -25.5810947,
+        -9.208676,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -26.1102524,
+          -9.634916,
+          0.0
+        ],
+        "Max": [
+          -25.3965683,
+          -8.694231,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "150064",
+    "Name": "Island18",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -7.140007,
+        -13.6074066,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -7.140007,
+        -13.6074066,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -8.835307,
+          -13.6805534,
+          0.0
+        ],
+        "Max": [
+          -6.32574749,
+          -13.26416,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -8.647737,
+          -13.8515739,
+          0.0
+        ],
+        "Max": [
+          -6.2760973,
+          -13.6613674,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -8.45465,
+          -13.9508762,
+          0.0
+        ],
+        "Max": [
+          -7.29669952,
+          -13.2531261,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "148728",
+    "Name": "Island19",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -27.8210945,
+        -7.66867638,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -27.8210945,
+        -7.66867638,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -29.5163956,
+          -7.741824,
+          0.0
+        ],
+        "Max": [
+          -27.0068359,
+          -7.325429,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -29.3288231,
+          -7.9128437,
+          0.0
+        ],
+        "Max": [
+          -26.9571838,
+          -7.722637,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -29.1357384,
+          -8.012146,
+          0.0
+        ],
+        "Max": [
+          -27.977787,
+          -7.314396,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "148920",
+    "Name": "Island20",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "151376",
+      "Position": [
+        -24.6010933,
+        -11.5586758,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -24.6010933,
+        -11.5586758,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        4.0,
+        4.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -25.6674156,
+          -12.5527487,
+          0.0
+        ],
+        "Max": [
+          -23.9224358,
+          -11.1971064,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      },
+      {
+        "Enabled": true,
+        "Min": [
+          -25.8708763,
+          -11.9376507,
+          0.0
+        ],
+        "Max": [
+          -23.9485321,
+          -10.4962559,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "152442",
+    "Name": "Collider1",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "148842",
+      "Position": [
+        -18.2799988,
+        -28.19,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -18.2799988,
+        -28.19,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -108.888824,
+          -54.4369354,
+          0.0
+        ],
+        "Max": [
+          63.63565,
+          -18.2399826,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "149360",
+    "Name": "Collider2",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "148842",
+      "Position": [
+        -29.5800018,
+        2.62259674,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -29.5800018,
+        2.62259674,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        1.0,
+        1.00000012,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -39.58,
+          0.122596741,
+          0.0
+        ],
+        "Max": [
+          0.419998169,
+          26.0583782,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "150818",
+    "Name": "Collider3",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "148842",
+      "Position": [
+        2.619995,
+        -7.76740265,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        2.619995,
+        -7.76740265,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          0.119995117,
+          -41.2657852,
+          0.0
+        ],
+        "Max": [
+          46.9230156,
+          4.38240051,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  },
+  {
+    "Id": "151476",
+    "Name": "Collider4",
+    "IsStatic": false,
+    "IsActive": true,
+    "Transform": {
+      "Parent": "148842",
+      "Position": [
+        -40.2100067,
+        -7.76740265,
+        0.0
+      ],
+      "Rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalPosition": [
+        -40.2100067,
+        -7.76740265,
+        0.0
+      ],
+      "LocalRotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "LocalScale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "Renderer": null,
+    "Colliders": [
+      {
+        "Enabled": true,
+        "Min": [
+          -71.1483459,
+          -41.4623528,
+          0.0
+        ],
+        "Max": [
+          -37.7100067,
+          4.828659,
+          0.0
+        ],
+        "Radius": 0.0,
+        "Type": 0
+      }
+    ],
+    "Light": null,
+    "ReflectionProbe": null,
+    "Terrain": null
+  }
+]
