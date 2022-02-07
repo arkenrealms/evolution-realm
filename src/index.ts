@@ -1,6 +1,8 @@
 
 import fs from 'fs'
 import express from 'express'
+import helmet from 'helmet'
+import cors from 'cors'
 import { log, logError } from './util'
 import { catchExceptions } from './util/process'
 import { initRealmServer } from './modules/realm-server'
@@ -23,6 +25,15 @@ async function init() {
     app.tests = tests
 
     app.server = express()
+
+    // Security related
+    app.server.set('trust proxy', 1)
+    app.server.use(helmet())
+    app.server.use(
+      cors({
+        allowedHeaders: ['Accept', 'Authorization', 'Cache-Control', 'X-Requested-With', 'Content-Type', 'applicationId'],
+      })
+    )
 
     app.http = require('http').Server(app.server)
 
@@ -47,9 +58,48 @@ async function init() {
 
     app.subProcesses = []
 
-    await initRealmServer(app)
-    await initWebServer(app)
-    await initGameBridge(app)
+    app.moduleConfig = [
+      {
+        name: 'initRealmServer',
+        instance: initRealmServer,
+        async: false,
+        timeout: 0
+      },
+      {
+        name: 'initWebServer',
+        instance: initWebServer,
+        async: false,
+        timeout: 0
+      },
+      {
+        name: 'initGameBridge',
+        instance: initGameBridge,
+        async: false,
+        timeout: 0
+      },
+    ]
+
+    app.modules = {}
+    
+    for (const module of app.moduleConfig) {
+      app.modules[module.name] = module.instance
+
+      if (module.timeout) {
+        setTimeout(async () => {
+          if (module.async) {
+            await module.instance(app)
+          } else {
+            module.instance(app)
+          }
+        }, module.timeout)
+      } else {
+        if (module.async) {
+          await module.instance(app)
+        } else {
+          module.instance(app)
+        }
+      }
+    }
 
     if (app.flags.testBanSystem)
       app.tests.testBanSystem(app)

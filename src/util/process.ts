@@ -29,7 +29,7 @@ export function killSubProcesses() {
 
   try {
     const execPromise = util.promisify(exec)
-    execPromise('kill -9 `ps aux | grep /usr/bin/node | grep -v grep | awk \'{ print $2 }\'` && kill -9 `ps aux | grep RuneInfinite | grep -v grep | awk \'{ print $2 }\'` && pkill -f Infinite').catch(() => {})
+    execPromise('kill -9 `ps aux | grep /usr/bin/node | grep -v grep | awk \'{ print $2 }\'` && kill -9 `ps aux | grep RuneEvolution | grep -v grep | awk \'{ print $2 }\'` && pkill -f Evolution').catch(() => {})
   } catch(e2) {
     console.log(e2)
   }

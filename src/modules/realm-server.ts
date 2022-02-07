@@ -38,7 +38,7 @@ function onRealmConnection(app, socket) {
 
       emitDirect(socket, 'AuthResponse', {
         id: req.id,
-        data: { success: 1 }
+        data: { status: 1 }
       })
     })
 
@@ -48,17 +48,17 @@ function onRealmConnection(app, socket) {
           caller: req.data.address
         })
 
-        if (await verifySignature(req.data.signature) && app.realm.state.modList.includes(req.data.address)) {
+        if (await verifySignature(req.signature) && app.realm.state.modList.includes(req.data.address)) {
           app.realm.state.modList.push(req.params.address)
       
           emitDirect(socket, 'AddModResponse', {
             id: req.id,
-            data: { success: 1 }
+            data: { status: 1 }
           })
         } else {
           emitDirect(socket, 'AddModResponse', {
             id: req.id,
-            data: { success: 0 }
+            data: { status: 0 }
           })
         }
       } catch (e) {
@@ -66,7 +66,7 @@ function onRealmConnection(app, socket) {
         
         emitDirect(socket, 'AddModResponse', {
           id: req.id,
-          data: { success: 0 }
+          data: { status: 0 }
         })
       }
     })
@@ -77,7 +77,7 @@ function onRealmConnection(app, socket) {
           caller: req.data.address
         })
 
-        if (await verifySignature(req.data.signature) && app.realm.state.modList.includes(req.data.address)) {
+        if (await verifySignature(req.signature) && app.realm.state.modList.includes(req.data.address)) {
           for (const client of app.realm.clients) {
             if (client.isMod && client.address === req.data.target) {
               client.isMod = false
@@ -86,18 +86,20 @@ function onRealmConnection(app, socket) {
       
           emitDirect(socket, 'RemoveModResponse', {
             id: req.id,
-            data: { success: 1 }
+            data: { status: 1 }
           })
         } else {
           emitDirect(socket, 'RemoveModResponse', {
             id: req.id,
-            data: { success: 0 }
+            data: { status: 0 }
           })
         }
       } catch (e) {
+        logError(e)
+        
         emitDirect(socket, 'RemoveModResponse', {
           id: req.id,
-          data: { success: 0 }
+          data: { status: 0 }
         })
       }
     })
@@ -111,12 +113,12 @@ function onRealmConnection(app, socket) {
 
           emitDirect(socket, 'BanUserResponse', {
             id: req.id,
-            data: { success: 1 }
+            data: { status: 1 }
           })
         } else {
           emitDirect(socket, 'BanUserResponse', {
             id: req.id,
-            data: { success: 0 }
+            data: { status: 0 }
           })
         }
       } catch (e) {
@@ -124,7 +126,7 @@ function onRealmConnection(app, socket) {
         
         emitDirect(socket, 'BanUserResponse', {
           id: req.id,
-          data: { success: 0 }
+          data: { status: 0 }
         })
       }
     })
@@ -136,17 +138,17 @@ function onRealmConnection(app, socket) {
           caller: req.data.address
         })
 
-        if (await verifySignature(req.data.signature) && app.realm.state.modList.includes(req.data.address)) {
+        if (await verifySignature(req.signature) && app.realm.state.modList.includes(req.data.address)) {
           app.realm.state.banList.splice(app.realm.state.banList.indexOf(req.data.target), 1)
 
           emitDirect(socket, 'UnbanUserResponse', {
             id: req.id,
-            data: { success: 1 }
+            data: { status: 1 }
           })
         } else {
           emitDirect(socket, 'UnbanUserResponse', {
             id: req.id,
-            data: { success: 0 }
+            data: { status: 0 }
           })
         }
       } catch (e) {
@@ -154,7 +156,7 @@ function onRealmConnection(app, socket) {
         
         emitDirect(socket, 'UnbanUserResponse', {
           id: req.id,
-          data: { success: 0 }
+          data: { status: 0 }
         })
       }
     })
@@ -169,7 +171,10 @@ function onRealmConnection(app, socket) {
       // console.log(eventName, res)
       if (app.realm.ioCallbacks[res.id]) {
         log('Callback', eventName)
-        app.realm.ioCallbacks[res.id](res.data)
+  
+        clearTimeout(app.realm.ioCallbacks[res.id].timeout)
+
+        app.realm.ioCallbacks[res.id].resolve(res.data)
   
         delete app.realm.ioCallbacks[res.id]
       }
@@ -186,21 +191,31 @@ function onRealmConnection(app, socket) {
 }
 
 async function sendEventToObservers(app, name, data = undefined) {
-  log('Emit Observers', name, data)
+  try {
+    log('Emit Observers', name, data)
 
-  const signature = await getSignedRequest(md5(JSON.stringify(data)))
- 
-  return new Promise(resolve => {
-    const id = shortId()
+    const signature = await getSignedRequest(md5(JSON.stringify(data)))
+  
+    return new Promise((resolve, reject) => {
+      const id = shortId()
 
-    app.realm.ioCallbacks[id] = resolve
+      const timeout = setTimeout(function() {
+        resolve({ status: 0, message: 'Request timeout' })
 
-    for (const socketId in app.realm.sockets) {
-      const socket = app.realm.sockets[socketId]
-      // console.log(socket, name, id, data)
-      socket.emit(name, { id, signature, data })
-    }
-  })
+        delete app.realm.ioCallbacks[id]
+      }, 2 * 1000)
+      
+      app.realm.ioCallbacks[id] = { resolve, reject, timeout }
+
+      for (const socketId in app.realm.sockets) {
+        const socket = app.realm.sockets[socketId]
+        // console.log(socket, name, id, data)
+        socket.emit(name, { id, signature, data })
+      }
+    })
+  } catch(e) {
+    logError(e)
+  }
 }
 
 export function initRealmServer(app) {
@@ -216,7 +231,8 @@ export function initRealmServer(app) {
 
   app.realm.sockets = {} // to storage sockets
   
-  app.realm.state = {}
+  app.realm.state = {
+  }
 
   app.realm.state.banList = []
 
