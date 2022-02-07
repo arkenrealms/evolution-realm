@@ -9,9 +9,17 @@ if (isDebug) {
 }
 
 export function log(...msgs) {
+  const logData = jetpack.read(path.resolve('../public/data/log.json'), 'json') || []
+  
+  for (const msg of msgs) {
+    logData.push(JSON.stringify(msg))
+  }
+
   if (isDebug) {
     console.log('[RS]', ...msgs)
   }
+
+  jetpack.write(path.resolve('../public/data/log.json'), JSON.stringify(logData, null, 2))
 }
 
 export function logError(err) {
@@ -19,7 +27,7 @@ export function logError(err) {
 
   const errorLog = jetpack.read(path.resolve('./public/data/errors.json'), 'json') || []
 
-  errorLog.push(err + '')
+  errorLog.push(JSON.stringify(err))
   
   jetpack.write(path.resolve('./public/data/errors.json'), JSON.stringify(errorLog, null, 2), { atomic: true })
 }

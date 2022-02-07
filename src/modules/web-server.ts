@@ -1,7 +1,5 @@
 
 import express from 'express'
-import helmet from 'helmet'
-import cors from 'cors'
 import RateLimit from 'express-rate-limit'
 import bodyParser from 'body-parser'
 import morgan from 'morgan'
@@ -17,10 +15,10 @@ function initRoutes(app) {
       try {
         app.realm.upgrade()
 
-        res.json({ success: 1 })
+        res.json({ status: 1 })
       } catch (e) {
         logError(e)
-        res.json({ success: 0 })
+        res.json({ status: 0 })
       }
     })
 
@@ -29,10 +27,10 @@ function initRoutes(app) {
         app.gameBridge.start()
         app.gameBridge.connect()
 
-        res.json({ success: 1 })
+        res.json({ status: 1 })
       } catch (e) {
         logError(e)
-        res.json({ success: 0 })
+        res.json({ status: 0 })
       }
     })
 
@@ -40,10 +38,10 @@ function initRoutes(app) {
       try {
         app.gameBridge.connect()
 
-        res.json({ success: 1 })
+        res.json({ status: 1 })
       } catch (e) {
         logError(e)
-        res.json({ success: 0 })
+        res.json({ status: 0 })
       }
     })
 
@@ -51,10 +49,10 @@ function initRoutes(app) {
       try {
         killSubProcesses()
 
-        res.json({ success: 1 })
+        res.json({ status: 1 })
       } catch (e) {
         logError(e)
-        res.json({ success: 0 })
+        res.json({ status: 0 })
       }
     })
 
@@ -63,10 +61,10 @@ function initRoutes(app) {
         killSubProcesses()
         setTimeout(app.gameBridge.start, 5 * 1000)
 
-        res.json({ success: 1 })
+        res.json({ status: 1 })
       } catch (e) {
         logError(e)
-        res.json({ success: 0 })
+        res.json({ status: 0 })
       }
     })
 
@@ -81,11 +79,11 @@ function initRoutes(app) {
           killSubProcesses()
           setTimeout(app.gameBridge.start, 5 * 1000)
   
-          res.json({ success: 1 })
+          res.json({ status: 1 })
         }, 5 * 1000)
       } catch (e) {
         logError(e)
-        res.json({ success: 0 })
+        res.json({ status: 0 })
       }
     })
 
@@ -93,10 +91,10 @@ function initRoutes(app) {
       try {
         app.gameBridge.clone()
 
-        res.json({ success: 1 })
+        res.json({ status: 1 })
       } catch (e) {
         logError(e)
-        res.json({ success: 0 })
+        res.json({ status: 0 })
       }
     })
 
@@ -350,13 +348,13 @@ function initRoutes(app) {
       try {
         if (!app.tests[req.params.testName]) {
           logError('Test doesnt exist')
-          res.json({ success: 0 })
+          res.json({ status: 0 })
         }
         
         res.json(await app.tests[req.params.testName](app))
       } catch (e) {
         logError(e)
-        res.json({ success: 0 })
+        res.json({ status: 0 })
       }
     })
     
@@ -376,15 +374,6 @@ export async function initWebServer(app) {
     max: 5,
   })
 
-  // Security related
-  app.server.set('trust proxy', 1)
-  app.server.use(helmet())
-  app.server.use(
-    cors({
-      allowedHeaders: ['Accept', 'Authorization', 'Cache-Control', 'X-Requested-With', 'Content-Type', 'applicationId'],
-    })
-  )
-
   // Accept json and other formats in the body
   app.server.use(bodyParser.urlencoded({ extended: true }))
   app.server.use(bodyParser.json())
@@ -400,12 +389,12 @@ export async function initWebServer(app) {
   initRoutes(app)
 
   // Finalize
-  const port = process.env.PORT || 80
+  const port = process.env.RS_PORT || 80
   app.http.listen(port, function() {
     log(`:: Backend ready and listening on *:${port}`)
   })
 
-  const sslPort = process.env.SSL_PORT || 443
+  const sslPort = process.env.RS_SSL_PORT || 443
   app.https.listen(sslPort, function() {
     log(`:: Backend ready and listening on *:${sslPort}`)
   })

@@ -1,5 +1,11 @@
 {
     "roundId": 1,
+    "rewardItemAmountPerLegitPlayer": 0.0015,
+    "rewardItemAmountMax": 0.03,
+    "rewardWinnerAmountPerLegitPlayer": 0.005333333333333333,
+    "rewardWinnerAmountMax": 0.08,
+    "rewardItemAmount": 0.1,
+    "rewardWinnerAmount": 0.1,
     "drops": {
       "guardian": 1633043139000,
       "earlyAccess": 1633043139000,
