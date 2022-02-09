@@ -62,6 +62,8 @@ async function callGameServer(app, name, data = {}) {
 
     app.gameBridge.ioCallbacks[id] = { resolve, reject, timeout }
 
+    log('GS call: ', name, { id, data })
+
     app.gameBridge.socket.emit(name, { id, data })
   })
 }
@@ -78,6 +80,24 @@ function connectGameServer(app) {
 
   const socket = app.gameBridge.socket = getSocket('http://' + server.endpoint)
   let connectTimeout
+
+  const serverState = {
+    index: app.gameBridge.state.servers.length,
+    info: undefined,
+    authed: false
+  }
+
+  app.gameBridge.state.servers.push(serverState)
+
+  async function fetchInfo() {
+    const res = await app.gameBridge.call('RS_InfoRequest') as any
+
+    if (res.status === 1) {
+      serverState.info = res.data
+    }
+
+    setTimeout(fetchInfo, 10 * 1000)
+  }
 
   socket.on('connect', function() {
     log('Connected: ' + server.key)
@@ -96,14 +116,19 @@ function connectGameServer(app) {
   })
 
   socket.on('GS_Init', function(msg) {
+    log('GS initialized')
     // TODO: Validate GS key
+    serverState.authed = true
+
     log(msg)
+
+    fetchInfo()
   })
 
   // Use by GS to tell RS it's connected
-  socket.on('GS_Connect', function() {
-    emitDirect(socket, 'OnConnected')
-  })
+  // socket.on('GS_Connect', async function() {
+  //   emitDirect(socket, 'OnConnected')
+  // })
 
   socket.on('GS_ConfigureRequest', function(req) {
     // TODO: Validate is authed
@@ -628,6 +653,8 @@ export function initGameBridge(app) {
     {x: -22.62, y: -11.69},
     {x: -26.44, y: -4.05},
   ]
+
+  app.gameBridge.state.servers = []
 
   app.gameBridge.process = null
   

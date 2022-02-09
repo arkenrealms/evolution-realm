@@ -42,6 +42,19 @@ function onRealmConnection(app, socket) {
       })
     })
 
+    // Use by GS to tell DB it's connected
+    socket.on('InfoRequest', function(req) {
+      const info = app.gameBridge.state.servers?.[0]?.info
+
+      emitDirect(socket, 'InfoResponse', {
+        id: req.id,
+        data: {
+          status: info ? 1 : 0,
+          data: info // TODO: dont assume theres only 1
+        }
+      })
+    })
+
     socket.on('AddModRequest', async function(req) {
       try {
         log('AddMod', {

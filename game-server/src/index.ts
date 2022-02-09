@@ -5,7 +5,6 @@ import express from 'express'
 import { log, logError, isDebug } from './util'
 import { catchExceptions } from './util/process'
 import { initGameServer } from './modules/game-server'
-import { initWebServer } from './modules/web-server'
 
 const path = require('path')
 

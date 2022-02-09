@@ -350,9 +350,12 @@ function emitElse(socket, ...args) {
 }
 
 function emitDirect(socket, ...args) {
-  log('Emit Direct', ...args)
+  if (!socket || !socket.emit) {
+    log('Emit Direct failed', ...args)
+    return
+  }
 
-  if (!socket || !socket.emit) return
+  log('Emit Direct', ...args)
 
   const eventQueue = [[...args]]
   const compiled = []
@@ -1784,7 +1787,7 @@ function initEventHandler() {
 
       clients.push(currentPlayer)
 
-      socket.on('RS_Connected', function() {
+      socket.on('RS_Connected', async function() {
         try {
           const sameNetworkObservers = observers.filter(r => r.hash === currentPlayer.hash)
 
@@ -1801,7 +1804,7 @@ function initEventHandler() {
           // TODO: confirm it's the realm server
           realmServer.socket = socket
 
-          emitDirect(socket, 'GS_Init', 1)
+          await rsCall('GS_Init', 1)
         } catch (e) {
           logError(e)
         }
@@ -2155,36 +2158,17 @@ function initEventHandler() {
         }
       })
 
-      socket.on('ServerInfoRequest', function(req) {
-        console.log(req)
-        emitDirect('ServerInfoResponse', {
+      socket.on('RS_ConfigRequest', function(req) {
+        socket.emit('RS_ConfigResponse', {
           id: req.id,
           data: {
-            version: serverVersion,
-            round: { id: round.id, startedAt: round.startedAt },
-            clientTotal: clients.length,
-            playerTotal: clients.filter(c => !c.isDead && !c.isSpectating).length,
-            spectatorTotal: clients.filter(c => c.isSpectating).length,
-            recentPlayersTotal: round.players.length,
-            spritesTotal: config.spritesTotal,
-            connectedPlayers: clients.map(c => c.name),
-            rewardWinnerAmount: config.rewardWinnerAmount,
-            totalLegitPlayers: totalLegitPlayers,
-            gameMode: config.gameMode,
-            orbs: orbs,
-            currentReward
+            status: 1,
+            data: config
           }
         })
       })
 
-      socket.on('ConfigRequest', function(req) {
-        emitDirect('ConfigResponse', {
-          id: req.id,
-          data: config
-        })
-      })
-
-      socket.on('MaintenanceRequest', async function(req) {
+      socket.on('RS_MaintenanceRequest', async function(req) {
         try {
           log('Maintenance', {
             caller: req.data.address
@@ -2196,12 +2180,12 @@ function initEventHandler() {
         
             publishEvent('OnMaintenance', config.isMaintenance)
 
-            emitDirect('MaintenanceResponse', {
+            socket.emit('RS_MaintenanceResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            emitDirect('MaintenanceResponse', {
+            socket.emit('RS_MaintenanceResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -2209,14 +2193,14 @@ function initEventHandler() {
         } catch (e) {
           console.log(e)
           
-          emitDirect('MaintenanceResponse', {
+          socket.emit('RS_MaintenanceResponse', {
             id: req.id,
             data: { status: 0 }
           })
         }
       })
 
-      socket.on('UnmaintenanceRequest', async function(req) {
+      socket.on('RS_UnmaintenanceRequest', async function(req) {
         try {
           log('Unmaintenance', {
             caller: req.data.address
@@ -2228,12 +2212,12 @@ function initEventHandler() {
         
             publishEvent('OnUnmaintenance', config.isMaintenance)
 
-            emitDirect('UnmaintenanceResponse', {
+            socket.emit('RS_UnmaintenanceResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            emitDirect('UnmaintenanceResponse', {
+            socket.emit('RS_UnmaintenanceResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -2241,14 +2225,14 @@ function initEventHandler() {
         } catch (e) {
           console.log(e)
           
-          emitDirect('UnmaintenanceResponse', {
+          socket.emit('RS_UnmaintenanceResponse', {
             id: req.id,
             data: { status: 0 }
           })
         }
       })
 
-      socket.on('StartBattleRoyaleRequest', async function(req) {
+      socket.on('RS_StartBattleRoyaleRequest', async function(req) {
         try {
           log('StartBattleRoyale', {
             caller: req.data.address
@@ -2260,12 +2244,12 @@ function initEventHandler() {
 
             publishEvent('OnBroadcast', `Battle Royale Started`, 3)
             
-            emitDirect('StartBattleRoyaleResponse', {
+            socket.emit('RS_StartBattleRoyaleResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            emitDirect('StartBattleRoyaleResponse', {
+            socket.emit('RS_StartBattleRoyaleResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -2273,14 +2257,14 @@ function initEventHandler() {
         } catch (e) {
           console.log(e)
           
-          emitDirect('StartBattleRoyaleResponse', {
+          socket.emit('RS_StartBattleRoyaleResponse', {
             id: req.id,
             data: { status: 0 }
           })
         }
       })
 
-      socket.on('StopBattleRoyaleRequest', async function(req) {
+      socket.on('RS_StopBattleRoyaleRequest', async function(req) {
         try {
           log('StopBattleRoyale', {
             caller: req.data.address
@@ -2292,12 +2276,12 @@ function initEventHandler() {
 
             publishEvent('OnBroadcast', `Battle Royale Stopped`, 0)
         
-            emitDirect('StopBattleRoyaleResponse', {
+            socket.emit('RS_StopBattleRoyaleResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            emitDirect('StopBattleRoyaleResponse', {
+            socket.emit('RS_StopBattleRoyaleResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -2305,14 +2289,14 @@ function initEventHandler() {
         } catch (e) {
           console.log(e)
           
-          emitDirect('StopBattleRoyaleResponse', {
+          socket.emit('RS_StopBattleRoyaleResponse', {
             id: req.id,
             data: { status: 0 }
           })
         }
       })
 
-      socket.on('PauseRoundRequest', async function(req) {
+      socket.on('RS_PauseRoundRequest', async function(req) {
         try {
           log('PauseRound', {
             caller: req.data.address
@@ -2328,12 +2312,12 @@ function initEventHandler() {
             publishEvent('OnBroadcast', `Round Paused`, 0)
         
             
-            emitDirect('PauseRoundResponse', {
+            socket.emit('RS_PauseRoundResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            emitDirect('PauseRoundResponse', {
+            socket.emit('RS_PauseRoundResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -2341,14 +2325,14 @@ function initEventHandler() {
         } catch (e) {
           console.log(e)
           
-          emitDirect('PauseRoundResponse', {
+          socket.emit('RS_PauseRoundResponse', {
             id: req.id,
             data: { status: 0 }
           })
         }
       })
 
-      socket.on('StartRoundRequest', async function(req) {
+      socket.on('RS_StartRoundRequest', async function(req) {
         try {
           log('StartRound', {
             caller: req.data.address
@@ -2364,12 +2348,12 @@ function initEventHandler() {
 
             resetLeaderboard(presets.find(p => p.gameMode === req.data.gameMode))
 
-            emitDirect('StartRoundResponse', {
+            socket.emit('RS_StartRoundResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            emitDirect('StartRoundResponse', {
+            socket.emit('RS_StartRoundResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -2377,14 +2361,14 @@ function initEventHandler() {
         } catch (e) {
           console.log(e)
 
-          emitDirect('StartRoundResponse', {
+          socket.emit('RS_StartRoundResponse', {
             id: req.id,
             data: { status: 0 }
           })
         }
       })
 
-      socket.on('EnableForceLevel2Request', async function(req) {
+      socket.on('RS_EnableForceLevel2Request', async function(req) {
         try {
           log('EnableForceLevel2', {
             caller: req.data.address
@@ -2394,12 +2378,12 @@ function initEventHandler() {
             baseConfig.level2forced = true
             config.level2forced = true
             
-            emitDirect('EnableForceLevel2Response', {
+            socket.emit('RS_EnableForceLevel2Response', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            emitDirect('EnableForceLevel2Response', {
+            socket.emit('RS_EnableForceLevel2Response', {
               id: req.id,
               data: { status: 0 }
             })
@@ -2407,14 +2391,14 @@ function initEventHandler() {
         } catch (e) {
           console.log(e)
 
-          emitDirect('EnableForceLevel2Response', {
+          socket.emit('RS_EnableForceLevel2Response', {
             id: req.id,
             data: { status: 0 }
           })
         }
       })
 
-      socket.on('DisableForceLevel2Request', async function(req) {
+      socket.on('RS_DisableForceLevel2Request', async function(req) {
         try {
           log('DisableForceLevel2', {
             caller: req.data.address
@@ -2424,12 +2408,12 @@ function initEventHandler() {
             baseConfig.level2forced = false
             config.level2forced = false
             
-            emitDirect('DisableForceLevel2Response', {
+            socket.emit('RS_DisableForceLevel2Response', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            emitDirect('DisableForceLevel2Response', {
+            socket.emit('RS_DisableForceLevel2Response', {
               id: req.id,
               data: { status: 0 }
             })
@@ -2437,14 +2421,14 @@ function initEventHandler() {
         } catch (e) {
           console.log(e)
 
-          emitDirect('DisableForceLevel2Response', {
+          socket.emit('RS_DisableForceLevel2Response', {
             id: req.id,
             data: { status: 0 }
           })
         }
       })
 
-      socket.on('StartGodPartyRequest', async function(req) {
+      socket.on('RS_StartGodPartyRequest', async function(req) {
         try {
           log('StartGodParty', {
             caller: req.data.address
@@ -2456,12 +2440,12 @@ function initEventHandler() {
 
             publishEvent('OnBroadcast', `God Party Started`, 0)
             
-            emitDirect('StartGodPartyResponse', {
+            socket.emit('RS_StartGodPartyResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            emitDirect('StartGodPartyResponse', {
+            socket.emit('RS_StartGodPartyResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -2469,14 +2453,14 @@ function initEventHandler() {
         } catch (e) {
           console.log(e)
           
-          emitDirect('StartGodPartyResponse', {
+          socket.emit('RS_StartGodPartyResponse', {
             id: req.id,
             data: { status: 0 }
           })
         }
       })
 
-      socket.on('StopGodPartyRequest', async function(req) {
+      socket.on('RS_StopGodPartyRequest', async function(req) {
         try {
           log('StopGodParty', {
             caller: req.data.address
@@ -2494,12 +2478,12 @@ function initEventHandler() {
 
             publishEvent('OnBroadcast', `God Party Stopped`, 2)
             
-            emitDirect('StopGodPartyResponse', {
+            socket.emit('RS_StopGodPartyResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            emitDirect('StopGodPartyResponse', {
+            socket.emit('RS_StopGodPartyResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -2507,14 +2491,14 @@ function initEventHandler() {
         } catch (e) {
           console.log(e)
           
-          emitDirect('StopGodPartyResponse', {
+          socket.emit('RS_StopGodPartyResponse', {
             id: req.id,
             data: { status: 0 }
           })
         }
       })
 
-      socket.on('MakeBattleHarderRequest', async function(req) {
+      socket.on('RS_MakeBattleHarderRequest', async function(req) {
         try {
           log('MakeBattleHarder', {
             caller: req.data.address
@@ -2540,12 +2524,12 @@ function initEventHandler() {
             publishEvent('OnBroadcast', `Difficulty Increased!`, 2)
         
             
-            emitDirect('MakeBattleHarderResponse', {
+            socket.emit('RS_MakeBattleHarderResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            emitDirect('MakeBattleHarderResponse', {
+            socket.emit('RS_MakeBattleHarderResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -2553,14 +2537,14 @@ function initEventHandler() {
         } catch (e) {
           console.log(e)
           
-          emitDirect('MakeBattleHarderResponse', {
+          socket.emit('RS_MakeBattleHarderResponse', {
             id: req.id,
             data: { status: 0 }
           })
         }
       })
 
-      socket.on('MakeBattleEasierRequest', async function(req) {
+      socket.on('RS_MakeBattleEasierRequest', async function(req) {
         try {
           log('MakeBattleEasier', {
             caller: req.data.address
@@ -2585,25 +2569,25 @@ function initEventHandler() {
             publishEvent('OnSetPositionMonitor', config.checkPositionDistance + ':' + config.checkInterval + ':' + config.resetInterval)
             publishEvent('OnBroadcast', `Difficulty Decreased!`, 0)
         
-            emitDirect('MakeBattleEasierResponse', {
+            socket.emit('RS_MakeBattleEasierResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            emitDirect('MakeBattleEasierResponse', {
+            socket.emit('RS_MakeBattleEasierResponse', {
               id: req.id,
               data: { status: 0 }
             })
           }
         } catch (e) {
-          emitDirect('MakeBattleEasierResponse', {
+          socket.emit('RS_MakeBattleEasierResponse', {
             id: req.id,
             data: { status: 0 }
           })
         }
       })
 
-      socket.on('ResetBattleDifficultyRequest', async function(req) {
+      socket.on('RS_ResetBattleDifficultyRequest', async function(req) {
         try {
           log('ResetBattleDifficulty', {
             caller: req.data.address
@@ -2628,25 +2612,25 @@ function initEventHandler() {
             publishEvent('OnSetPositionMonitor', config.checkPositionDistance + ':' + config.checkInterval + ':' + config.resetInterval)
             publishEvent('OnBroadcast', `Difficulty Reset!`, 0)
         
-            emitDirect('ResetBattleDifficultyResponse', {
+            socket.emit('RS_ResetBattleDifficultyResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            emitDirect('ResetBattleDifficultyResponse', {
+            socket.emit('RS_ResetBattleDifficultyResponse', {
               id: req.id,
               data: { status: 0 }
             })
           }
         } catch (e) {
-          emitDirect('ResetBattleDifficultyResponse', {
+          socket.emit('RS_ResetBattleDifficultyResponse', {
             id: req.id,
             data: { status: 0 }
           })
         }
       })
 
-      socket.on('SetConfigRequest', async function(req) {
+      socket.on('RS_SetConfigRequest', async function(req) {
         try {
           log('SetConfig', {
             caller: req.data.address
@@ -2664,12 +2648,12 @@ function initEventHandler() {
 
             publishEvent('OnBroadcast', `${req.data.key} = ${val}`, 1)
             
-            emitDirect('SetConfigResponse', {
+            socket.emit('RS_SetConfigResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            emitDirect('SetConfigResponse', {
+            socket.emit('RS_SetConfigResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -2677,33 +2661,14 @@ function initEventHandler() {
         } catch (e) {
           console.log(e)
           
-          emitDirect('SetConfigResponse', {
+          socket.emit('RS_SetConfigResponse', {
             id: req.id,
             data: { status: 0 }
           })
         }
       })
 
-      socket.on('ReportUser', async function(req) {
-        const reportedPlayer = clients.find(c => c.address === req.data.target)
-
-        if (reportedPlayer) {
-          const res = await rsCall('GS_ReportUserRequest', { currentAddress: currentPlayer.address, reportedAddress: reportedPlayer.address }) as any
-          
-          emitDirect('ReportUserResponse', {
-            id: req.id,
-            data: { status: res.status }
-          })
-        } else {
-          emitDirect('ReportUserResponse', {
-            id: req.id,
-            data: { status: 0 }
-          })
-        }
-
-      })
-
-      socket.on('MessageUserRequest', async function(req) {
+      socket.on('RS_MessageUserRequest', async function(req) {
         try {
           log('Message', {
             value: req.data.target,
@@ -2716,25 +2681,25 @@ function initEventHandler() {
 
             emitDirect(socket, 'OnBroadcast', req.data.message.replace(/:/gi, ''), 0)
             
-            emitDirect('MessageUserResponse', {
+            socket.emit('RS_MessageUserResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            emitDirect('MessageUserResponse', {
+            socket.emit('RS_MessageUserResponse', {
               id: req.id,
               data: { status: 0 }
             })
           }
         } catch (e) {
-          emitDirect('MessageUserResponse', {
+          socket.emit('RS_MessageUserResponse', {
             id: req.id,
             data: { status: 0 }
           })
         }
       })
 
-      socket.on('BroadcastRequest', async function(req) {
+      socket.on('RS_BroadcastRequest', async function(req) {
         try {
           log('Broadcast', {
             caller: req.address,
@@ -2744,12 +2709,12 @@ function initEventHandler() {
           if (await isValidAdminRequest(req.hash, req.address, req.data)) {
             publishEvent('OnBroadcast', req.data.message.replace(/:/gi, ''), 0)
             
-            emitDirect('BroadcastResponse', {
+            socket.emit('RS_BroadcastResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            emitDirect('BroadcastResponse', {
+            socket.emit('RS_BroadcastResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -2757,37 +2722,40 @@ function initEventHandler() {
         } catch (e) {
           console.log(e)
           
-          emitDirect('BroadcastResponse', {
+          socket.emit('RS_BroadcastResponse', {
             id: req.id,
             data: { status: 0 }
           })
         }
       })
 
-      socket.on('KickUser', async function(req) {
+      socket.on('RS_KickUser', async function(req) {
         if (await isValidAdminRequest(req.hash, req.address, req.data) && clients.find(c => c.address === req.data.target)) {
           disconnectPlayer(clients.find(c => c.address === req.data.target))
         }
       })
 
-      socket.on('InfoRequest', async function(req) {
-        emitDirect('InfoResponse', {
+      socket.on('RS_InfoRequest', async function(req) {
+        socket.emit('RS_InfoResponse', {
           id: req.id,
           data: {
-            version: serverVersion,
-            round: { id: round.id, startedAt: round.startedAt },
-            clientTotal: clients.length,
-            playerTotal: clients.filter(c => !c.isDead && !c.isSpectating).length,
-            spectatorTotal: clients.filter(c => c.isSpectating).length,
-            recentPlayersTotal: round.players.length,
-            spritesTotal: config.spritesTotal,
-            connectedPlayers: clients.map(c => c.name),
-            rewardItemAmount: config.rewardItemAmount,
-            rewardWinnerAmount: config.rewardWinnerAmount,
-            totalLegitPlayers: totalLegitPlayers,
-            gameMode: config.gameMode,
-            orbs: orbs,
-            currentReward
+            status: 1,
+            data: {
+              version: serverVersion,
+              round: { id: round.id, startedAt: round.startedAt },
+              clientTotal: clients.length,
+              playerTotal: clients.filter(c => !c.isDead && !c.isSpectating).length,
+              spectatorTotal: clients.filter(c => c.isSpectating).length,
+              recentPlayersTotal: round.players.length,
+              spritesTotal: config.spritesTotal,
+              connectedPlayers: clients.map(c => c.name),
+              rewardItemAmount: config.rewardItemAmount,
+              rewardWinnerAmount: config.rewardWinnerAmount,
+              totalLegitPlayers: totalLegitPlayers,
+              gameMode: config.gameMode,
+              orbs: orbs,
+              currentReward
+            }
           }
         })
       })
