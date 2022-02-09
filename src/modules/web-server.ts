@@ -99,25 +99,19 @@ function initRoutes(app) {
     })
 
     app.server.get('/info', async function(req, res) {
-      const response = await app.gameBridge.call('ServerInfoRequest')
-
-      res.json(response)
-    })
-
-    app.server.get('/db', async function(req, res) {
-      const response = await app.gameBridge.call('DbRequest')
+      const response = await app.gameBridge.call('RS_ServerInfoRequest')
 
       res.json(response)
     })
 
     app.server.get('/config', async function(req, res) {
-      const response = await app.gameBridge.call('ConfigRequest')
+      const response = await app.gameBridge.call('RS_ConfigRequest')
 
       res.json(response)
     })
 
     app.server.post('/maintenance', async function(req, res) {
-      const response = await app.gameBridge.call('MaintenanceRequest', {
+      const response = await app.gameBridge.call('RS_MaintenanceRequest', {
         address: req.body.address,
         signature: req.body.signature
       })
@@ -126,7 +120,7 @@ function initRoutes(app) {
     })
 
     app.server.post('/unmaintenance', async function(req, res) {
-      const response = await app.gameBridge.call('UnmaintenanceRequest', {
+      const response = await app.gameBridge.call('RS_UnmaintenanceRequest', {
         address: req.body.address,
         signature: req.body.signature
       })
@@ -135,7 +129,7 @@ function initRoutes(app) {
     })
 
     app.server.post('/startBattleRoyale', async function(req, res) {
-      const response = await app.gameBridge.call('StartBattleRoyaleRequest', {
+      const response = await app.gameBridge.call('RS_StartBattleRoyaleRequest', {
         address: req.body.address,
         signature: req.body.signature
       })
@@ -144,7 +138,7 @@ function initRoutes(app) {
     })
 
     app.server.post('/stopBattleRoyale', async function(req, res) {
-      const response = await app.gameBridge.call('StopBattleRoyaleRequest', {
+      const response = await app.gameBridge.call('RS_StopBattleRoyaleRequest', {
         address: req.body.address,
         signature: req.body.signature
       })
@@ -153,7 +147,7 @@ function initRoutes(app) {
     })
 
     app.server.post('/pauseRound', async function(req, res) {
-      const response = await app.gameBridge.call('PauseRoundRequest', {
+      const response = await app.gameBridge.call('RS_PauseRoundRequest', {
         address: req.body.address,
         signature: req.body.signature,
         gameMode: req.body.gameMode
@@ -163,7 +157,7 @@ function initRoutes(app) {
     })
 
     app.server.post('/startRound', async function(req, res) {
-      const response = await app.gameBridge.call('StartRoundRequest', {
+      const response = await app.gameBridge.call('RS_StartRoundRequest', {
         address: req.body.address,
         signature: req.body.signature,
         gameMode: req.body.gameMode
@@ -172,8 +166,26 @@ function initRoutes(app) {
       res.json(response)
     })
 
+    app.server.post('/enableForceLevel1', async function(req, res) {
+      const response = await app.gameBridge.call('RS_EnableForceLevel1Request', {
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
+    app.server.post('/disableForceLevel1', async function(req, res) {
+      const response = await app.gameBridge.call('RS_DisableForceLevel1Request', {
+        address: req.body.address,
+        signature: req.body.signature
+      })
+
+      res.json(response)
+    })
+
     app.server.post('/enableForceLevel2', async function(req, res) {
-      const response = await app.gameBridge.call('EnableForceLevel2Request', {
+      const response = await app.gameBridge.call('RS_EnableForceLevel2Request', {
         address: req.body.address,
         signature: req.body.signature
       })
@@ -182,7 +194,7 @@ function initRoutes(app) {
     })
 
     app.server.post('/disableForceLevel2', async function(req, res) {
-      const response = await app.gameBridge.call('DisableForceLevel2Request', {
+      const response = await app.gameBridge.call('RS_DisableForceLevel2Request', {
         address: req.body.address,
         signature: req.body.signature
       })
@@ -191,7 +203,7 @@ function initRoutes(app) {
     })
 
     app.server.post('/startGodParty', async function(req, res) {
-      const response = await app.gameBridge.call('StartGodPartyRequest', {
+      const response = await app.gameBridge.call('RS_StartGodPartyRequest', {
         address: req.body.address,
         signature: req.body.signature
       })
@@ -200,7 +212,7 @@ function initRoutes(app) {
     })
 
     app.server.post('/stopGodParty', async function(req, res) {
-      const response = await app.gameBridge.call('StopGodPartyRequest', {
+      const response = await app.gameBridge.call('RS_StopGodPartyRequest', {
         address: req.body.address,
         signature: req.body.signature
       })
@@ -209,7 +221,7 @@ function initRoutes(app) {
     })
 
     app.server.post('/makeBattleHarder', async function(req, res) {
-      const response = await app.gameBridge.call('MakeBattleHarderRequest', {
+      const response = await app.gameBridge.call('RS_MakeBattleHarderRequest', {
         address: req.body.address,
         signature: req.body.signature
       })
@@ -218,7 +230,7 @@ function initRoutes(app) {
     })
 
     app.server.post('/makeBattleEasier', async function(req, res) {
-      const response = await app.gameBridge.call('MakeBattleEasierRequest', {
+      const response = await app.gameBridge.call('RS_MakeBattleEasierRequest', {
         address: req.body.address,
         signature: req.body.signature
       })
@@ -227,27 +239,7 @@ function initRoutes(app) {
     })
 
     app.server.post('/resetBattleDifficulty', async function(req, res) {
-      const response = await app.gameBridge.call('ResetBattleDifficultyRequest', {
-        address: req.body.address,
-        signature: req.body.signature
-      })
-
-      res.json(response)
-    })
-
-    app.server.post('/addMod/:address', async function(req, res) {
-      const response = await app.gameBridge.call('AddModRequest', {
-        target: req.params.address,
-        address: req.body.address,
-        signature: req.body.signature
-      })
-
-      res.json(response)
-    })
-
-    app.server.post('/removeMod/:address', async function(req, res) {
-      const response = await app.gameBridge.call('RemoveModRequest', {
-        target: req.params.address,
+      const response = await app.gameBridge.call('RS_ResetBattleDifficultyRequest', {
         address: req.body.address,
         signature: req.body.signature
       })
@@ -256,7 +248,7 @@ function initRoutes(app) {
     })
 
     app.server.post('/setConfig/:key/:value', async function(req, res) {
-      const response = await app.gameBridge.call('SetConfigRequest', {
+      const response = await app.gameBridge.call('RS_SetConfigRequest', {
         key: req.params.key,
         value: req.params.value,
         address: req.body.address,
@@ -267,7 +259,7 @@ function initRoutes(app) {
     })
 
     app.server.post('/report/:address', async function(req, res) {
-      const response = await app.gameBridge.call('ReportUserRequest', {
+      const response = await app.gameBridge.call('RS_ReportUserRequest', {
         target: req.params.address,
         address: req.body.address,
         signature: req.body.signature
@@ -277,7 +269,7 @@ function initRoutes(app) {
     })
 
     app.server.post('/ban/:address', async function(req, res) {
-      const response = await app.gameBridge.call('BanUserRequest', {
+      const response = await app.gameBridge.call('RS_BanUserRequest', {
         target: req.params.address,
         address: req.body.address,
         signature: req.body.signature
@@ -287,7 +279,7 @@ function initRoutes(app) {
     })
 
     app.server.post('/unban/:address', async function(req, res) {
-      const response = await app.gameBridge.call('UnbanUserRequest', {
+      const response = await app.gameBridge.call('RS_UnbanUserRequest', {
         target: req.params.address,
         address: req.body.address,
         signature: req.body.signature
@@ -297,7 +289,7 @@ function initRoutes(app) {
     })
 
     app.server.post('/message/:address', async function(req, res) {
-      const response = await app.gameBridge.call('MessageUserRequest', {
+      const response = await app.gameBridge.call('RS_MessageUserRequest', {
         target: req.params.address,
         address: req.body.address,
         signature: req.body.signature,
@@ -308,37 +300,10 @@ function initRoutes(app) {
     })
 
     app.server.post('/broadcast', async function(req, res) {
-      const response = await app.gameBridge.call('BoradcastRequest', {
+      const response = await app.gameBridge.call('RS_BroadcastRequest', {
         address: req.body.address,
         signature: req.body.signature,
         message: req.body.message
-      })
-
-      res.json(response)
-    })
-
-    app.server.get('/user/:address/details', async function(req, res) {
-      const response = await app.gameBridge.call('UserDetailsRequest', {
-        address: req.params.address
-      })
-
-      res.json(response)
-    })
-
-    app.server.get('/user/:address', async function(req, res) {
-      const response = await app.gameBridge.call('UserRequest', {
-        address: req.params.address
-      })
-
-      res.json(response)
-    })
-
-    app.server.get('/admin/claim/:address/:symbol/:amount/:tx', async function(req, res) {
-      const response = await app.gameBridge.call('AdminClaimRequest', {
-        address: req.params.address,
-        symbol: req.params.symbol,
-        amount: req.params.amount,
-        tx: req.params.tx
       })
 
       res.json(response)

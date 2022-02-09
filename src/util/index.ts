@@ -2,7 +2,7 @@ import jetpack from 'fs-jetpack'
 
 const path = require('path')
 
-export const isDebug = process.env.HOME === '/Users/dev'
+export const isDebug = process.env.HOME === '/Users/dev' || process.env.HOME === '/home/dev' || process.env.HOME === '/root'
 
 if (isDebug) {
   console.log('Running RS in DEBUG mode')
@@ -27,7 +27,7 @@ export function log(...msgs) {
 }
 
 export function logError(err) {
-  console.log("[RS]", err)
+  console.log('[RS]', err)
 
   if (!writeLogs) return
 
