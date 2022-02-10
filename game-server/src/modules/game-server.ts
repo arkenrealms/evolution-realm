@@ -1902,6 +1902,7 @@ function initEventHandler(app) {
                 return
               }
 
+              currentPlayer.pickups = recentPlayer.pickups
               currentPlayer.kills = recentPlayer.kills
               currentPlayer.deaths = recentPlayer.deaths
               currentPlayer.points = recentPlayer.points
