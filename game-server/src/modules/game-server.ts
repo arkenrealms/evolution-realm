@@ -1815,9 +1815,11 @@ function initEventHandler(app) {
           // TODO: confirm it's the realm server
           realmServer.socket = socket
 
-          await rsCall('GS_Init', 1)
+          await rsCall('GS_Init', { status: 1 })
         } catch (e) {
           logError(e)
+
+          await rsCall('GS_Init', { status: 0 })
         }
       })
 

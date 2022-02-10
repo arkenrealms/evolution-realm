@@ -115,15 +115,18 @@ function connectGameServer(app) {
     log(msg)
   })
 
-  socket.on('GS_Init', function(msg) {
+  socket.on('GS_Init', function(req) {
+    if (req.status === 1) {
+      logError('Could not init')
+      return
+    }
+
     log('GS initialized')
-    
+
     if (connectTimeout) clearTimeout(connectTimeout)
 
     // TODO: Validate GS key
     serverState.authed = true
-
-    log(msg)
 
     fetchInfo()
   })
