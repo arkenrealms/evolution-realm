@@ -25,7 +25,10 @@ function initRoutes(app) {
     app.server.get('/admin/gs/start', function(req, res) {
       try {
         app.gameBridge.start()
-        app.gameBridge.connect()
+
+        setTimeout(() => {
+          app.gameBridge.connect()
+        }, 5000)
 
         res.json({ status: 1 })
       } catch (e) {
