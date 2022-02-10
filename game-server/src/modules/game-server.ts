@@ -454,7 +454,7 @@ async function spawnRandomReward() {
 
   const rewardRes = (await rsCall('GS_GetRandomRewardRequest') as any)
 
-  if (rewardRes.status !== 1) {
+  if (rewardRes?.status !== 1) {
     setTimeout(spawnRandomReward, 1 * 1000)
   }
 
