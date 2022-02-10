@@ -60,7 +60,7 @@ async function init() {
       })
     )
 
-    app.isHttps = false // process.env.RUNE_ENV !== 'local'
+    app.isHttps = process.env.RUNE_ENV !== 'local'
 
     app.http = require('http').Server(app.server)
 
