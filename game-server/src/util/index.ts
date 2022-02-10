@@ -5,7 +5,7 @@ const path = require('path')
 
 const logData = jetpack.read(path.resolve('../public/data/log.json'), 'json') || []
 
-export const isDebug = process.env.HOME === '/Users/dev'
+export const isDebug = process.env.RUNE_ENV === 'local' 
 
 const writeLogs = false
 

@@ -60,7 +60,7 @@ async function init() {
       })
     )
 
-    app.isHttps = process.env.SUDO_USER === 'dev' || process.env.OS_FLAVOUR === 'debian-10'
+    app.isHttps = process.env.RUNE_ENV !== 'local'
 
     if (app.isHttps) {
       app.https = require('https').createServer({ 

@@ -42,8 +42,8 @@ async function init() {
       cert: fs.readFileSync(path.resolve('./fullchain.pem'))
     }, app.server)
 
-    app.io = require('socket.io')(process.env.SUDO_USER === 'dev' || process.env.OS_FLAVOUR === 'debian-10' ? app.https : app.http, {
-      secure: process.env.SUDO_USER === 'dev' || process.env.OS_FLAVOUR === 'debian-10' ? true : false,
+    app.io = require('socket.io')(process.env.RUNE_ENV !== 'local' ? app.https : app.http, {
+      secure: process.env.RUNE_ENV !== 'local' ? true : false,
       pingInterval: 30005,
       pingTimeout: 5000,
       upgradeTimeout: 3000,
