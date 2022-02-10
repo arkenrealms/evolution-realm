@@ -12,29 +12,67 @@ if (isDebug) {
   console.log('Running GS in DEBUG mode')
 }
 
+function startServer(app) {
+  if (app.isHttps) {
+    app.https.on('error', function (e) {
+      app.state.sslPort++
+      setTimeout(() => startServer(app), 10 * 1000)
+    })
+
+    app.https.listen(app.state.sslPort, function() {
+      log(`:: Backend ready and listening on *:${app.state.sslPort}`)
+
+      app.state.spawnPort = app.state.sslPort
+    })
+  } else {
+    app.http.on('error', function (e) {
+      app.state.port++
+      setTimeout(() => startServer(app), 10 * 1000)
+    })
+
+    app.http.listen(app.state.port, function() {
+      log(`:: Backend ready and listening on *:${app.state.port}`)
+
+      app.state.spawnPort = app.state.port
+    })
+  }
+}
+
 async function init() {
   catchExceptions()
 
   try {
-    const server = express()
+    const app = {} as any
+
+    app.state = {}
+    app.state.port = process.env.GS_PORT || 80
+    app.state.sslPort = process.env.GS_SSL_PORT || 443
+    app.state.spawnPort = undefined
+
+    app.server = express()
 
     // Security related
-    server.set('trust proxy', 1)
-    server.use(helmet())
-    server.use(
+    app.server.set('trust proxy', 1)
+    app.server.use(helmet())
+    app.server.use(
       cors({
         allowedHeaders: ['Accept', 'Authorization', 'Cache-Control', 'X-Requested-With', 'Content-Type', 'applicationId'],
       })
     )
 
-    const http = require('http').Server(server)
-    const https = require('https').createServer({ 
-      key: fs.readFileSync(path.resolve('../privkey.pem')),
-      cert: fs.readFileSync(path.resolve('../fullchain.pem'))
-    }, server)
+    app.isHttps = process.env.SUDO_USER === 'dev' || process.env.OS_FLAVOUR === 'debian-10'
 
-    const io = require('socket.io')(process.env.SUDO_USER === 'dev' || process.env.OS_FLAVOUR === 'debian-10' ? https : http, {
-      secure: process.env.SUDO_USER === 'dev' || process.env.OS_FLAVOUR === 'debian-10' ? true : false,
+    if (app.isHttps) {
+      app.https = require('https').createServer({ 
+        key: fs.readFileSync(path.resolve('../privkey.pem')),
+        cert: fs.readFileSync(path.resolve('../fullchain.pem'))
+      }, app.server)
+    } else {
+      app.http = require('http').Server(app.server)
+    }
+
+    app.io = require('socket.io')(app.isHttps ? app.https : app.http, {
+      secure: app.isHttps ? true : false,
       pingInterval: 30005,
       pingTimeout: 5000,
       upgradeTimeout: 3000,
@@ -47,18 +85,9 @@ async function init() {
       }
     })
 
-    // await initWebServer(server)
-    await initGameServer(io)
+    await initGameServer(app)
 
-    const port = process.env.GS_PORT || 80
-    http.listen(port, function() {
-      log(`:: Backend ready and listening on *:${port}`)
-    })
-
-    const sslPort = process.env.GS_SSL_PORT || 443
-    https.listen(sslPort, function() {
-      log(`:: Backend ready and listening on *:${sslPort}`)
-    })
+    startServer(app)
   } catch(e) {
     logError(e)
   }

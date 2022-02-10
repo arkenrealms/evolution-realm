@@ -43,16 +43,55 @@ function onRealmConnection(app, socket) {
     })
 
     // Use by GS to tell DB it's connected
-    socket.on('InfoRequest', function(req) {
-      const info = app.gameBridge.state.servers?.[0]?.info
+    socket.on('SetConfigRequest', function(req) {
+      try {
+        app.gameBridge.state.config = { ...app.gameBridge.state.config, ...req.config }
 
-      emitDirect(socket, 'InfoResponse', {
-        id: req.id,
-        data: {
-          status: info ? 1 : 0,
-          data: info // TODO: dont assume theres only 1
-        }
-      })
+        emitDirect(socket, 'SetConfigResponse', {
+          id: req.id,
+          data: {
+            status: 1
+          }
+        })
+      } catch(e) {
+        emitDirect(socket, 'SetConfigResponse', {
+          id: req.id,
+          data: {
+            status: 0
+          }
+        })
+
+        logError(e)
+      }
+    })
+
+    // Use by GS to tell DB it's connected
+    socket.on('InfoRequest', function(req) {
+      try {
+        const games = app.gameBridge.state.servers.map(s => s.info).filter(i => !!i)
+
+        emitDirect(socket, 'InfoResponse', {
+          id: req.id,
+          data: {
+            status: 1,
+            data: {
+              playerCount: games.reduce((a, b) => a + b.playerCount, 0) || 0,
+              speculatorCount: games.reduce((a, b) => a + b.speculatorCount, 0) || 0,
+              version: '1.0.0',
+              games
+            }
+          }
+        })
+      } catch(e) {
+        emitDirect(socket, 'InfoResponse', {
+          id: req.id,
+          data: {
+            status: 0
+          }
+        })
+
+        logError(e)
+      }
     })
 
     socket.on('AddModRequest', async function(req) {
@@ -194,7 +233,7 @@ function onRealmConnection(app, socket) {
     })
 
     socket.on('disconnect', function() {
-      log('User has disconnected')
+      log('Observer has disconnected')
 
       currentClient.log.clientDisconnected += 1
     })

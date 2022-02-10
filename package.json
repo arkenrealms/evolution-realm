@@ -61,7 +61,7 @@
     "node": "14.*.*"
   },
   "scripts": {
-    "dev": "RS_PORT=3006 RS_SSL_PORT=3106 GS_PORT=3007 GS_SSL_PORT=3107 ts-node-dev --quiet --respawn ./src/index.ts",
+    "dev": "RS_PORT=3006 RS_SSL_PORT=3106 GS_PORT=3008 GS_SSL_PORT=3107 ts-node-dev --quiet --respawn ./src/index.ts",
     "inspect": "NODE_ENV=development yarn build && PORT=3001 NODE_ENV=production node --inspect build/index.js",
     "prod": "NODE_ENV=production yarn run nodemon --config nodemon.production.json",
     "build": "NODE_ENV=production tsc",

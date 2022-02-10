@@ -1,5 +1,4 @@
 import { spawn } from 'child_process'
-import jetpack from 'fs-jetpack'
 import { io as ioClient } from 'socket.io-client'
 import { log, logError, random, getTime } from '../util'
 import { web3 } from '../util/web3'
@@ -30,7 +29,8 @@ function startGameServer(app) {
   //   win32: ''
   // }[process.platform]
 
-  console.log(path.join(__dirname, '../../game-server'))
+  process.env.GS_PORT = app.gameBridge.state.spawnPort + ''
+
   // Start the server
   app.gameBridge.process = spawn('node',
     ['build/index.js'], 
@@ -43,6 +43,8 @@ function startGameServer(app) {
   app.gameBridge.process.on('exit', (code, signal) => log(`Child process exited with code ${code} and signal ${signal}`))
 
   app.subProcesses.push(app.gameBridge.process)
+
+  process.env.GS_PORT = app.gameBridge.state.spawnPort+1 + ''
 }
 
 async function callGameServer(app, name, data = {}) {
@@ -74,7 +76,7 @@ function connectGameServer(app) {
   }
 
   const server = {
-    endpoint: 'localhost:' + process.env.GS_PORT,
+    endpoint: 'localhost:' + app.gameBridge.state.spawnPort,
     key: 'local1'
   }
 
@@ -82,7 +84,7 @@ function connectGameServer(app) {
   let connectTimeout
 
   const serverState = {
-    index: app.gameBridge.state.servers.length,
+    id: shortId(),
     info: undefined,
     authed: false
   }
@@ -178,8 +180,10 @@ function connectGameServer(app) {
     try {
       log('GS_SaveRoundRequest', req)
 
+      const { config } = app.gameBridge.state
+
       // Update player stat DB
-      const res = await app.realm.call('SaveRoundRequest', req.data)
+      const res = await app.realm.call('SaveRoundRequest', { gsid: serverState.id, round: req.data, rewardWinnerAmount: config.rewardWinnerAmount })
 
       emitDirect(socket, 'GS_SaveRoundResponse', {
         id: req.id,
@@ -256,9 +260,20 @@ function connectGameServer(app) {
       // TODO: Validate is authed
       emitDirect(socket, 'GS_VerifySignatureResponse', {
         id: req.id,
-        data: web3.eth.accounts.recover(req.data.value, req.data.hash).toLowerCase() === req.data.address.toLowerCase()
+        data: {
+          status: 1,
+          verified: web3.eth.accounts.recover(req.data.value, req.data.hash).toLowerCase() === req.data.address.toLowerCase()
+        }
       })
     } catch(e) {
+      // TODO: Validate is authed
+      emitDirect(socket, 'GS_VerifySignatureResponse', {
+        id: req.id,
+        data: {
+          status: 0,
+          verified: false
+        }
+      })
       logError(e)
     }
   })
@@ -269,9 +284,19 @@ function connectGameServer(app) {
       const normalizedAddress = web3.utils.toChecksumAddress(req.data.address.trim())
       emitDirect(socket, 'GS_VerifyAdminSignatureResponse', {
         id: req.id,
-        data: web3.eth.accounts.recover(req.data.value, req.data.hash).toLowerCase() === req.data.address.toLowerCase() && app.realm.state.modList.includes(normalizedAddress)
+        data: {
+          status: 1,
+          address: web3.eth.accounts.recover(req.data.value, req.data.hash).toLowerCase() === req.data.address.toLowerCase() && app.realm.state.modList.includes(normalizedAddress)
+        }
       })
     } catch(e) {
+      emitDirect(socket, 'GS_VerifyAdminSignatureResponse', {
+        id: req.id,
+        data: {
+          status: 0,
+          address: req.data.address
+        }
+      })
       logError(e)
     }
   })
@@ -281,9 +306,19 @@ function connectGameServer(app) {
       // TODO: Validate is authed
       emitDirect(socket, 'GS_NormalizeAddressResponse', {
         id: req.id,
-        data: web3.utils.toChecksumAddress(req.data.address.trim())
+        data: {
+          status: 1,
+          address: web3.utils.toChecksumAddress(req.data.address.trim())
+        }
       })
     } catch(e) {
+      emitDirect(socket, 'GS_NormalizeAddressResponse', {
+        id: req.id,
+        data: {
+          status: 0,
+          address: req.data.address
+        }
+      })
       logError(e)
     }
   })
@@ -351,7 +386,6 @@ function connectGameServer(app) {
           name: 'Guardian Egg',
           rarity: 'Magical',
           quantity: 1,
-          rewardItemName: tempReward.rarity + ' ' + tempReward.name,
           rewardItemType: 2
         }
 
@@ -364,6 +398,8 @@ function connectGameServer(app) {
         else if (rand > 850)
           tempReward.rarity = 'Rare'
 
+        tempReward.rewardItemName = tempReward.rarity + ' ' + tempReward.name
+
         config.drops.guardian = now
       } else if ((now - config.drops.earlyAccess) > 30 * 24 * 60 * 60 * 1000 && randPerMonth === Math.round(timesPerMonth / 2)) { // (now - config.drops.earlyAccess) > 7 * 24 * 60 * 60 * 1000
         tempReward = {
@@ -373,9 +409,10 @@ function connectGameServer(app) {
           name: `Early Access Founder's Cube`,
           rarity: 'Unique',
           quantity: 1,
-          rewardItemName: tempReward.name,
           rewardItemType: 3
         }
+
+        tempReward.rewardItemName = tempReward.name
 
         config.drops.earlyAccess = now
       // } else if (randPer10Mins === Math.round(timesPer10Mins / 2)) { // (now - config.drops.earlyAccess) > 7 * 24 * 60 * 60 * 1000
@@ -402,7 +439,6 @@ function connectGameServer(app) {
           name: 'Trinket',
           rarity: 'Magical',
           quantity: 1,
-          rewardItemName: tempReward.rarity + ' ' + tempReward.name,
           rewardItemType: 4
         }
 
@@ -415,6 +451,8 @@ function connectGameServer(app) {
         else if (rand > 850)
           tempReward.rarity = 'Rare'
 
+        tempReward.rewardItemName = tempReward.rarity + ' ' + tempReward.name
+
         config.drops.trinket = now
       } else if ((now - config.drops.runeword) > 12 * 60 * 60 * 1000 && randPerDay === Math.round(timesPerDay / 5)) { // (now - config.drops.runeword) > 24 * 60 * 60 * 1000
         config.drops.runeword = now
@@ -426,7 +464,6 @@ function connectGameServer(app) {
           name: 'RUNE',
           rarity: 'Normal',
           quantity: 1,
-          rewardItemName: tempReward.quantity + ' ' + tempReward.name,
           rewardItemType: 5
         }
 
@@ -438,6 +475,8 @@ function connectGameServer(app) {
           tempReward.quantity = 3
         else if (rand > 950)
           tempReward.quantity = 2
+
+        tempReward.rewardItemName = tempReward.quantity + ' ' + tempReward.name
 
         config.drops.runeToken = now
       } else {
@@ -518,17 +557,19 @@ function connectGameServer(app) {
     }
   })
 
+  socket.connect()
+
   connectTimeout = setTimeout(function() {
-    logError('Could not connect.')
+    logError('Could not connect to GS on ' + server.endpoint)
 
     socket.close()
   }, 5000)
-
-  socket.connect()
 }
 
 export function initGameBridge(app) {
   app.gameBridge = {}
+
+  app.gameBridge.ioCallbacks = {}
 
   app.gameBridge.state = {}
 
@@ -536,7 +577,7 @@ export function initGameBridge(app) {
 
   app.gameBridge.state.playerRewards = {} as any
 
-  app.gameBridge.ioCallbacks = {}
+  app.gameBridge.state.spawnPort = process.env.GS_PORT || 3008
 
   app.gameBridge.state.rewards = {
     "runes": [
@@ -615,7 +656,23 @@ export function initGameBridge(app) {
     ]
   } as any
   
-  app.gameBridge.state.config = jetpack.read(path.resolve('./public/data/config.json'), 'json')
+  app.gameBridge.state.config = {
+    roundId: 1,
+    rewardItemAmountPerLegitPlayer: 0,
+    rewardItemAmountMax: 0,
+    rewardWinnerAmountPerLegitPlayer: 0,
+    rewardWinnerAmountMax: 0,
+    rewardItemAmount: 0,
+    rewardWinnerAmount: 0,
+    drops: {
+      guardian: 1633043139000,
+      earlyAccess: 1633043139000,
+      trinket: 1641251240764,
+      santa: 1633043139000,
+      runeword: 1641303263018,
+      runeToken: 1633043139000
+    }
+  }
   
   app.gameBridge.state.rewardSpawnPoints = [
     {x: -16.32, y: -15.7774},
