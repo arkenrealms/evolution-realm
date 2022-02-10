@@ -47,7 +47,7 @@ function onRealmConnection(app, socket) {
       try {
         log('SetConfigRequest', req)
 
-        app.gameBridge.state.config = { ...app.gameBridge.state.config, ...req.data.config }
+        app.gameBridge.state.config = { ...app.gameBridge.state.config, ...req.data }
 
         emitDirect(socket, 'SetConfigResponse', {
           id: req.id,
