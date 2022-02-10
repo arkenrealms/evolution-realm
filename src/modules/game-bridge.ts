@@ -572,7 +572,7 @@ function connectGameServer(app) {
     logError('Could not connect to GS on ' + server.endpoint)
 
     socket.close()
-  }, 5000)
+  }, 20 * 1000)
 }
 
 export function initGameBridge(app) {
