@@ -20,7 +20,7 @@ function startServer(app) {
     })
 
     app.https.listen(app.state.sslPort, function() {
-      log(`:: Backend ready and listening on *:${app.state.sslPort} (https)`)
+      log(`Backend ready and listening on *:${app.state.sslPort} (https)`)
 
       app.state.spawnPort = app.state.sslPort
     })
@@ -32,7 +32,7 @@ function startServer(app) {
   })
 
   app.http.listen(app.state.port, function() {
-    log(`:: Backend ready and listening on *:${app.state.port} (http)`)
+    log(`Backend ready and listening on *:${app.state.port} (http)`)
 
     app.state.spawnPort = app.state.port
   })
@@ -60,7 +60,7 @@ async function init() {
       })
     )
 
-    app.isHttps = process.env.RUNE_ENV !== 'local'
+    app.isHttps = false // process.env.RUNE_ENV !== 'local'
 
     app.http = require('http').Server(app.server)
 
