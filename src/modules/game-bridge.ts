@@ -76,7 +76,7 @@ function connectGameServer(app) {
   }
 
   const server = {
-    endpoint: '0.0.0.0:' + app.gameBridge.state.spawnPort,
+    endpoint: '127.0.0.1:' + app.gameBridge.state.spawnPort,
     key: 'local1'
   }
 
