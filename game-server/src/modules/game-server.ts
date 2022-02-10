@@ -33,6 +33,7 @@ let lastLeaderName
 let round = {
   id: 1,
   startedAt: Math.round(getTime() / 1000),
+  endedAt: null,
   events: [],
   states: [],
   players: []
@@ -332,22 +333,22 @@ function comparePlayers(a, b) {
   return 0
 }
 
-function emitAll(...args) {
+function emitAll(app, ...args) {
   // log('Emit All', ...args)
-  io.emit(...args)
+  app.io.emit(...args)
 }
 
-function emitElse(socket, ...args) {
-  log('Emit Else', ...args)
+// function emitElse(socket, ...args) {
+//   log('Emit Else', ...args)
 
-  if (!socket || !socket.emit) {
-    io.emit(...args)
-    return
-  }
+//   if (!socket || !socket.emit) {
+//     io.emit(...args)
+//     return
+//   }
 
-  socket.broadcast.emit('Events', getPayload([[...args]].map(e => `["${e[0]}","${e.slice(1).join(':')}"]`)))
-  // socket.broadcast.emit(...args)
-}
+//   socket.broadcast.emit('Events', getPayload([[...args]].map(e => `["${e[0]}","${e.slice(1).join(':')}"]`)))
+//   // socket.broadcast.emit(...args)
+// }
 
 function emitDirect(socket, ...args) {
   if (!socket || !socket.emit) {
@@ -371,17 +372,17 @@ function emitDirect(socket, ...args) {
   socket.emit('Events', getPayload(compiled))
 }
 
-function emitAllFast(socket, ...args) {
-  log('Emit All Fast', ...args)
+// function emitAllFast(socket, ...args) {
+//   log('Emit All Fast', ...args)
 
-  if (!socket || !socket.emit) {
-    io.emit(...args)
-    return
-  }
+//   if (!socket || !socket.emit) {
+//     io.emit(...args)
+//     return
+//   }
 
-  socket.emit(...args)
-  socket.broadcast.emit(...args)
-}
+//   socket.emit(...args)
+//   socket.broadcast.emit(...args)
+// }
 
 function publishEvent(...args) {
   // console.log(args)
@@ -414,7 +415,7 @@ async function rsCall(name, data = {}) {
 async function normalizeAddress(address) {
   try {
     const res = await rsCall('GS_NormalizeAddressRequest', { address }) as any
-    return res
+    return res.address
   } catch(e) {
     logError(e)
     return false
@@ -425,7 +426,7 @@ async function verifySignature(signature, address) {
   log('Verifying', signature, address)
   try {
     const res = await rsCall('GS_VerifySignatureRequest', { value: signature.value, hash: signature.hash, address }) as any
-    return res === true
+    return res.verified === true
   } catch(e) {
     logError(e)
     return false
@@ -444,7 +445,7 @@ async function verifyAdminSignature(signature, address) {
 }
 
 async function spawnRandomReward() {
-  return
+  // return
   if (currentReward) {
     return
   }
@@ -461,7 +462,7 @@ async function spawnRandomReward() {
   }
 
   if (tempReward.type !== 'rune') {
-    publishEvent('OnBroadcast', `Powerful Energy Detected - ${currentReward.rewardItemName}`, 3)
+    publishEvent('OnBroadcast', `Powerful Energy Detected - ${tempReward.rewardItemName}`, 3)
   }
 
   setTimeout(() => {
@@ -960,28 +961,31 @@ async function resetLeaderboard(preset) {
       return
     }
 
+    round.endedAt = getTime()
+
     const fiveSecondsAgo = getTime() - 7000
 
-    const leaders = round.players.filter(p => p.lastUpdate >= fiveSecondsAgo).sort((a, b) => b.points - a.points)
+    const winners = round.players.filter(p => p.lastUpdate >= fiveSecondsAgo).sort((a, b) => b.points - a.points).slice(0, 10)
 
-    if (leaders.length) {
-      lastLeaderName = leaders[0].name
-      log('Leader: ', leaders[0])
+    if (winners.length) {
+      lastLeaderName = winners[0].name
+      log('Leader: ', winners[0])
     
-      if (leaders[0]?.address) {
-        publishEvent('OnRoundWinner', leaders[0].name)
+      if (winners[0]?.address) {
+        publishEvent('OnRoundWinner', winners[0].name)
       }
 
       if (config.isBattleRoyale) {
-        publishEvent('OnBroadcast', `Top 5 - ${leaders.slice(0, 5).map(l => l.name).join(', ')}`, 0)
+        publishEvent('OnBroadcast', `Top 5 - ${winners.slice(0, 5).map(l => l.name).join(', ')}`, 0)
       }
     }
 
     const saveRoundRes = await rsCall('GS_SaveRoundRequest', {
       id: round.id,
       startedAt: round.startedAt,
+      endedAt: round.endedAt,
       players: round.players,
-
+      winners
     }) as any
 
     if (saveRoundRes.status !== 1) {
@@ -1010,6 +1014,7 @@ async function resetLeaderboard(preset) {
     round = {
       id: roundId,
       startedAt: Math.round(getTime() / 1000),
+      endedAt: null,
       players: [],
       events: [],
       states: [],
@@ -1498,7 +1503,7 @@ function fastestGameloop() {
   setTimeout(fastestGameloop, config.fastestLoopSeconds * 1000)
 }
 
-function fastGameloop() {
+function fastGameloop(app) {
   try {
     const now = getTime()
 
@@ -1625,7 +1630,7 @@ function fastGameloop() {
        )
     }
 
-    flushEventQueue()
+    flushEventQueue(app)
 
     lastFastGameloopTime = now
   } catch(e) {
@@ -1633,12 +1638,12 @@ function fastGameloop() {
     process.exit(1)
   }
 
-  setTimeout(fastGameloop, config.fastLoopSeconds * 1000)
+  setTimeout(() => fastGameloop(app), config.fastLoopSeconds * 1000)
 }
 
 let eventFlushedAt = getTime()
 
-function flushEventQueue() {
+function flushEventQueue(app) {
   const now = getTime()
 
   if (eventQueue.length) {
@@ -1666,7 +1671,7 @@ function flushEventQueue() {
       }
     }
 
-    emitAll('Events', getPayload(compiled))
+    emitAll(app, 'Events', getPayload(compiled))
 
     // round.events = round.events.concat(eventQueue)
   
@@ -1679,8 +1684,10 @@ function clearSprites() {
   powerups.splice(0, powerups.length) // clear the powerup list
 }
 
-function initEventHandler() {
-  io.on('connection', function(socket) {
+function initEventHandler(app) {
+  log('Starting event handler')
+
+  app.io.on('connection', function(socket) {
     try {
       const ip = socket.handshake.headers['x-forwarded-for']?.split(',')[0] || socket.conn.remoteAddress?.split(":")[3]
       // socket.request.connection.remoteAddress ::ffff:127.0.0.1
@@ -1834,7 +1841,7 @@ function initEventHandler() {
             return
           }
 
-          const address = await normalizeAddress(pack.address) as string
+          const address = await normalizeAddress(pack.address)
 
           if (!await verifySignature({ value: 'evolution', hash: pack.signature.trim() }, address)) {
             currentPlayer.log.signatureProblem += 1
@@ -2311,7 +2318,6 @@ function initEventHandler() {
             publishEvent('OnRoundPaused')
             publishEvent('OnBroadcast', `Round Paused`, 0)
         
-            
             socket.emit('RS_PauseRoundResponse', {
               id: req.id,
               data: { status: 1 }
@@ -2742,6 +2748,7 @@ function initEventHandler() {
             status: 1,
             data: {
               version: serverVersion,
+              port: app.state.spawnPort,
               round: { id: round.id, startedAt: round.startedAt },
               clientTotal: clients.length,
               playerTotal: clients.filter(c => !c.isDead && !c.isSpectating).length,
@@ -2781,7 +2788,7 @@ function initEventHandler() {
 
         setTimeout(() => {
           disconnectPlayer(currentPlayer)
-          flushEventQueue()
+          flushEventQueue(app)
         }, 2 * 1000)
       })
     } catch(e) {
@@ -2790,10 +2797,8 @@ function initEventHandler() {
   })
 }
 
-export async function initGameServer(_io) {
-  io = _io
-
-  initEventHandler()
+export async function initGameServer(app) {
+  initEventHandler(app)
 
   if (Object.keys(clientLookup).length == 0) {
     randomRoundPreset()
@@ -2802,7 +2807,7 @@ export async function initGameServer(_io) {
   }
 
   setTimeout(fastestGameloop, config.fastestLoopSeconds * 1000)
-  setTimeout(fastGameloop, config.fastLoopSeconds * 1000)
+  setTimeout(() => fastGameloop(app), config.fastLoopSeconds * 1000)
   setTimeout(slowGameloop, config.slowLoopSeconds * 1000)
   setTimeout(sendUpdates, config.sendUpdateLoopSeconds * 1000)
   setTimeout(spawnRewards, config.rewardSpawnLoopSeconds * 1000)
