@@ -45,6 +45,8 @@ function onRealmConnection(app, socket) {
     // Use by GS to tell DB it's connected
     socket.on('SetConfigRequest', function(req) {
       try {
+        log('SetConfigRequest', req)
+
         app.gameBridge.state.config = { ...app.gameBridge.state.config, ...req.data.config }
 
         emitDirect(socket, 'SetConfigResponse', {
