@@ -116,7 +116,7 @@ function connectGameServer(app) {
   })
 
   socket.on('GS_Init', function(req) {
-    if (req.status === 1) {
+    if (req.data.status === 1) {
       logError('Could not init')
       return
     }

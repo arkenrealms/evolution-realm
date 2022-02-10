@@ -2,7 +2,7 @@ import jetpack from 'fs-jetpack'
 
 const path = require('path')
 
-export const isDebug = process.env.RUNE_ENV === 'local'
+export const isDebug = process.env.LOG === '1' || process.env.RUNE_ENV === 'local'
 
 if (isDebug) {
   console.log('Running RS in DEBUG mode')
