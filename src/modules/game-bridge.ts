@@ -104,8 +104,6 @@ function connectGameServer(app) {
   socket.on('connect', function() {
     log('Connected: ' + server.key)
 
-    clearTimeout(connectTimeout)
-
     socket.emit('RS_Connected')
   })
 
@@ -119,6 +117,9 @@ function connectGameServer(app) {
 
   socket.on('GS_Init', function(msg) {
     log('GS initialized')
+    
+    if (connectTimeout) clearTimeout(connectTimeout)
+
     // TODO: Validate GS key
     serverState.authed = true
 
