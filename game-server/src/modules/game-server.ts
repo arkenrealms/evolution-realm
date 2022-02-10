@@ -951,8 +951,8 @@ async function calcRoundRewards() {
     clients
   }) as any
   
-  sharedConfig.rewardWinnerAmount = calcRewardsRes.rewardWinnerAmount
-  config.rewardWinnerAmount = calcRewardsRes.rewardWinnerAmount
+  sharedConfig.rewardWinnerAmount = calcRewardsRes.data.rewardWinnerAmount
+  config.rewardWinnerAmount = calcRewardsRes.data.rewardWinnerAmount
 }
 
 let lastFastGameloopTime = getTime()
