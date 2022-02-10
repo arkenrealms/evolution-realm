@@ -530,9 +530,18 @@ function connectGameServer(app) {
 
       emitDirect(socket, 'GS_GetRandomRewardResponse', {
         id: req.id,
-        data: tempReward
+        data: {
+          status: 1,
+          reward: tempReward
+        }
       })
     } catch(e) {
+      emitDirect(socket, 'GS_GetRandomRewardResponse', {
+        id: req.id,
+        data: {
+          status: 0
+        }
+      })
       logError(e)
     }
   })
