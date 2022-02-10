@@ -577,7 +577,7 @@ export function initGameBridge(app) {
 
   app.gameBridge.state.playerRewards = {} as any
 
-  app.gameBridge.state.spawnPort = process.env.GS_PORT || 3008
+  app.gameBridge.state.spawnPort = process.env.GS_PORT || 80
 
   app.gameBridge.state.rewards = {
     "runes": [
