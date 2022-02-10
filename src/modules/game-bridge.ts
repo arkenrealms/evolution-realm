@@ -76,11 +76,11 @@ function connectGameServer(app) {
   }
 
   const server = {
-    endpoint: '127.0.0.1:' + app.gameBridge.state.spawnPort,
+    endpoint: 'local.runeevolution.com:' + app.gameBridge.state.spawnPort,
     key: 'local1'
   }
 
-  const socket = app.gameBridge.socket = getSocket('http://' + server.endpoint)
+  const socket = app.gameBridge.socket = getSocket('https://' + server.endpoint)
   let connectTimeout
 
   const serverState = {
