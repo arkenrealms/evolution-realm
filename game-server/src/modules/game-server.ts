@@ -458,6 +458,7 @@ async function spawnRandomReward() {
 
   if (rewardRes?.status !== 1) {
     setTimeout(spawnRandomReward, 1 * 1000)
+    return
   }
 
   const tempReward = rewardRes.reward
