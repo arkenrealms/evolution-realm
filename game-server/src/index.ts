@@ -14,28 +14,28 @@ if (isDebug) {
 
 function startServer(app) {
   if (app.isHttps) {
-    app.https.on('error', function (e) {
-      app.state.sslPort++
-      setTimeout(() => startServer(app), 10 * 1000)
-    })
+    // app.https.on('error', function (e) {
+    //   app.state.sslPort++
+    //   setTimeout(() => startServer(app), 10 * 1000)
+    // })
 
     app.https.listen(app.state.sslPort, function() {
       log(`Backend ready and listening on *:${app.state.sslPort} (https)`)
 
       app.state.spawnPort = app.state.sslPort
     })
+  } else {
+    // app.http.on('error', function (e) {
+    //   app.state.port++
+    //   setTimeout(() => startServer(app), 10 * 1000)
+    // })
+
+    app.http.listen(app.state.port, function() {
+      log(`Backend ready and listening on *:${app.state.port} (http)`)
+
+      app.state.spawnPort = app.state.port
+    })
   }
-
-  app.http.on('error', function (e) {
-    app.state.port++
-    setTimeout(() => startServer(app), 10 * 1000)
-  })
-
-  app.http.listen(app.state.port, function() {
-    log(`Backend ready and listening on *:${app.state.port} (http)`)
-
-    app.state.spawnPort = app.state.port
-  })
 }
 
 async function init() {
@@ -62,13 +62,13 @@ async function init() {
 
     app.isHttps = process.env.RUNE_ENV !== 'local'
 
-    app.http = require('http').Server(app.server)
-
     if (app.isHttps) {
       app.https = require('https').createServer({ 
         key: fs.readFileSync(path.resolve('../privkey.pem')),
         cert: fs.readFileSync(path.resolve('../fullchain.pem'))
       }, app.server)
+    } else {
+      app.http = require('http').Server(app.server)
     }
 
     app.io = require('socket.io')(app.isHttps ? app.https : app.http, {
