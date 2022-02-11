@@ -427,6 +427,7 @@ async function normalizeAddress(address) {
 async function verifySignature(signature, address) {
   log('Verifying', signature, address)
   if (!address) return false
+  if (address.length !== 42 || address.slice(0, 2) !== '0x') return false
   try {
     const res = await rsCall('GS_VerifySignatureRequest', { value: signature.value, hash: signature.hash, address }) as any
     return res.verified === true
@@ -438,6 +439,8 @@ async function verifySignature(signature, address) {
 
 async function verifyAdminSignature(signature, address) {
   log('Verifying Admin', signature, address)
+  if (!address) return false
+  if (address.length !== 42 || address.slice(0, 2) !== '0x') return false
   try {
     const res = await rsCall('GS_VerifyAdminSignatureRequest', { value: signature.value, hash: signature.hash, address }) as any
     return res

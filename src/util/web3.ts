@@ -4,7 +4,7 @@ import ArcaneItems from '../contracts/ArcaneItems.json'
 import BEP20Contract from '../contracts/BEP20.json'
 import contracts from '../contracts'
 import * as secrets from '../secrets'
-import { log } from './'
+import { log, logError } from './'
 
 function getRandomProvider() {
   return ethers.getDefaultProvider("https://thrumming-still-leaf.bsc.quiknode.pro/b2f8a5b1bd0809dbf061112e1786b4a8e53c9a83/") //"wss://thrumming-still-leaf.bsc.quiknode.pro/b2f8a5b1bd0809dbf061112e1786b4a8e53c9a83/")
@@ -34,17 +34,22 @@ export function verifySignature(signature) {
   try {
     return web3.eth.accounts.recover(signature.data, signature.hash).toLowerCase() === signature.address.toLowerCase()
   } catch(e) {
-    log(e)
+    logError(e)
     return false
   }
 }
 
 export async function getSignedRequest(data) {
   log('Signing', data)
-  return {
-    address: secrets.address,
-    hash: (await web3.eth.accounts.sign(data, secrets.key)).signature,
-    data
+  try {
+    return {
+      address: secrets.address,
+      hash: (await web3.eth.accounts.sign(data, secrets.key)).signature,
+      data
+    }
+  } catch (e) {
+    logError(e)
+    return null
   }
 }
 
