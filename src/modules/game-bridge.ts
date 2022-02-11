@@ -199,7 +199,9 @@ function connectGameServer(app) {
       const { config } = app.gameBridge.state
 
       config.rewardItemAmount = 0
+      config.rewardItemAmountPerLegitPlayer = 0
       config.rewardWinnerAmount = 0
+      config.rewardWinnerAmountPerLegitPlayer = 0
 
       emitDirect(socket, 'GS_SaveRoundResponse', {
         id: req.id,
