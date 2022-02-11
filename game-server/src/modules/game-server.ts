@@ -30,6 +30,7 @@ let eventQueue = []
 let clients = [] // to storage clients
 let lastReward
 let lastLeaderName
+let problemInterval
 let round = {
   id: 1,
   startedAt: Math.round(getTime() / 1000),
@@ -790,7 +791,7 @@ const registerKill = (winner, loser) => {
   const notReallyTrying = config.antifeed1 ? (totalKills >= 2 && loser.kills < 2 && loser.rewards <= 1) || (totalKills >= 2 && loser.kills < 2 && loser.powerups <= 100) : false
   const tooManyKills = config.antifeed2 ? clients.length > 2 && totalKills >= 5 && totalKills > winner.log.kills.length / clients.filter(c => !c.isDead).length : false
   const killingThemselves = config.antifeed3 ? winner.hash === loser.hash : false
-  const allowKill = !notReallyTrying && !tooManyKills && !killingThemselves
+  const allowKill = !notReallyTrying && !tooManyKills // && !killingThemselves
     
   if (notReallyTrying) {
     loser.log.notReallyTrying += 1
@@ -996,7 +997,9 @@ async function resetLeaderboard(preset) {
     }) as any
 
     if (saveRoundRes.status !== 1) {
-      publishEvent('OnBroadcast', `Problem saving the round. Contact support.`, 3)
+      problemInterval = setInterval(() => publishEvent('OnBroadcast', `Problem saving the round. Contact support.`, 3), 5 * 1000)
+    } else {
+      clearInterval(problemInterval)
     }
 
     if (config.calcRoundRewards) {
