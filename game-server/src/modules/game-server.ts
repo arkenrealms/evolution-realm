@@ -996,10 +996,10 @@ async function resetLeaderboard(preset) {
       winners
     }) as any
 
+    clearInterval(problemInterval)
+
     if (saveRoundRes.status !== 1) {
-      problemInterval = setInterval(() => publishEvent('OnBroadcast', `Problem saving the round. Contact support.`, 3), 5 * 1000)
-    } else {
-      clearInterval(problemInterval)
+      problemInterval = setInterval(() => publishEvent('OnBroadcast', `Problem saving the round. Contact support.`, 3), 10 * 1000)
     }
 
     if (config.calcRoundRewards) {
