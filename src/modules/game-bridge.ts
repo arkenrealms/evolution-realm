@@ -196,6 +196,11 @@ function connectGameServer(app) {
     } catch (e) {
       logError(e)
 
+      const { config } = app.gameBridge.state
+
+      config.rewardItemAmount = 0
+      config.rewardWinnerAmount = 0
+
       emitDirect(socket, 'GS_SaveRoundResponse', {
         id: req.id,
         data: { status: 0 }

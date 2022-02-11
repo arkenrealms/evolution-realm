@@ -67,6 +67,12 @@ function onRealmConnection(app, socket) {
       }
     })
 
+    socket.on('PingRequest', function(req) {
+      emitDirect(socket, 'PingResponse', {
+        id: req.id
+      })
+    })
+
     // Use by GS to tell DB it's connected
     socket.on('InfoRequest', function(req) {
       try {
