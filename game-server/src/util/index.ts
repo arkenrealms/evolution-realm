@@ -20,19 +20,27 @@ export function log(...msgs) {
     logData.push(JSON.stringify(msg))
   }
 
-  jetpack.write(path.resolve('../public/data/log.json'), JSON.stringify(logData, null, 2))
+  try {
+    jetpack.write(path.resolve('../public/data/log.json'), JSON.stringify(logData, null, 2))
+  } catch(e) {
+    console.log("[GS] log parse error", e)
+  }
 }
 
 export function logError(err) {
   console.log("[GS]", err)
 
-  if (!writeLogs) return
+  // if (!writeLogs) return
 
   const errorLog = jetpack.read(path.resolve('../public/data/errors.json'), 'json') || []
 
   errorLog.push(JSON.stringify(err))
-  
-  jetpack.write(path.resolve('../public/data/errors.json'), JSON.stringify(errorLog, null, 2), { atomic: true })
+    
+  try {
+    jetpack.write(path.resolve('../public/data/errors.json'), JSON.stringify(errorLog, null, 2), { atomic: true })
+  } catch(e) {
+    console.log("[GS] logError parse error", e)
+  }
 }
 
 export function getTime() {

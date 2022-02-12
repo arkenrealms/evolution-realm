@@ -1,5 +1,4 @@
-import md5 from 'js-md5'
-import { verifySignature, signatureAddress, getSignedRequest } from '../util/web3'
+import { isValidRequest, signatureAddress, getSignedRequest } from '../util/web3'
 import { log, logError, getTime } from '../util'
 import { emitDirect } from '../util/websocket'
 import { upgradeCodebase } from '../util/codebase'
@@ -43,11 +42,25 @@ function onRealmConnection(app, socket) {
     })
 
     // Use by GS to tell DB it's connected
-    socket.on('SetConfigRequest', function(req) {
+    socket.on('SetConfigRequest', async function(req) {
       try {
         log('SetConfigRequest', req)
 
-        app.gameBridge.state.config = { ...app.gameBridge.state.config, ...req.data }
+        if (!await isValidRequest(req) && app.realm.state.modList.includes(req.data.address)) {
+          emitDirect(socket, 'SetConfigResponse', {
+            id: req.id,
+            data: {
+              status: 0
+            }
+          })
+  
+          logError('Invalid request signature')
+          return
+        }
+
+        app.gameBridge.state.config = { ...app.gameBridge.state.config, ...req.config }
+
+        app.gameBridge.call('RS_SetConfigRequest', { config: app.gameBridge.state.config })
 
         emitDirect(socket, 'SetConfigResponse', {
           id: req.id,
@@ -74,9 +87,23 @@ function onRealmConnection(app, socket) {
     })
 
     // Use by GS to tell DB it's connected
-    socket.on('InfoRequest', function(req) {
+    socket.on('InfoRequest', async function(req) {
       try {
+        if (!await isValidRequest(req) || !app.realm.state.modList.includes(req.signature.address)) {
+          emitDirect(socket, 'InfoResponse', {
+            id: req.id,
+            data: {
+              status: 0
+            }
+          })
+  
+          logError('Invalid request signature')
+          return
+        }
+
         const games = app.gameBridge.state.servers.map(s => s.info).filter(i => !!i)
+
+        app.gameBridge.state.config = { ...app.gameBridge.state.config, ...req.data.config }
 
         emitDirect(socket, 'InfoResponse', {
           id: req.id,
@@ -104,11 +131,9 @@ function onRealmConnection(app, socket) {
 
     socket.on('AddModRequest', async function(req) {
       try {
-        log('AddMod', {
-          caller: req.data.address
-        })
+        log('AddMod', req)
 
-        if (await verifySignature(req.signature) && app.realm.state.modList.includes(req.data.address)) {
+        if (await isValidRequest(req) && app.realm.state.modList.includes(req.data.address)) {
           app.realm.state.modList.push(req.params.address)
       
           emitDirect(socket, 'AddModResponse', {
@@ -137,7 +162,7 @@ function onRealmConnection(app, socket) {
           caller: req.data.address
         })
 
-        if (await verifySignature(req.signature) && app.realm.state.modList.includes(req.data.address)) {
+        if (await isValidRequest(req) && app.realm.state.modList.includes(req.data.address)) {
           for (const client of app.realm.clients) {
             if (client.isMod && client.address === req.data.target) {
               client.isMod = false
@@ -168,7 +193,7 @@ function onRealmConnection(app, socket) {
       try {
         log('Ban', req)
 
-        if (await verifySignature(req.signature) && app.realm.state.modList.includes(req.signature.address)) {
+        if (await isValidRequest(req) && app.realm.state.modList.includes(req.signature.address)) {
           app.gameBridge.call('KickUser', await getSignedRequest({ target: req.data.target }))
 
           emitDirect(socket, 'BanUserResponse', {
@@ -198,7 +223,7 @@ function onRealmConnection(app, socket) {
           caller: req.data.address
         })
 
-        if (await verifySignature(req.signature) && app.realm.state.modList.includes(req.data.address)) {
+        if (await isValidRequest(req) && app.realm.state.modList.includes(req.data.address)) {
           app.realm.state.banList.splice(app.realm.state.banList.indexOf(req.data.target), 1)
 
           emitDirect(socket, 'UnbanUserResponse', {
@@ -254,7 +279,7 @@ async function sendEventToObservers(app, name, data = undefined) {
   try {
     log('Emit Observers', name, data)
 
-    const signature = await getSignedRequest(md5(JSON.stringify(data)))
+    const signature = await getSignedRequest(data)
   
     return new Promise((resolve, reject) => {
       const id = shortId()

@@ -31,7 +31,6 @@ let lastReward
 let lastLeaderName
 let problemInterval
 let round = {
-  id: 1,
   startedAt: Math.round(getTime() / 1000),
   endedAt: null,
   events: [],
@@ -44,7 +43,8 @@ const realmServer = {
 }
 const ioCallbacks = {}
 
-const baseConfig = {
+let baseConfig = {
+  roundId: 1,
   damagePerTouch: 2,
   periodicReboots: false,
   startAvatar: 0,
@@ -133,7 +133,7 @@ const sharedConfig = {
   rewardSpawnLoopSeconds: testMode ? 1 : 3 * 60 / 20,
   rewardWinnerAmount: 0,
   rewardWinnerName: 'ZOD',
-  roundLoopSeconds: testMode ? 1 * 60 : 5 * 60,
+  roundLoopSeconds: testMode ? 1 * 60 : 5 * 60 / 30,
   sendUpdateLoopSeconds: 3,
   slowLoopSeconds: 1,
   spritesPerPlayerCount: 1,
@@ -423,26 +423,13 @@ async function normalizeAddress(address) {
   }
 }
 
-async function verifySignature(signature, address) {
-  log('Verifying', signature, address)
-  if (!address) return false
-  if (address.length !== 42 || address.slice(0, 2) !== '0x') return false
+async function isValidSignatureRequest(req) {
+  log('Verifying', req)
+  if (!req.signature.address) return false
+  if (req.signature.address.length !== 42 || req.signature.address.slice(0, 2) !== '0x') return false
   try {
-    const res = await rsCall('GS_VerifySignatureRequest', { value: signature.value, hash: signature.hash, address }) as any
+    const res = await rsCall('GS_VerifySignatureRequest', req) as any
     return res.verified === true
-  } catch(e) {
-    logError(e)
-    return false
-  }
-}
-
-async function verifyAdminSignature(signature, address) {
-  log('Verifying Admin', signature, address)
-  if (!address) return false
-  if (address.length !== 42 || address.slice(0, 2) !== '0x') return false
-  try {
-    const res = await rsCall('GS_VerifyAdminSignatureRequest', { value: signature.value, hash: signature.hash, address }) as any
-    return res
   } catch(e) {
     logError(e)
     return false
@@ -772,8 +759,17 @@ function addToRecentPlayers(player) {
   round.players.push(player)
 }
 
-async function isValidAdminRequest(hash, address, data) {
-  return verifyAdminSignature({ value: JSON.stringify(data), hash }, address)
+async function isValidAdminRequest(req) {
+  log('Verifying Admin', req)
+  if (!req.signature?.address) return false
+  if (req.signature.address.length !== 42 || req.signature.address.slice(0, 2) !== '0x') return false
+  try {
+    const res = await rsCall('GS_VerifyAdminSignatureRequest', req) as any
+    return res
+  } catch(e) {
+    logError(e)
+    return false
+  }
 }
 
 function roundEndingSoon(sec) {
@@ -858,11 +854,11 @@ const registerKill = (winner, loser) => {
     }
   }
 
-  const currentRound = round.id
+  const currentRound = config.roundId
 
   if (config.orbOnDeathPercent > 0 && !roundEndingSoon(config.orbCutoffSeconds)) {
     setTimeout(() => {
-      if (round.id !== currentRound) return
+      if (config.roundId !== currentRound) return
 
       orbs.push(orb)
       orbLookup[orb.id] = orb
@@ -991,7 +987,6 @@ async function resetLeaderboard(preset) {
     }
 
     const saveRoundRes = await rsCall('GS_SaveRoundRequest', {
-      id: round.id,
       startedAt: round.startedAt,
       endedAt: round.endedAt,
       players: round.players,
@@ -1020,11 +1015,11 @@ async function resetLeaderboard(preset) {
       randomRoundPreset()
     }
 
-    const roundId = round.id + 1
+    baseConfig.roundId = baseConfig.roundId + 1
+    config.roundId = baseConfig.roundId
 
     round = null
     round = {
-      id: roundId,
       startedAt: Math.round(getTime() / 1000),
       endedAt: null,
       players: [],
@@ -1103,7 +1098,7 @@ async function resetLeaderboard(preset) {
 
     publishEvent('OnClearLeaderboard')
 
-    publishEvent('OnBroadcast', `Game Mode - ${config.gameMode} (Round ${round.id})`, 0)
+    publishEvent('OnBroadcast', `Game Mode - ${config.gameMode} (Round ${config.roundId})`, 0)
 
     if (config.hideMap) {
       publishEvent('OnHideMinimap')
@@ -1131,11 +1126,11 @@ async function resetLeaderboard(preset) {
     for (const observer of observers) {
       emitDirect(observer.socket, 'GS_StartRound')
     }
-
-    roundLoopTimeout = setTimeout(resetLeaderboard, config.roundLoopSeconds * 1000)
   } catch(e) {
     logError(e)
   }
+
+  roundLoopTimeout = setTimeout(resetLeaderboard, config.roundLoopSeconds * 1000)
 }
 
 function checkConnectionLoop() {
@@ -1823,11 +1818,27 @@ function initEventHandler(app) {
           // TODO: confirm it's the realm server
           realmServer.socket = socket
 
-          await rsCall('GS_Init', { status: 1 })
+          const initRes = await rsCall('GS_InitRequest', { status: 1 }) as any
+
+          baseConfig.roundId = initRes.roundId
+          config.roundId = initRes.roundId
         } catch (e) {
           logError(e)
 
-          await rsCall('GS_Init', { status: 0 })
+          await rsCall('GS_InitRequest', { status: 0 })
+        }
+      })
+
+      socket.on('RS_SetConfigRequest', async function(req) {
+        try {
+          baseConfig = {...baseConfig, ...req.data.config}
+          config = {...config, ...req.data.config}
+
+          await rsCall('RS_SetConfigResponse', { status: 1 })
+        } catch (e) {
+          logError(e)
+
+          await rsCall('RS_SetConfigResponse', { status: 0 })
         }
       })
 
@@ -1857,7 +1868,7 @@ function initEventHandler(app) {
 
           const address = await normalizeAddress(pack.address)
 
-          if (!await verifySignature({ value: 'evolution', hash: pack.signature.trim() }, address)) {
+          if (!await isValidSignatureRequest({ signature: { data: 'evolution', hash: pack.signature.trim(), address }, data: 'evolution' })) {
             currentPlayer.log.signatureProblem += 1
             disconnectPlayer(currentPlayer)
             return
@@ -2073,7 +2084,7 @@ function initEventHandler(app) {
 
           if (!config.isRoundPaused) {
             emitDirect(socket, 'OnSetRoundInfo', roundTimer + ':' + getRoundInfo().join(':') + ':' + guide.join(':'))
-            emitDirect(socket, 'OnBroadcast', `Game Mode - ${config.gameMode} (Round ${round.id})`, 0)
+            emitDirect(socket, 'OnBroadcast', `Game Mode - ${config.gameMode} (Round ${config.roundId})`, 0)
           }
 
           syncSprites()
@@ -2196,7 +2207,7 @@ function initEventHandler(app) {
             caller: req.data.address
           })
 
-          if (await isValidAdminRequest(req.hash, req.address, req.data)) {
+          if (await isValidAdminRequest(req)) {
             sharedConfig.isMaintenance = true
             config.isMaintenance = true
         
@@ -2228,7 +2239,7 @@ function initEventHandler(app) {
             caller: req.data.address
           })
 
-          if (await isValidAdminRequest(req.hash, req.address, req.data)) {
+          if (await isValidAdminRequest(req)) {
             sharedConfig.isMaintenance = false
             config.isMaintenance = false
         
@@ -2260,7 +2271,7 @@ function initEventHandler(app) {
             caller: req.data.address
           })
 
-          if (await isValidAdminRequest(req.hash, req.address, req.data)) {
+          if (await isValidAdminRequest(req)) {
             baseConfig.isBattleRoyale = true
             config.isBattleRoyale = true
 
@@ -2292,7 +2303,7 @@ function initEventHandler(app) {
             caller: req.data.address
           })
 
-          if (await isValidAdminRequest(req.hash, req.address, req.data)) {
+          if (await isValidAdminRequest(req)) {
             baseConfig.isBattleRoyale = false
             config.isBattleRoyale = false
 
@@ -2324,7 +2335,7 @@ function initEventHandler(app) {
             caller: req.data.address
           })
 
-          if (await isValidAdminRequest(req.hash, req.address, req.data)) {
+          if (await isValidAdminRequest(req)) {
             clearTimeout(roundLoopTimeout)
 
             baseConfig.isRoundPaused = true
@@ -2359,7 +2370,7 @@ function initEventHandler(app) {
             caller: req.data.address
           })
 
-          if (await isValidAdminRequest(req.hash, req.address, req.data)) {
+          if (await isValidAdminRequest(req)) {
             clearTimeout(roundLoopTimeout)
 
             if (config.isRoundPaused) {
@@ -2395,7 +2406,7 @@ function initEventHandler(app) {
             caller: req.data.address
           })
 
-          if (await isValidAdminRequest(req.hash, req.address, req.data)) {
+          if (await isValidAdminRequest(req)) {
             baseConfig.level2forced = true
             config.level2forced = true
             
@@ -2425,7 +2436,7 @@ function initEventHandler(app) {
             caller: req.data.address
           })
 
-          if (await isValidAdminRequest(req.hash, req.address, req.data)) {
+          if (await isValidAdminRequest(req)) {
             baseConfig.level2forced = false
             config.level2forced = false
             
@@ -2455,7 +2466,7 @@ function initEventHandler(app) {
             caller: req.data.address
           })
 
-          if (await isValidAdminRequest(req.hash, req.address, req.data)) {
+          if (await isValidAdminRequest(req)) {
             baseConfig.isGodParty = true
             config.isGodParty = true
 
@@ -2487,7 +2498,7 @@ function initEventHandler(app) {
             caller: req.data.address
           })
 
-          if (await isValidAdminRequest(req.hash, req.address, req.data)) {
+          if (await isValidAdminRequest(req)) {
             baseConfig.isGodParty = false
             config.isGodParty = false
 
@@ -2525,7 +2536,7 @@ function initEventHandler(app) {
             caller: req.data.address
           })
 
-          if (await isValidAdminRequest(req.hash, req.address, req.data)) {
+          if (await isValidAdminRequest(req)) {
             baseConfig.dynamicDecayPower = false
             config.dynamicDecayPower = false
 
@@ -2571,7 +2582,7 @@ function initEventHandler(app) {
             caller: req.data.address
           })
 
-          if (await isValidAdminRequest(req.hash, req.address, req.data)) {
+          if (await isValidAdminRequest(req)) {
             baseConfig.dynamicDecayPower = false
             config.dynamicDecayPower = false
 
@@ -2614,7 +2625,7 @@ function initEventHandler(app) {
             caller: req.data.address
           })
 
-          if (await isValidAdminRequest(req.hash, req.address, req.data)) {
+          if (await isValidAdminRequest(req)) {
             baseConfig.dynamicDecayPower = true
             config.dynamicDecayPower = true
 
@@ -2653,11 +2664,9 @@ function initEventHandler(app) {
 
       socket.on('RS_SetConfigRequest', async function(req) {
         try {
-          log('SetConfig', {
-            caller: req.data.address
-          })
+          log('SetConfig', req)
 
-          if (await isValidAdminRequest(req.hash, req.address, req.data)) {
+          if (await isValidAdminRequest(req)) {
             const val = isNumeric(req.data.value) ? parseFloat(req.data.value) : req.data.value
             if (baseConfig.hasOwnProperty(req.data.key)) 
               baseConfig[req.data.key] = val
@@ -2697,7 +2706,7 @@ function initEventHandler(app) {
             message: req.data.message
           })
 
-          if (await isValidAdminRequest(req.hash, req.address, req.data)) {
+          if (await isValidAdminRequest(req)) {
             const socket = sockets[clients.find(c => c.address === req.data.target).id]
 
             emitDirect(socket, 'OnBroadcast', req.data.message.replace(/:/gi, ''), 0)
@@ -2727,7 +2736,7 @@ function initEventHandler(app) {
             message: req.data.message
           })
 
-          if (await isValidAdminRequest(req.hash, req.address, req.data)) {
+          if (await isValidAdminRequest(req)) {
             publishEvent('OnBroadcast', req.data.message.replace(/:/gi, ''), 0)
             
             socket.emit('RS_BroadcastResponse', {
@@ -2751,7 +2760,7 @@ function initEventHandler(app) {
       })
 
       socket.on('RS_KickUser', async function(req) {
-        if (await isValidAdminRequest(req.hash, req.address, req.data) && clients.find(c => c.address === req.data.target)) {
+        if (await isValidAdminRequest(req) && clients.find(c => c.address === req.data.target)) {
           disconnectPlayer(clients.find(c => c.address === req.data.target))
         }
       })
@@ -2764,7 +2773,7 @@ function initEventHandler(app) {
             data: {
               version: serverVersion,
               port: app.state.spawnPort,
-              round: { id: round.id, startedAt: round.startedAt },
+              round: { id: config.roundId, startedAt: round.startedAt },
               clientTotal: clients.length,
               playerTotal: clients.filter(c => !c.isDead && !c.isSpectating).length,
               spectatorTotal: clients.filter(c => c.isSpectating).length,

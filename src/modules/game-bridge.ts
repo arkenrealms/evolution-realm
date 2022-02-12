@@ -1,3 +1,5 @@
+import md5 from 'js-md5'
+import jetpack from 'fs-jetpack'
 import { spawn } from 'child_process'
 import { io as ioClient } from 'socket.io-client'
 import { log, logError, random, getTime } from '../util'
@@ -80,7 +82,7 @@ function connectGameServer(app) {
     key: 'local1'
   }
 
-  const socket = app.gameBridge.socket = getSocket('https://' + server.endpoint)
+  const socket = app.gameBridge.socket = getSocket((app.isHttps ? 'https://' : 'http://') + server.endpoint)
   let connectTimeout
 
   const serverState = {
@@ -115,7 +117,7 @@ function connectGameServer(app) {
     log(msg)
   })
 
-  socket.on('GS_Init', function(req) {
+  socket.on('GS_InitRequest', function(req) {
     if (req.status === 1) {
       logError('Could not init')
       return
@@ -129,6 +131,14 @@ function connectGameServer(app) {
     serverState.authed = true
 
     fetchInfo()
+
+    emitDirect(socket, 'GS_InitResponse', {
+      id: req.id,
+      data: {
+        status: 1,
+        roundId: app.gameBridge.state.config.roundId
+      }
+    })
   })
 
   // Use by GS to tell RS it's connected
@@ -180,34 +190,63 @@ function connectGameServer(app) {
   })
 
   socket.on('GS_SaveRoundRequest', async function(req) {
+    const { config } = app.gameBridge.state
+
+    let failed = false
+
     // TODO: Validate is authed
     try {
       log('GS_SaveRoundRequest', req)
 
-      const { config } = app.gameBridge.state
-
       // Update player stat DB
-      const res = await app.realm.call('SaveRoundRequest', { gsid: serverState.id, round: req.data, rewardWinnerAmount: config.rewardWinnerAmount })
+      const res = await app.realm.call('SaveRoundRequest', { gsid: serverState.id, roundId: config.roundId, round: req.data, rewardWinnerAmount: config.rewardWinnerAmount })
 
-      emitDirect(socket, 'GS_SaveRoundResponse', {
-        id: req.id,
-        data: res
-      })
+      if (res.status === 1) {
+        emitDirect(socket, 'GS_SaveRoundResponse', {
+          id: req.id,
+          data: res
+        })
+      } else {
+        failed = true
+      }
     } catch (e) {
       logError(e)
 
-      const { config } = app.gameBridge.state
-
-      config.rewardItemAmount = 0
-      config.rewardItemAmountPerLegitPlayer = 0
-      config.rewardWinnerAmount = 0
-      config.rewardWinnerAmountPerLegitPlayer = 0
-
-      emitDirect(socket, 'GS_SaveRoundResponse', {
-        id: req.id,
-        data: { status: 0 }
-      })
+      failed = true
     }
+
+    try {
+      if (failed) {
+        const { config } = app.gameBridge.state
+
+        app.state.unsavedGames.push({ gsid: serverState.id, roundId: config.roundId, round: req.data, rewardWinnerAmount: config.rewardWinnerAmount })
+
+        emitDirect(socket, 'GS_SaveRoundResponse', {
+          id: req.id,
+          data: { status: 0 }
+        })
+
+        config.rewardItemAmount = 0
+        config.rewardItemAmountPerLegitPlayer = 0
+        config.rewardWinnerAmount = 0
+        config.rewardWinnerAmountPerLegitPlayer = 0
+      } else {
+        for (const game of app.state.unsavedGames.filter(g => g.status === undefined)) {
+          const res = await app.realm.call('SaveRoundRequest', game)
+
+          game.status = res.status
+        }
+
+        app.state.unsavedGames = app.state.unsavedGames.filter(g => g.status !== 1)
+      }
+
+      await jetpack.writeAsync(path.resolve('./public/data/unsavedGames.json'), JSON.stringify(app.state.unsavedGames, null, 2))
+      await jetpack.writeAsync(path.resolve('./public/data/config.json'), JSON.stringify(config, null, 2))
+    } catch(e) {
+      logError(e)
+    }
+
+    app.gameBridge.state.config.roundId++
   })
 
   socket.on('GS_ConfirmUserRequest', function(req) {
@@ -269,11 +308,12 @@ function connectGameServer(app) {
   socket.on('GS_VerifySignatureRequest', function(req) {
     try {
       // TODO: Validate is authed
+      const hashedData = md5(JSON.stringify(req.data))
       emitDirect(socket, 'GS_VerifySignatureResponse', {
         id: req.id,
         data: {
           status: 1,
-          verified: web3.eth.accounts.recover(req.data.value, req.data.hash).toLowerCase() === req.data.address.toLowerCase()
+          verified: web3.eth.accounts.recover(req.data.signature.data, req.data.signature.hash).toLowerCase() === req.data.signature.address.toLowerCase() && hashedData === req.data.signature.data
         }
       })
     } catch(e) {
@@ -292,12 +332,13 @@ function connectGameServer(app) {
   socket.on('GS_VerifyAdminSignatureRequest', function(req) {
     try {
       // TODO: Validate is authed
-      const normalizedAddress = web3.utils.toChecksumAddress(req.data.address.trim())
+      const normalizedAddress = web3.utils.toChecksumAddress(req.data.signature.address.trim())
+      const hashedData = md5(JSON.stringify(req.data))
       emitDirect(socket, 'GS_VerifyAdminSignatureResponse', {
         id: req.id,
         data: {
           status: 1,
-          address: web3.eth.accounts.recover(req.data.value, req.data.hash).toLowerCase() === req.data.address.toLowerCase() && app.realm.state.modList.includes(normalizedAddress)
+          address: web3.eth.accounts.recover(req.data.signature.data, req.data.signature.hash).toLowerCase() === req.data.signature.address.toLowerCase() && hashedData === req.data.signature.data && app.realm.state.modList.includes(normalizedAddress)
         }
       })
     } catch(e) {
@@ -677,7 +718,7 @@ export function initGameBridge(app) {
     ]
   } as any
   
-  app.gameBridge.state.config = {
+  app.gameBridge.state.config = jetpack.read(path.resolve('./public/data/config.json'), 'json') || {
     roundId: 1,
     rewardItemAmountPerLegitPlayer: 0,
     rewardItemAmountMax: 0,
