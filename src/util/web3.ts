@@ -1,3 +1,4 @@
+import md5 from 'js-md5'
 import * as ethers from 'ethers'
 import Web3 from 'web3'
 import ArcaneItems from '../contracts/ArcaneItems.json'
@@ -29,10 +30,15 @@ export function getAddress(address) {
   return address[chainId] ? address[chainId] : address[mainNetChainId]
 }
 
-export function verifySignature(signature) {
-  log('Verifying', signature)
+export function isValidRequest(req) {
+  log('Verifying', req)
+  if (!req?.signature) {
+    return false
+  }
+
   try {
-    return web3.eth.accounts.recover(signature.data, signature.hash).toLowerCase() === signature.address.toLowerCase()
+    const hashedData = md5(JSON.stringify(req.data))
+    return web3.eth.accounts.recover(req.signature.data, req.signature.hash).toLowerCase() === req.signature.address.toLowerCase() && hashedData === req.signature.data
   } catch(e) {
     logError(e)
     return false
@@ -42,10 +48,11 @@ export function verifySignature(signature) {
 export async function getSignedRequest(data) {
   log('Signing', data)
   try {
+    const hashedData = md5(JSON.stringify(data))
     return {
       address: secrets.address,
-      hash: (await web3.eth.accounts.sign(data, secrets.key)).signature,
-      data
+      hash: (await web3.eth.accounts.sign(hashedData, secrets.key)).signature,
+      data: hashedData
     }
   } catch (e) {
     logError(e)

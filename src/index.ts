@@ -1,3 +1,4 @@
+import jetpack from 'fs-jetpack'
 import fs from 'fs'
 import express from 'express'
 import helmet from 'helmet'
@@ -17,6 +18,10 @@ async function init() {
   try {
     const app = {} as any
 
+    app.state = {}
+
+    app.state.unsavedGames = jetpack.read(path.resolve('./public/data/unsavedGames.json'), 'json') || []
+
     app.flags = {
       testBanSystem: false
     }
@@ -33,6 +38,8 @@ async function init() {
         allowedHeaders: ['Accept', 'Authorization', 'Cache-Control', 'X-Requested-With', 'Content-Type', 'applicationId'],
       })
     )
+
+    app.isHttps = process.env.RUNE_ENV !== 'local'
 
     app.http = require('http').Server(app.server)
 
