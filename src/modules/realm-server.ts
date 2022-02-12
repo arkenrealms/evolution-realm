@@ -46,7 +46,7 @@ function onRealmConnection(app, socket) {
       try {
         log('SetConfigRequest', req)
 
-        if (!await isValidRequest(req) && app.realm.state.modList.includes(req.data.address)) {
+        if (!await isValidRequest(req) && app.realm.state.modList.includes(req.signature.address)) {
           emitDirect(socket, 'SetConfigResponse', {
             id: req.id,
             data: {
