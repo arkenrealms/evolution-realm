@@ -9,7 +9,6 @@ const shortId = require('shortid')
 const mapData = jetpack.read(path.resolve('./public/data/map.json'), 'json')
 
 const serverVersion = "1.6.3"
-let io
 let observers = []
 const testMode = false
 let roundLoopTimeout
