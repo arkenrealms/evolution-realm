@@ -133,7 +133,7 @@ const sharedConfig = {
   rewardSpawnLoopSeconds: testMode ? 1 : 3 * 60 / 20,
   rewardWinnerAmount: 0,
   rewardWinnerName: 'ZOD',
-  roundLoopSeconds: testMode ? 1 * 60 : 5 * 60 / 30,
+  roundLoopSeconds: testMode ? 1 * 60 : 5 * 60,
   sendUpdateLoopSeconds: 3,
   slowLoopSeconds: 1,
   spritesPerPlayerCount: 1,
