@@ -36,7 +36,7 @@ function startGameServer(app) {
   // Start the server
   app.gameBridge.process = spawn('node',
     ['build/index.js'], 
-    {cwd: path.join(__dirname, '../../game-server'), env: process.env, stdio: ['ignore', 'pipe', 'pipe']}
+    {cwd: path.resolve('./game-server'), env: process.env, stdio: ['ignore', 'pipe', 'pipe']}
   )
 
   app.gameBridge.process.stdout.pipe(process.stdout)
