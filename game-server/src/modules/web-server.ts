@@ -31,7 +31,7 @@ export async function initWebServer(server) {
   // Logging
   server.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 
-  server.use(express.static(path.join(__dirname, '/../public')))
+  server.use(express.static(path.resolve('./public')))
 
   initRoutes(server)
 }
