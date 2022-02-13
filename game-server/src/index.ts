@@ -64,8 +64,8 @@ async function init() {
 
     if (app.isHttps) {
       app.https = require('https').createServer({ 
-        key: fs.readFileSync(path.resolve('../privkey.pem')),
-        cert: fs.readFileSync(path.resolve('../fullchain.pem'))
+        key: fs.readFileSync(path.resolve('./privkey.pem')),
+        cert: fs.readFileSync(path.resolve('./fullchain.pem'))
       }, app.server)
     } else {
       app.http = require('http').Server(app.server)
