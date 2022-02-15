@@ -288,7 +288,7 @@ async function sendEventToObservers(app, name, data = undefined) {
         resolve({ status: 0, message: 'Request timeout' })
 
         delete app.realm.ioCallbacks[id]
-      }, 10 * 1000)
+      }, 30 * 1000)
       
       app.realm.ioCallbacks[id] = { resolve, reject, timeout }
 
