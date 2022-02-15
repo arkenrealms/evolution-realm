@@ -62,7 +62,7 @@ async function callGameServer(app, name, data = {}) {
       resolve({ status: 0, message: 'Request timeout' })
 
       delete app.gameBridge.ioCallbacks[id]
-    }, 2 * 1000)
+    }, 30 * 1000)
 
     app.gameBridge.ioCallbacks[id] = { resolve, reject, timeout }
 
@@ -625,7 +625,7 @@ function connectGameServer(app) {
     logError('Could not connect to GS on ' + server.endpoint)
 
     socket.close()
-  }, 20 * 1000)
+  }, 60 * 1000)
 }
 
 export function initGameBridge(app) {
