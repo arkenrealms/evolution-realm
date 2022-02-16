@@ -12,11 +12,11 @@ const writeLogs = false
 
 export function log(...msgs) {
   if (isDebug) {
-    console.log('[RS]', ...msgs)
+    console.log('[RS]', nowReadable(), ...msgs)
   }
 
   if (!writeLogs) return
-
+  
   const logData = jetpack.read(path.resolve('./public/data/log.json'), 'json') || []
   
   for (const msg of msgs) {
@@ -31,7 +31,7 @@ export function log(...msgs) {
 }
 
 export function logError(err) {
-  console.log('[RS]', err)
+  console.log('[RS]', nowReadable(), err)
 
   // if (!writeLogs) return
 
@@ -52,6 +52,10 @@ export function wait(ms) {
 
 export function getTime() {
   return new Date().getTime()
+}
+
+export function nowReadable() {
+  return new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '')
 }
   
 export function convertToDecimal(byte) {
