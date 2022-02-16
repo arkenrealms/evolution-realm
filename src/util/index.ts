@@ -26,18 +26,20 @@ export function log(...msgs) {
   try {
     jetpack.write(path.resolve('./public/data/log.json'), JSON.stringify(logData, null, 2), { atomic: true })
   } catch(e) {
-    console.log("[RS] logError parse error", e)
+    console.log("[RS] log parse error", e)
   }
 }
 
-export function logError(err) {
-  console.log('[RS]', nowReadable(), err)
+export function logError(...msgs) {
+  console.log('[RS]', nowReadable(), msgs)
 
   // if (!writeLogs) return
 
   const errorLog = jetpack.read(path.resolve('./public/data/errors.json'), 'json') || []
 
-  errorLog.push(JSON.stringify(err))
+  for (const msg of msgs) {
+    errorLog.push(JSON.stringify(msg))
+  }
   
   try {
     jetpack.write(path.resolve('./public/data/errors.json'), JSON.stringify(errorLog, null, 2), { atomic: true })
