@@ -11,7 +11,7 @@ const writeLogs = false
 
 export function log(...msgs) {
   if (isDebug) {
-    console.log('[GS]', ...msgs)
+    console.log('[GS]', nowReadable(), ...msgs)
   }
 
   if (!writeLogs) return
@@ -23,12 +23,12 @@ export function log(...msgs) {
   try {
     jetpack.write(path.resolve('../public/data/log.json'), JSON.stringify(logData, null, 2))
   } catch(e) {
-    console.log("[GS] log parse error", e)
+    console.log(`[GS] log parse error`, e)
   }
 }
 
 export function logError(err) {
-  console.log("[GS]", err)
+  console.log('[GS]', nowReadable(), err)
 
   // if (!writeLogs) return
 
@@ -39,12 +39,16 @@ export function logError(err) {
   try {
     jetpack.write(path.resolve('../public/data/errors.json'), JSON.stringify(errorLog, null, 2), { atomic: true })
   } catch(e) {
-    console.log("[GS] logError parse error", e)
+    console.log(`[GS] logError parse error`, e)
   }
 }
 
 export function getTime() {
   return new Date().getTime()
+}
+
+export function nowReadable() {
+  return new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '')
 }
 
 export function sha256(str) {
