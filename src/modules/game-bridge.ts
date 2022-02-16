@@ -210,17 +210,16 @@ function connectGameServer(app) {
         })
       } else {
         failed = true
+        log('Save round failed', res)
       }
     } catch (e) {
-      logError(e)
+      logError('Save round failed', e)
 
       failed = true
     }
 
     try {
       if (failed) {
-        log('Save round failed', req)
-
         const { config } = app.gameBridge.state
 
         app.state.unsavedGames.push({ gsid: serverState.id, roundId: config.roundId, round: req.data, rewardWinnerAmount: config.rewardWinnerAmount })
