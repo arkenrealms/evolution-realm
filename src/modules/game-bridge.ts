@@ -88,7 +88,7 @@ function connectGameServer(app) {
   const serverState = {
     id: shortId(),
     info: undefined,
-    authed: false
+    isAuthed: false
   }
 
   app.gameBridge.state.servers.push(serverState)
@@ -100,7 +100,7 @@ function connectGameServer(app) {
       serverState.info = res.data
     }
 
-    setTimeout(fetchInfo, 10 * 1000)
+    // setTimeout(fetchInfo, 10 * 1000)
   }
 
   socket.on('connect', function() {
@@ -117,8 +117,8 @@ function connectGameServer(app) {
     log(msg)
   })
 
-  socket.on('GS_InitRequest', function(req) {
-    if (req.status === 1) {
+  socket.on('GS_InitRequest', async function(req) {
+    if (req.data.status !== 1) {
       logError('Could not init')
       return
     }
@@ -128,15 +128,17 @@ function connectGameServer(app) {
     if (connectTimeout) clearTimeout(connectTimeout)
 
     // TODO: Validate GS key
-    serverState.authed = true
+    serverState.isAuthed = true
 
-    fetchInfo()
+    await fetchInfo()
 
     emitDirect(socket, 'GS_InitResponse', {
       id: req.id,
       data: {
         status: 1,
-        roundId: app.gameBridge.state.config.roundId
+        data: {
+          roundId: app.gameBridge.state.config.roundId
+        }
       }
     })
   })
@@ -217,6 +219,8 @@ function connectGameServer(app) {
 
     try {
       if (failed) {
+        log('Save round failed', req)
+
         const { config } = app.gameBridge.state
 
         app.state.unsavedGames.push({ gsid: serverState.id, roundId: config.roundId, round: req.data, rewardWinnerAmount: config.rewardWinnerAmount })

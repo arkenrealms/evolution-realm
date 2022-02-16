@@ -1821,8 +1821,8 @@ function initEventHandler(app) {
 
           const initRes = await rsCall('GS_InitRequest', { status: 1 }) as any
 
-          baseConfig.roundId = initRes.roundId
-          config.roundId = initRes.roundId
+          baseConfig.roundId = initRes.data.roundId
+          config.roundId = initRes.data.roundId
         } catch (e) {
           logError(e)
 
@@ -2766,7 +2766,7 @@ function initEventHandler(app) {
         }
       })
 
-      socket.on('RS_InfoRequest', async function(req) {
+      socket.on('RS_InfoRequest', function(req) {
         socket.emit('RS_InfoResponse', {
           id: req.id,
           data: {
@@ -2791,6 +2791,7 @@ function initEventHandler(app) {
           }
         })
       })
+
       socket.onAny(function(eventName, res) {
         // log('onAny', eventName, res)
         if (!res || !res.id) return
