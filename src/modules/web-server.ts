@@ -3,9 +3,9 @@ import express from 'express'
 import RateLimit from 'express-rate-limit'
 import bodyParser from 'body-parser'
 import morgan from 'morgan'
-import { log, logError } from '../util'
-import { emitAll } from '../util/websocket'
-import { killSubProcesses } from '../util/process'
+import { log, logError } from '@rune-backend-sdk/util'
+import { emitAll } from '@rune-backend-sdk/util/websocket'
+import { killSubProcesses } from '@rune-backend-sdk/util/process'
 
 const path = require('path')
 
