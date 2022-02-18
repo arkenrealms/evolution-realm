@@ -2,10 +2,9 @@ import md5 from 'js-md5'
 import jetpack from 'fs-jetpack'
 import { spawn } from 'child_process'
 import { io as ioClient } from 'socket.io-client'
-import { log, logError, random, getTime } from '../util'
-import { web3 } from '../util/web3'
-import { emitDirect } from '../util/websocket'
-import { upgradeGsCodebase, cloneGsCodebase } from '../util/codebase'
+import { log, logError, random, getTime } from '@rune-backend-sdk/util'
+import { emitDirect } from '@rune-backend-sdk/util/websocket'
+import { upgradeGsCodebase, cloneGsCodebase } from '@rune-backend-sdk/util/codebase'
 
 const path = require('path')
 const shortId = require('shortid')
@@ -316,7 +315,7 @@ function connectGameServer(app) {
         id: req.id,
         data: {
           status: 1,
-          verified: web3.eth.accounts.recover(req.data.signature.data, req.data.signature.hash).toLowerCase() === req.data.signature.address.toLowerCase() && hashedData === req.data.signature.data
+          verified: app.web3.eth.accounts.recover(req.data.signature.data, req.data.signature.hash).toLowerCase() === req.data.signature.address.toLowerCase() && hashedData === req.data.signature.data
         }
       })
     } catch(e) {
@@ -335,13 +334,13 @@ function connectGameServer(app) {
   socket.on('GS_VerifyAdminSignatureRequest', function(req) {
     try {
       // TODO: Validate is authed
-      const normalizedAddress = web3.utils.toChecksumAddress(req.data.signature.address.trim())
+      const normalizedAddress = app.web3.utils.toChecksumAddress(req.data.signature.address.trim())
       const hashedData = md5(JSON.stringify(req.data))
       emitDirect(socket, 'GS_VerifyAdminSignatureResponse', {
         id: req.id,
         data: {
           status: 1,
-          address: web3.eth.accounts.recover(req.data.signature.data, req.data.signature.hash).toLowerCase() === req.data.signature.address.toLowerCase() && hashedData === req.data.signature.data && app.realm.state.modList.includes(normalizedAddress)
+          address: app.web3.eth.accounts.recover(req.data.signature.data, req.data.signature.hash).toLowerCase() === req.data.signature.address.toLowerCase() && hashedData === req.data.signature.data && app.realm.state.modList.includes(normalizedAddress)
         }
       })
     } catch(e) {
@@ -363,7 +362,7 @@ function connectGameServer(app) {
         id: req.id,
         data: {
           status: 1,
-          address: web3.utils.toChecksumAddress(req.data.address.trim())
+          address: app.web3.utils.toChecksumAddress(req.data.address.trim())
         }
       })
     } catch(e) {

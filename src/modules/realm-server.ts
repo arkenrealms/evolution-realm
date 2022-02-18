@@ -1,7 +1,7 @@
-import { isValidRequest, signatureAddress, getSignedRequest } from '../util/web3'
-import { log, logError, getTime } from '../util'
-import { emitDirect } from '../util/websocket'
-import { upgradeCodebase } from '../util/codebase'
+import { isValidRequest, getSignedRequest } from '@rune-backend-sdk/util/web3'
+import { log, logError, getTime } from '@rune-backend-sdk/util'
+import { emitDirect } from '@rune-backend-sdk/util/websocket'
+import { upgradeCodebase } from '@rune-backend-sdk/util/codebase'
 
 const shortId = require('shortid')
 
@@ -46,7 +46,7 @@ function onRealmConnection(app, socket) {
       try {
         log('SetConfigRequest', req)
 
-        if (!await isValidRequest(req) && app.realm.state.modList.includes(req.signature.address)) {
+        if (!await isValidRequest(app.web3, req) && app.realm.state.modList.includes(req.signature.address)) {
           emitDirect(socket, 'SetConfigResponse', {
             id: req.id,
             data: {
@@ -89,7 +89,7 @@ function onRealmConnection(app, socket) {
     // Use by GS to tell DB it's connected
     socket.on('InfoRequest', async function(req) {
       try {
-        if (!await isValidRequest(req) || !app.realm.state.modList.includes(req.signature.address)) {
+        if (!await isValidRequest(app.web3, req) || !app.realm.state.modList.includes(req.signature.address)) {
           emitDirect(socket, 'InfoResponse', {
             id: req.id,
             data: {
@@ -133,7 +133,7 @@ function onRealmConnection(app, socket) {
       try {
         log('AddMod', req)
 
-        if (await isValidRequest(req) && app.realm.state.modList.includes(req.data.address)) {
+        if (await isValidRequest(app.web3, req) && app.realm.state.modList.includes(req.data.address)) {
           app.realm.state.modList.push(req.params.address)
       
           emitDirect(socket, 'AddModResponse', {
@@ -162,7 +162,7 @@ function onRealmConnection(app, socket) {
           caller: req.data.address
         })
 
-        if (await isValidRequest(req) && app.realm.state.modList.includes(req.data.address)) {
+        if (await isValidRequest(app.web3, req) && app.realm.state.modList.includes(req.data.address)) {
           for (const client of app.realm.clients) {
             if (client.isMod && client.address === req.data.target) {
               client.isMod = false
@@ -193,8 +193,8 @@ function onRealmConnection(app, socket) {
       try {
         log('Ban', req)
 
-        if (await isValidRequest(req) && app.realm.state.modList.includes(req.signature.address)) {
-          app.gameBridge.call('KickUser', await getSignedRequest({ target: req.data.target }))
+        if (await isValidRequest(app.web3, req) && app.realm.state.modList.includes(req.signature.address)) {
+          app.gameBridge.call('KickUser', await getSignedRequest(app.web3, app.secrets, { target: req.data.target }))
 
           emitDirect(socket, 'BanUserResponse', {
             id: req.id,
@@ -223,7 +223,7 @@ function onRealmConnection(app, socket) {
           caller: req.data.address
         })
 
-        if (await isValidRequest(req) && app.realm.state.modList.includes(req.data.address)) {
+        if (await isValidRequest(app.web3, req) && app.realm.state.modList.includes(req.data.address)) {
           app.realm.state.banList.splice(app.realm.state.banList.indexOf(req.data.target), 1)
 
           emitDirect(socket, 'UnbanUserResponse', {
@@ -279,7 +279,7 @@ async function sendEventToObservers(app, name, data = undefined) {
   try {
     log('Emit Observers', name, data)
 
-    const signature = await getSignedRequest(data)
+    const signature = await getSignedRequest(app.web3, app.secrets, data)
   
     return new Promise((resolve, reject) => {
       const id = shortId()

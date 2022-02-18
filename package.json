@@ -4,6 +4,7 @@
   "description": "",
   "main": "build/index.js",
   "dependencies": {
+    "@truffle/hdwallet-provider": "^1.2.0",
     "@typechain/ethers-v4": "^1.0.0",
     "@types/common-tags": "^1.8.0",
     "@types/cors": "^2.8.5",
@@ -62,7 +63,7 @@
     "node": "14.*.*"
   },
   "scripts": {
-    "dev": "RUNE_ENV=local RS_PORT=3006 RS_SSL_PORT=3106 GS_PORT=3008 GS_SSL_PORT=3107 tsnd --respawn -r tsconfig-paths/register ./src/index.ts",
+    "dev": "RUNE_ENV=local RS_PORT=3006 RS_SSL_PORT=3106 GS_PORT=3008 GS_SSL_PORT=3107 LOG_PREFIX=[RERS] tsnd --respawn -r tsconfig-paths/register ./src/index.ts",
     "inspect": "NODE_ENV=development yarn build && PORT=3001 NODE_ENV=production node --inspect build/index.js",
     "prod": "NODE_ENV=production yarn run nodemon --config nodemon.production.json",
     "build": "NODE_ENV=production tsc",
