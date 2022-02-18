@@ -44,11 +44,11 @@ export function logError(err) {
 }
 
 export function getTime() {
-  return new Date().getTime()
+  return (new Date()).getTime()
 }
 
 export function nowReadable() {
-  return new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '')
+  return (new Date()).toISOString().replace(/T/, ' ').replace(/\..+/, '')
 }
 
 export function sha256(str) {

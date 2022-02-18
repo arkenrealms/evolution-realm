@@ -968,7 +968,7 @@ async function resetLeaderboard(preset) {
       return
     }
 
-    round.endedAt = getTime()
+    round.endedAt =  Math.round(getTime() / 1000)
 
     const fiveSecondsAgo = getTime() - 7000
 
@@ -2665,7 +2665,7 @@ function initEventHandler(app) {
 
       socket.on('RS_SetConfigRequest', async function(req) {
         try {
-          log('SetConfig', req)
+          log('RS_SetConfigRequest', req)
 
           if (await isValidAdminRequest(req)) {
             const val = isNumeric(req.data.value) ? parseFloat(req.data.value) : req.data.value
