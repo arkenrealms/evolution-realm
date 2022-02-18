@@ -1,7 +1,5 @@
 build
-secrets.js
-secrets.ts
-secrets.ptr.js
+secrets.json
 nohup.out
 
 node_modules/

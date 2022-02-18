@@ -5,6 +5,7 @@ import helmet from 'helmet'
 import cors from 'cors'
 import { log, logError } from './util'
 import { catchExceptions } from './util/process'
+import { initWeb3 } from './modules/web3'
 import { initRealmServer } from './modules/realm-server'
 import { initWebServer } from './modules/web-server'
 import { initGameBridge } from './modules/game-bridge'
@@ -65,6 +66,12 @@ async function init() {
     app.subProcesses = []
 
     app.moduleConfig = [
+      {
+        name: 'initWeb3',
+        instance: initWeb3,
+        async: false,
+        timeout: 0
+      },
       {
         name: 'initRealmServer',
         instance: initRealmServer,
