@@ -1,6 +1,6 @@
 {
   "name": "rune-evolution-game-server",
-  "version": "0.2.1",
+  "version": "1.0.0",
   "description": "",
   "main": "build/index.js",
   "dependencies": {
@@ -32,6 +32,7 @@
     "semver": "^7.3.5",
     "shortid": "^2.2.2",
     "socket.io": "^4.1.2",
+    "tsconfig-paths": "^3.12.0",
     "typescript": "^4.3.4",
     "utf8": "^3.0.0",
     "web3": "^1.3.6"
@@ -58,7 +59,7 @@
     "node": "14.*.*"
   },
   "scripts": {
-    "dev": "NODE_ENV=development yarn build && GS_PORT=3001 yarn start",
+    "dev": "GS_PORT=3001 LOG_PREFIX=[REGS] tsnd --respawn -r tsconfig-paths/register ./src/index.ts",
     "inspect": "NODE_ENV=development yarn build && GS_PORT=3001 NODE_ENV=production node --inspect build/index.js",
     "prod": "NODE_ENV=production yarn run nodemon --config nodemon.production.json",
     "build": "NODE_ENV=production tsc",

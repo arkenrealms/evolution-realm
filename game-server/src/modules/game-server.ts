@@ -1,7 +1,7 @@
 import jetpack from 'fs-jetpack'
 import axios from 'axios'
 import semver from 'semver/preload.js'
-import { log, logError, getTime, shuffleArray, random, randomPosition, sha256, decodePayload, isNumeric } from '../util'
+import { log, logError, getTime, shuffleArray, random, randomPosition, sha256, decodePayload, isNumeric } from '@rune-backend-sdk/util'
 
 const path = require('path')
 const shortId = require('shortid')
