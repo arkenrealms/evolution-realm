@@ -2,8 +2,8 @@ import fs from 'fs'
 import helmet from 'helmet'
 import cors from 'cors'
 import express from 'express'
-import { log, logError, isDebug } from './util'
-import { catchExceptions } from './util/process'
+import { log, logError, isDebug } from '@rune-backend-sdk/util'
+import { catchExceptions } from '@rune-backend-sdk/util/process'
 import { initGameServer } from './modules/game-server'
 
 const path = require('path')

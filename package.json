@@ -1,6 +1,6 @@
 {
   "name": "rune-evolution-realm-server",
-  "version": "0.2.1",
+  "version": "1.0.0",
   "description": "",
   "main": "build/index.js",
   "dependencies": {

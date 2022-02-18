@@ -2,7 +2,7 @@ import express from 'express'
 import RateLimit from 'express-rate-limit'
 import bodyParser from 'body-parser'
 import morgan from 'morgan'
-import { logError } from '../util'
+import { logError } from '@rune-backend-sdk/util'
 
 const path = require('path')
 
