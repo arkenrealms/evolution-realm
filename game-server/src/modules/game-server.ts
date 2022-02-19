@@ -385,7 +385,7 @@ function emitDirect(socket, ...args) {
 // }
 
 function publishEvent(...args) {
-  // console.log(args)
+  // log(args)
   eventQueue.push(args)
 }
 
@@ -397,7 +397,7 @@ async function rsCall(name, data = {}) {
       resolve({ status: 0, message: 'Request timeout' })
 
       delete ioCallbacks[id]
-    }, 5 * 1000)
+    }, 15 * 1000)
     
     ioCallbacks[id] = { resolve, reject, timeout }
 
@@ -416,7 +416,7 @@ async function normalizeAddress(address) {
   if (!address) return false
   try {
     const res = await rsCall('GS_NormalizeAddressRequest', { address }) as any
-    return res.address
+    return res.data.address
   } catch(e) {
     logError(e)
     return false
@@ -1124,9 +1124,9 @@ async function resetLeaderboard(preset) {
       rebootAfterRound = true
     }
 
-    for (const observer of observers) {
-      observer.socket.emit('GS_StartRound')
-    }
+    // for (const observer of observers) {
+    //   observer.socket.emit('GS_StartRound')
+    // }
   } catch(e) {
     logError(e)
   }
@@ -1396,7 +1396,7 @@ function detectCollisions() {
           if (isPlayer2Invincible) continue
           if (player2.avatar === player1.avatar) continue
 
-          // console.log(player1.position, player2.position, distanceBetweenPoints(player1.position.x, player1.position.y, player2.position.x, player2.position.y))
+          // log(player1.position, player2.position, distanceBetweenPoints(player1.position.x, player1.position.y, player2.position.x, player2.position.y))
 
           const distance = distanceMap[player1.avatar] + distanceMap[player2.avatar] //Math.max(distanceMap[player1.avatar], distanceMap[player2.avatar]) + Math.min(distanceMap[player1.avatar], distanceMap[player2.avatar])
 
@@ -1405,7 +1405,7 @@ function detectCollisions() {
           if (player2.avatar > player1.avatar) {
             // if (distanceBetweenPoints(player2.position, player2.clientPosition) > config.pickupCheckPositionDistance) continue
             // playerDamageGiven[currentPlayer.id + pack.id] = now
-            // // console.log('Player Damage Given', currentPlayer.id + pack.id)
+            // // log('Player Damage Given', currentPlayer.id + pack.id)
             // if (playerDamageTaken[currentPlayer.id + pack.id] > now - 500) {
               // if (player1.xp > 5) {
                 // player1.xp -= 1
@@ -1417,7 +1417,7 @@ function detectCollisions() {
           } else if (player1.avatar > player2.avatar) {
             // if (distanceBetweenPoints(player1.position, player1.clientPosition) > config.pickupCheckPositionDistance) continue
             // playerDamageGiven[pack.id + currentPlayer.id] = now
-            // // console.log('Player Damage Given', pack.id + currentPlayer.id)
+            // // log('Player Damage Given', pack.id + currentPlayer.id)
             // if (playerDamageTaken[pack.id + currentPlayer.id] > now - 500) {
               // if (player2.xp > 5) {
               //   player2.xp -= 1
@@ -1437,8 +1437,8 @@ function detectCollisions() {
         if (player.isDead) continue
         if (player.isSpectating) continue
         if (player.isPhased || now < player.phasedUntil) continue
-        // console.log(player.position, player.clientPosition, distanceBetweenPoints(player.position, player.clientPosition))
-        // console.log(currentReward)
+        // log(player.position, player.clientPosition, distanceBetweenPoints(player.position, player.clientPosition))
+        // log(currentReward)
         // if (distanceBetweenPoints(player.position, player.clientPosition) > config.pickupCheckPositionDistance) continue
 
         const touchDistance = config.pickupDistance + config['avatarTouchDistance' + player.avatar]
@@ -1486,7 +1486,7 @@ function detectCollisions() {
           for (const reward of rewards) {
             if (!reward) continue
             if (now < reward.enabledAt) continue
-            // console.log(distanceBetweenPoints(player.position, reward.position), player.position, reward.position, touchDistance)
+            // log(distanceBetweenPoints(player.position, reward.position), player.position, reward.position, touchDistance)
             if (distanceBetweenPoints(player.position, reward.position) > touchDistance) continue
       
             // player.rewards += 1
@@ -1501,7 +1501,7 @@ function detectCollisions() {
 
     lastFastestGameloopTime = now
   } catch (e) {
-    console.log(e)
+    log(e)
   }
 }
 
@@ -2235,7 +2235,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          console.log(e)
+          logError(e)
           
           socket.emit('RS_MaintenanceResponse', {
             id: req.id,
@@ -2267,7 +2267,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          console.log(e)
+          logError(e)
           
           socket.emit('RS_UnmaintenanceResponse', {
             id: req.id,
@@ -2299,7 +2299,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          console.log(e)
+          logError(e)
           
           socket.emit('RS_StartBattleRoyaleResponse', {
             id: req.id,
@@ -2331,7 +2331,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          console.log(e)
+          logError(e)
           
           socket.emit('RS_StopBattleRoyaleResponse', {
             id: req.id,
@@ -2366,7 +2366,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          console.log(e)
+          logError(e)
           
           socket.emit('RS_PauseRoundResponse', {
             id: req.id,
@@ -2402,7 +2402,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          console.log(e)
+          logError(e)
 
           socket.emit('RS_StartRoundResponse', {
             id: req.id,
@@ -2432,7 +2432,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          console.log(e)
+          logError(e)
 
           socket.emit('RS_EnableForceLevel2Response', {
             id: req.id,
@@ -2462,7 +2462,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          console.log(e)
+          logError(e)
 
           socket.emit('RS_DisableForceLevel2Response', {
             id: req.id,
@@ -2494,7 +2494,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          console.log(e)
+          logError(e)
           
           socket.emit('RS_StartGodPartyResponse', {
             id: req.id,
@@ -2532,7 +2532,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          console.log(e)
+          logError(e)
           
           socket.emit('RS_StopGodPartyResponse', {
             id: req.id,
@@ -2578,7 +2578,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          console.log(e)
+          logError(e)
           
           socket.emit('RS_MakeBattleHarderResponse', {
             id: req.id,
@@ -2700,7 +2700,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          console.log(e)
+          logError(e)
           
           socket.emit('RS_SetConfigResponse', {
             id: req.id,
@@ -2761,7 +2761,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          console.log(e)
+          logError(e)
           
           socket.emit('RS_BroadcastResponse', {
             id: req.id,
@@ -2804,9 +2804,9 @@ function initEventHandler(app) {
 
       socket.onAny(function(eventName, res) {
         if (!res || !res.id) return
-        log('onAny', eventName, res)
+        // log('onAny', eventName, res)
         if (ioCallbacks[res.id]) {
-          log('Callback', eventName)
+          log('Callback', eventName, res)
 
           clearTimeout(ioCallbacks[res.id].timeout)
 
