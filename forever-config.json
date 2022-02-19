@@ -10,5 +10,5 @@
   "logFile": "./forever-script-log.log",
   "outFile": "./forever-script-out.log",
   "errFile": "./forever-script-err.log",
-  "args": []
+  "args": ["PROVIDER_URI=wss://thrumming-still-leaf.bsc.quiknode.pro/b2f8a5b1bd0809dbf061112e1786b4a8e53c9a83/ LOG=1 LOG_PREFIX=[RERS]"]
 }
