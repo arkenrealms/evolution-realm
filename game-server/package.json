@@ -62,7 +62,7 @@
     "dev": "GS_PORT=3001 LOG_PREFIX=[REGS] tsnd --respawn -r tsconfig-paths/register ./src/index.ts",
     "inspect": "NODE_ENV=development yarn build && GS_PORT=3001 NODE_ENV=production node --inspect build/index.js",
     "prod": "NODE_ENV=production yarn run nodemon --config nodemon.production.json",
-    "build": "NODE_ENV=production tsc",
+    "build": "NODE_ENV=production tsc && tsc-alias",
     "start": "NODE_ENV=production node build/index.js",
     "forever": "NODE_ENV=production yarn build && sudo nohup forever start forever-config.json &",
     "release": "NODE_ENV=production tsc && gcloud app deploy app.yaml --project evident-ethos-317302",
