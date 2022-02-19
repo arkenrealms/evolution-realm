@@ -97,6 +97,8 @@ function connectGameServer(app) {
 
     if (res?.status === 1) {
       serverState.info = res.data
+
+      return res.data
     }
 
     // setTimeout(fetchInfo, 10 * 1000)
@@ -117,29 +119,60 @@ function connectGameServer(app) {
   })
 
   socket.on('GS_InitRequest', async function(req) {
-    if (req.data.status !== 1) {
-      logError('Could not init')
-      return
-    }
-
-    log('GS initialized')
-
-    if (connectTimeout) clearTimeout(connectTimeout)
-
-    // TODO: Validate GS key
-    serverState.isAuthed = true
-
-    await fetchInfo()
-
-    emitDirect(socket, 'GS_InitResponse', {
-      id: req.id,
-      data: {
-        status: 1,
-        data: {
-          roundId: app.gameBridge.state.config.roundId
-        }
+    try {
+      if (req.data.status !== 1) {
+        logError('Could not init')
+        
+        emitDirect(socket, 'GS_InitResponse', {
+          id: req.id,
+          data: {
+            status: 0
+          }
+        })
+        
+        return
       }
-    })
+
+      log('GS initialized')
+
+      const info = await fetchInfo()
+
+      if (!info) {
+        logError('Couldnt fetch info')
+  
+        emitDirect(socket, 'GS_InitResponse', {
+          id: req.id,
+          data: {
+            status: 0
+          }
+        })
+        return
+      }
+
+      if (connectTimeout) clearTimeout(connectTimeout)
+
+      // TODO: Validate GS key
+      serverState.isAuthed = true
+
+      emitDirect(socket, 'GS_InitResponse', {
+        id: req.id,
+        data: {
+          status: 1,
+          data: {
+            roundId: app.gameBridge.state.config.roundId
+          }
+        }
+      })
+    } catch(e) {
+      logError(e)
+
+      emitDirect(socket, 'GS_InitResponse', {
+        id: req.id,
+        data: {
+          status: 0
+        }
+      })
+    }
   })
 
   // Use by GS to tell RS it's connected
