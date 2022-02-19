@@ -6199,10 +6199,10 @@ run-parallel@^1.1.9:
   dependencies:
     queue-microtask "^1.2.2"
 
-rune-backend-sdk@^1.0.4:
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/rune-backend-sdk/-/rune-backend-sdk-1.0.4.tgz#7e2189850b2398442e99028b51f0677e9b8e4807"
-  integrity sha512-C80Cuc3EHECQvLeFGlJnl/rvgTICXGPYKGqEBwWsJXEWlCJoO+ybX1feGGMLuN/ozs3bO0RbmUtZHC+0ODKYfw==
+rune-backend-sdk@^1.0.6:
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/rune-backend-sdk/-/rune-backend-sdk-1.0.6.tgz#6350c994dd6b3bce6241a06304ad7c49595bb2e5"
+  integrity sha512-FmIMuO399FH17f8CfVuxpHcpQISN5G1+NokBdZolLgZOoCnVb9j33amiAK96LezwFoJoVvhr49xkW8iKpygIRg==
   dependencies:
     "@truffle/hdwallet-provider" "^2.0.3"
     "@typechain/ethers-v4" "^1.0.0"
