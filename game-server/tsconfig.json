@@ -42,9 +42,9 @@
     // "noUncheckedIndexedAccess": true,            /* Include 'undefined' in index signature results */
     // "noPropertyAccessFromIndexSignature": true,  /* Require undeclared properties from index signatures to use element accesses. */
 
-    /* Module Resolution Options */
+    "baseUrl": "./",                             /* Base directory to resolve non-absolute module names. */
     "paths": {
-      "@rune-backend-sdk/*": ["./lib/rune-backend-sdk/src/*"],
+      "@rune-backend-sdk/*": ["./node_modules/rune-backend-sdk/build/*"],
       "@": ["./src"]
     },
     // "moduleResolution": "node",                  /* Specify module resolution strategy: 'node' (Node.js) or 'classic' (TypeScript pre-1.6). */
