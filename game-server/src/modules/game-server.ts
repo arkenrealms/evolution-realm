@@ -1125,7 +1125,7 @@ async function resetLeaderboard(preset) {
     }
 
     for (const observer of observers) {
-      emitDirect(observer.socket, 'GS_StartRound')
+      observer.socket.emit('GS_StartRound')
     }
   } catch(e) {
     logError(e)
@@ -2803,9 +2803,8 @@ function initEventHandler(app) {
       })
 
       socket.onAny(function(eventName, res) {
-        // log('onAny', eventName, res)
         if (!res || !res.id) return
-        // console.log(eventName, res)
+        log('onAny', eventName, res)
         if (ioCallbacks[res.id]) {
           log('Callback', eventName)
 
