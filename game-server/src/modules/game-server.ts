@@ -416,7 +416,8 @@ async function normalizeAddress(address) {
   if (!address) return false
   try {
     const res = await rsCall('GS_NormalizeAddressRequest', { address }) as any
-    return res.data.address
+    log('GS_NormalizeAddressResponse', res)
+    return res.address
   } catch(e) {
     logError(e)
     return false
@@ -2805,6 +2806,9 @@ function initEventHandler(app) {
       socket.onAny(function(eventName, res) {
         if (!res || !res.id) return
         // log('onAny', eventName, res)
+
+        log(`Callback ${ioCallbacks[res.id] ? 'Exists' : 'Doesnt Exist'}`, eventName)
+
         if (ioCallbacks[res.id]) {
           log('Callback', eventName, res)
 
