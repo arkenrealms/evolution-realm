@@ -1804,6 +1804,8 @@ function initEventHandler(app) {
 
       socket.on('RS_Connected', async function() {
         try {
+          log('RS_Connected')
+
           const sameNetworkObservers = observers.filter(r => r.hash === currentPlayer.hash)
 
           for (const observer of sameNetworkObservers) {
@@ -1821,8 +1823,14 @@ function initEventHandler(app) {
 
           const initRes = await rsCall('GS_InitRequest', { status: 1 }) as any
 
-          baseConfig.roundId = initRes.data.roundId
-          config.roundId = initRes.data.roundId
+          log('GS_InitRequest', initRes)
+
+          if (initRes.status === 1) {
+            baseConfig.roundId = initRes.data.roundId
+            config.roundId = initRes.data.roundId
+          } else {
+            logError('Could not init')
+          }
         } catch (e) {
           logError(e)
 
