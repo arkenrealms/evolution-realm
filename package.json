@@ -32,7 +32,7 @@
     "js-md5": "^0.7.3",
     "moment": "^2.29.1",
     "morgan": "^1.10.0",
-    "rune-backend-sdk": "^1.0.4",
+    "rune-backend-sdk": "^1.0.5",
     "semver": "^7.3.5",
     "shortid": "^2.2.2",
     "socket.io": "^4.1.2",
