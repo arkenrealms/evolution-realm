@@ -32,10 +32,15 @@ function startGameServer(app) {
 
   process.env.GS_PORT = app.gameBridge.state.spawnPort + ''
 
+  const env = {
+    ...process.env,
+    LOG_PREFIX: '[REGS]'
+  }
+
   // Start the server
   app.gameBridge.process = spawn('node',
     ['-r', 'tsconfig-paths/register', 'build/index.js'], 
-    {cwd: path.resolve('./game-server'), env: process.env, stdio: ['ignore', 'pipe', 'pipe']}
+    {cwd: path.resolve('./game-server'), env, stdio: ['ignore', 'pipe', 'pipe']}
   )
 
   app.gameBridge.process.stdout.pipe(process.stdout)
@@ -390,7 +395,10 @@ function connectGameServer(app) {
 
   socket.on('GS_NormalizeAddressRequest', function(req) {
     try {
+      log('GS_NormalizeAddressRequest', req)
+
       // TODO: Validate is authed
+
       emitDirect(socket, 'GS_NormalizeAddressResponse', {
         id: req.id,
         data: {

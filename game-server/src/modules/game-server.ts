@@ -1877,7 +1877,9 @@ function initEventHandler(app) {
 
           const address = await normalizeAddress(pack.address)
 
-          if (!await isValidSignatureRequest({ signature: { data: 'evolution', hash: pack.signature.trim(), address }, data: 'evolution' })) {
+          log('SetInfo normalizeAddress', pack.address, address)
+
+          if (!await isValidSignatureRequest({ signature: { data: 'evolution', hash: pack.signature.trim(), address } })) {
             currentPlayer.log.signatureProblem += 1
             disconnectPlayer(currentPlayer)
             return
