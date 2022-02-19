@@ -24,7 +24,7 @@ function _initProvider(app) {
     app.contracts = {}
     app.contracts.wbnb = new ethers.Contract(getAddress(app.contractInfo.wbnb), app.contractMetadata.BEP20.abi, app.signers.read)
   } catch(e) {
-    log(`Couldn't setup provider.`)
+    log(`Couldn't setup provider.`, e)
 
     setTimeout(() => _initProvider(app), 60 * 1000)
   }
