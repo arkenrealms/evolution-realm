@@ -100,7 +100,9 @@ function connectGameServer(app) {
   async function fetchInfo() {
     const res = await app.gameBridge.call('RS_InfoRequest') as any
 
-    if (res?.status === 1) {
+    log('fetchInfo res', res)
+
+    if (res.status === 1) {
       serverState.info = res.data
 
       return res.data
