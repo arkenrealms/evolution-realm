@@ -667,6 +667,8 @@ function connectGameServer(app) {
 
   socket.connect()
 
+  clearTimeout(connectTimeout)
+
   connectTimeout = setTimeout(function() {
     logError('Could not connect to GS on ' + server.endpoint)
 

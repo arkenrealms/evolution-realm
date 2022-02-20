@@ -287,6 +287,8 @@ async function sendEventToObservers(app, name, data = undefined) {
       const id = shortId()
 
       const timeout = setTimeout(function() {
+        log('Request timeout')
+
         resolve({ status: 0, message: 'Request timeout' })
 
         delete app.realm.ioCallbacks[id]
