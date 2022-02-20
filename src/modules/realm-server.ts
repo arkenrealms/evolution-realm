@@ -81,6 +81,8 @@ function onRealmConnection(app, socket) {
     })
 
     socket.on('PingRequest', function(req) {
+      // log('PingRequest', req)
+
       emitDirect(socket, 'PingResponse', {
         id: req.id
       })
