@@ -11,6 +11,7 @@ function _initProvider(app) {
     log('Setting up provider')
 
     app.secrets = secrets
+    console.log(getRandomProvider)
     app.web3Provider = getRandomProvider(secrets)
     app.web3 = new Web3(app.web3Provider)
 
