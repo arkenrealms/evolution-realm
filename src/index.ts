@@ -17,6 +17,8 @@ async function init() {
   catchExceptions()
 
   try {
+    log('App init')
+
     const app = {} as any
 
     app.state = {}
@@ -62,6 +64,9 @@ async function init() {
         origin: "*"
       }
     })
+
+    app.io.set('close timeout', 60)
+    app.io.set('heartbeat timeout', 60)
 
     app.subProcesses = []
 
