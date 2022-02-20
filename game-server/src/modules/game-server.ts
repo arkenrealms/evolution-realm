@@ -44,6 +44,7 @@ const realmServer = {
 const ioCallbacks = {}
 
 let baseConfig = {
+  id: undefined,
   roundId: 1,
   damagePerTouch: 2,
   periodicReboots: false,
@@ -1827,6 +1828,8 @@ function initEventHandler(app) {
           log('GS_InitRequest', initRes)
 
           if (initRes.status === 1) {
+            baseConfig.id = initRes.id
+            config.id = initRes.id
             baseConfig.roundId = initRes.data.roundId
             config.roundId = initRes.data.roundId
           } else {
@@ -2783,6 +2786,7 @@ function initEventHandler(app) {
           data: {
             status: 1,
             data: {
+              id: config.id,
               version: serverVersion,
               port: app.state.spawnPort,
               round: { id: config.roundId, startedAt: round.startedAt },

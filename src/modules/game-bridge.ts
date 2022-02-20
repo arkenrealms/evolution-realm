@@ -166,6 +166,7 @@ function connectGameServer(app) {
         data: {
           status: 1,
           data: {
+            id: shortId(),
             roundId: app.gameBridge.state.config.roundId
           }
         }
