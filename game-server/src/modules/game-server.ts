@@ -1848,10 +1848,17 @@ function initEventHandler(app) {
 
       socket.on('RS_SetConfigRequest', async function(req) {
         try {
-          baseConfig = {...baseConfig, ...req.data.config}
-          config = {...config, ...req.data.config}
+          if (await isValidAdminRequest(req)) {
+            baseConfig = {...baseConfig, ...req.data.config}
+            config = {...config, ...req.data.config}
 
-          await rsCall('RS_SetConfigResponse', { status: 1 })
+            await rsCall('RS_SetConfigResponse', { status: 1 })
+          } else {
+            socket.emit('RS_SetConfigResponse', {
+              id: req.id,
+              data: { status: 0 }
+            })
+          }
         } catch (e) {
           logError(e)
 
@@ -2681,41 +2688,41 @@ function initEventHandler(app) {
         }
       })
 
-      socket.on('RS_SetConfigRequest', async function(req) {
-        try {
-          log('RS_SetConfigRequest', req)
+      // socket.on('RS_SetConfigRequest', async function(req) {
+      //   try {
+      //     log('RS_SetConfigRequest', req)
 
-          if (await isValidAdminRequest(req)) {
-            const val = isNumeric(req.data.value) ? parseFloat(req.data.value) : req.data.value
-            if (baseConfig.hasOwnProperty(req.data.key)) 
-              baseConfig[req.data.key] = val
+      //     if (await isValidAdminRequest(req)) {
+      //       const val = isNumeric(req.data.value) ? parseFloat(req.data.value) : req.data.value
+      //       if (baseConfig.hasOwnProperty(req.data.key)) 
+      //         baseConfig[req.data.key] = val
 
-            if (sharedConfig.hasOwnProperty(req.data.key)) 
-              sharedConfig[req.data.key] = val
+      //       if (sharedConfig.hasOwnProperty(req.data.key)) 
+      //         sharedConfig[req.data.key] = val
 
-            config[req.data.key] = val
+      //       config[req.data.key] = val
 
-            publishEvent('OnBroadcast', `${req.data.key} = ${val}`, 1)
+      //       publishEvent('OnBroadcast', `${req.data.key} = ${val}`, 1)
             
-            socket.emit('RS_SetConfigResponse', {
-              id: req.id,
-              data: { status: 1 }
-            })
-          } else {
-            socket.emit('RS_SetConfigResponse', {
-              id: req.id,
-              data: { status: 0 }
-            })
-          }
-        } catch (e) {
-          logError(e)
+      //       socket.emit('RS_SetConfigResponse', {
+      //         id: req.id,
+      //         data: { status: 1 }
+      //       })
+      //     } else {
+      //       socket.emit('RS_SetConfigResponse', {
+      //         id: req.id,
+      //         data: { status: 0 }
+      //       })
+      //     }
+      //   } catch (e) {
+      //     logError(e)
           
-          socket.emit('RS_SetConfigResponse', {
-            id: req.id,
-            data: { status: 0 }
-          })
-        }
-      })
+      //     socket.emit('RS_SetConfigResponse', {
+      //       id: req.id,
+      //       data: { status: 0 }
+      //     })
+      //   }
+      // })
 
       socket.on('RS_MessageUserRequest', async function(req) {
         try {

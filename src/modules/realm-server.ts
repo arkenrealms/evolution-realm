@@ -91,6 +91,8 @@ function onRealmConnection(app, socket) {
     // Use by GS to tell DB it's connected
     socket.on('InfoRequest', async function(req) {
       try {
+        log('InfoRequest', req)
+
         if (!await isValidRequest(app.web3, req) || !app.realm.state.modList.includes(req.signature.address)) {
           emitDirect(socket, 'InfoResponse', {
             id: req.id,
@@ -308,6 +310,8 @@ async function sendEventToObservers(app, name, data = undefined) {
 }
 
 export function initRealmServer(app) {
+  log('initRealmServer')
+
   app.realm = {}
 
   app.realm.version = '2.0.0'
