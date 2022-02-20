@@ -53,9 +53,9 @@ async function init() {
 
     app.io = require('socket.io')(process.env.RUNE_ENV !== 'local' ? app.https : app.http, {
       secure: process.env.RUNE_ENV !== 'local' ? true : false,
-      pingInterval: 30005,
-      pingTimeout: 5000,
-      upgradeTimeout: 3000,
+      pingInterval: 30 * 1000,
+      pingTimeout: 90 * 1000,
+      upgradeTimeout: 20 * 1000,
       allowUpgrades: true,
       cookie: false,
       serveClient: true,
@@ -65,8 +65,8 @@ async function init() {
       }
     })
 
-    app.io.set('close timeout', 60)
-    app.io.set('heartbeat timeout', 60)
+    // app.io.set('close timeout', 60)
+    // app.io.set('heartbeat timeout', 60)
 
     app.subProcesses = []
 
