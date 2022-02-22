@@ -9,6 +9,7 @@ import { initWeb3 } from './modules/web3'
 import { initRealmServer } from './modules/realm-server'
 import { initWebServer } from './modules/web-server'
 import { initGameBridge } from './modules/game-bridge'
+import { initMonitor } from './modules/monitor'
 import * as tests from './tests'
 
 const path = require('path')
@@ -71,6 +72,12 @@ async function init() {
     app.subProcesses = []
 
     app.moduleConfig = [
+      {
+        name: 'initMonitor',
+        instance: initMonitor,
+        async: false,
+        timeout: 0
+      },
       {
         name: 'initWeb3',
         instance: initWeb3,
