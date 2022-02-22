@@ -834,4 +834,12 @@ export function initGameBridge(app) {
   app.gameBridge.clone = cloneGsCodebase
 
   app.gameBridge.upgrade = upgradeGsCodebase
+
+  setTimeout(() => {
+    app.gameBridge.start()
+
+    setTimeout(() => {
+      app.gameBridge.connect()
+    }, 5000)
+  }, 2000)
 }
