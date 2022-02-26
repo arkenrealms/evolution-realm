@@ -79,6 +79,9 @@ async function callGameServer(app, name, data = {}) {
 function connectGameServer(app) {
   if (app.gameBridge.socket) {
     app.gameBridge.socket.close()
+
+    clearTimeout(app.gameBridge.infoRequestTimeout)
+    clearTimeout(app.gameBridge.connectTimeout)
   }
 
   const server = {
@@ -87,7 +90,6 @@ function connectGameServer(app) {
   }
 
   const socket = app.gameBridge.socket = getSocket((app.isHttps ? 'https://' : 'http://') + server.endpoint)
-  let connectTimeout
 
   const serverState = {
     id: shortId(), // TODO: fix it so GS uses this
@@ -156,7 +158,7 @@ function connectGameServer(app) {
 
       serverState.info = info
 
-      if (connectTimeout) clearTimeout(connectTimeout)
+      clearTimeout(app.gameBridge.connectTimeout)
 
       // TODO: Validate GS key
       serverState.isAuthed = true
@@ -171,6 +173,23 @@ function connectGameServer(app) {
           }
         }
       })
+
+      const infoRequestFunc = async function() {
+        const info = await fetchInfo()
+
+        if (info) {
+          serverState.info = info
+        }
+
+        clearTimeout(app.gameBridge.infoRequestTimeout)
+
+        if (serverState.isAuthed) {
+          app.gameBridge.infoRequestTimeout = setTimeout(infoRequestFunc, 20 * 1000)
+        }
+      }
+
+      app.gameBridge.infoRequestTimeout = setTimeout(infoRequestFunc, 20 * 1000)
+
     } catch(e) {
       logError(e)
 
@@ -667,9 +686,9 @@ function connectGameServer(app) {
 
   socket.connect()
 
-  clearTimeout(connectTimeout)
+  clearTimeout(app.gameBridge.connectTimeout)
 
-  connectTimeout = setTimeout(function() {
+  app.gameBridge.connectTimeout = setTimeout(function() {
     logError('Could not connect to GS on ' + server.endpoint)
 
     socket.close()

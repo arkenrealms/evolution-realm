@@ -67,11 +67,11 @@
     "node": "14.*.*"
   },
   "scripts": {
-    "dev": "RUNE_ENV=local RS_PORT=3006 RS_SSL_PORT=3106 GS_PORT=3008 GS_SSL_PORT=3107 PROVIDER_URI=wss://thrumming-still-leaf.bsc.quiknode.pro/b2f8a5b1bd0809dbf061112e1786b4a8e53c9a83/ LOG=1 LOG_PREFIX=[RERS] tsnd --respawn -r tsconfig-paths/register ./src/index.ts",
+    "dev": "RUNE_ENV=local RS_PORT=3006 RS_SSL_PORT=3106 GS_PORT=3008 GS_SSL_PORT=3107 PROVIDER_URI=https://bsc-dataseed.binance.org/ LOG=1 LOG_PREFIX=[RERS] tsnd --respawn -r tsconfig-paths/register ./src/index.ts",
     "inspect": "NODE_ENV=development yarn build && PORT=3001 NODE_ENV=production node --inspect build/index.js",
     "prod": "NODE_ENV=production yarn run nodemon --config nodemon.production.json",
     "build": "NODE_ENV=production tsc && tsc-alias",
-    "start": "RS_PORT=80 RS_SSL_PORT=443 GS_PORT=8443 GS_SSL_PORT=8443 PROVIDER_URI=wss://thrumming-still-leaf.bsc.quiknode.pro/b2f8a5b1bd0809dbf061112e1786b4a8e53c9a83/ LOG=1 LOG_PREFIX=[RERS] NODE_ENV=production node -r tsconfig-paths/register build/src/index.js",
+    "start": "RS_PORT=80 RS_SSL_PORT=443 GS_PORT=8443 GS_SSL_PORT=8443 PROVIDER_URI=https://bsc-dataseed.binance.org/ LOG=1 LOG_PREFIX=[RERS] NODE_ENV=production node -r tsconfig-paths/register build/src/index.js",
     "forever": "NODE_ENV=production yarn build && sudo nohup forever start forever-config.json &",
     "release": "NODE_ENV=production tsc && gcloud app deploy app.yaml --project evident-ethos-317302",
     "release-europe1": "NODE_ENV=production tsc && gcloud app deploy app.yaml --project rune-evolution-europe1",
