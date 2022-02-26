@@ -5,7 +5,7 @@
   "spinSleepTime": 30000,
   "append": true,
   "watch": false,
-  "command": "sudo RS_PORT=80 RS_SSL_PORT=443 GS_PORT=8443 GS_SSL_PORT=8443 PROVIDER_URI=wss://thrumming-still-leaf.bsc.quiknode.pro/b2f8a5b1bd0809dbf061112e1786b4a8e53c9a83/ LOG=0 LOG_PREFIX=[RERS] NODE_ENV=production /usr/bin/node -r tsconfig-paths/register --max_semi_space_size=30000 --max-old-space-size=30000 --initial-old-space-size=8000 --optimize-for-size --experimental-modules --experimental-json-modules",
+  "command": "sudo RS_PORT=80 RS_SSL_PORT=443 GS_PORT=8443 GS_SSL_PORT=8443 PROVIDER_URI=wss://autumn-blue-meadow.bsc.quiknode.pro/6b0e7864e252135989a5346630683db90691012a/ LOG=0 LOG_PREFIX=[RERS] NODE_ENV=production /usr/bin/node -r tsconfig-paths/register --max_semi_space_size=30000 --max-old-space-size=30000 --initial-old-space-size=8000 --optimize-for-size --experimental-modules --experimental-json-modules",
   "script": "build/src/index.js",
   "logFile": "./forever-script-log.log",
   "outFile": "./forever-script-out.log",
