@@ -4826,7 +4826,7 @@ lodash.uniq@^4.5.0:
   resolved "https://registry.yarnpkg.com/lodash.uniq/-/lodash.uniq-4.5.0.tgz#d0225373aeb652adc1bc82e4945339a842754773"
   integrity sha1-0CJTc662Uq3BvILklFM5qEJ1R3M=
 
-lodash@^4.17.14, lodash@^4.17.19, lodash@^4.17.20, lodash@^4.17.21:
+lodash@^4.17.14, lodash@^4.17.19, lodash@^4.17.20:
   version "4.17.21"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
   integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
@@ -6199,10 +6199,10 @@ run-parallel@^1.1.9:
   dependencies:
     queue-microtask "^1.2.2"
 
-rune-backend-sdk@^1.0.6:
-  version "1.0.6"
-  resolved "https://registry.yarnpkg.com/rune-backend-sdk/-/rune-backend-sdk-1.0.6.tgz#6350c994dd6b3bce6241a06304ad7c49595bb2e5"
-  integrity sha512-FmIMuO399FH17f8CfVuxpHcpQISN5G1+NokBdZolLgZOoCnVb9j33amiAK96LezwFoJoVvhr49xkW8iKpygIRg==
+rune-backend-sdk@^1.0.41:
+  version "1.0.41"
+  resolved "https://registry.yarnpkg.com/rune-backend-sdk/-/rune-backend-sdk-1.0.41.tgz#c97db53419d58f8008335d14c22bd9b7d02b64fa"
+  integrity sha512-oCry7MgkwWe+g1NNEQREK/kuFBjP6vnUXrmGHKY3jsq3aHa//6WM8v0/a+nMM3FBHXb/D6MIIVz2ptyXMFOZTA==
   dependencies:
     "@truffle/hdwallet-provider" "^2.0.3"
     "@typechain/ethers-v4" "^1.0.0"
@@ -6211,17 +6211,13 @@ rune-backend-sdk@^1.0.6:
     "@types/node" "^13.7.0"
     "@typescript-eslint/eslint-plugin" "^1.9.0"
     "@typescript-eslint/parser" "^1.9.0"
-    chalk "^4.1.1"
     ethers "^5.3.1"
-    fast-safe-stringify "^2.0.7"
     fs-jetpack "^4.1.0"
     js-md5 "^0.7.3"
     knex "^0.21.1"
-    lodash "^4.17.21"
     moment "^2.29.1"
     objection "^2.1.3"
     shortid "^2.2.2"
-    socket.io "^4.1.2"
     socket.io-client "^4.1.2"
     ts-node-dev "^1.1.8"
     typescript "^4.3.4"
