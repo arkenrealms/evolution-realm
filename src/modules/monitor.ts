@@ -5,7 +5,7 @@ export function initMonitor(app) {
   let logs = []
 
   setInterval(function() {
-    if ((os.freemem() / os.totalmem()) > 0.8) {
+    if ((os.freemem() / os.totalmem()) < 0.2) {
       if (logs.length >= 5) {
         process.exit()
       }
@@ -15,9 +15,7 @@ export function initMonitor(app) {
   }, 60 * 1000)
 
   setInterval(function() {
-    console.log(os.freemem(), os.totalmem())
-    
-    if ((os.freemem() / os.totalmem()) > 0.8) {
+    if ((os.freemem() / os.totalmem()) < 0.2) {
       logs.push(true)
     }
   }, 10 * 1000)
