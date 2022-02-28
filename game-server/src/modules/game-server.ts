@@ -403,7 +403,7 @@ async function rsCall(name, data = {}) {
     ioCallbacks[id] = { resolve, reject, timeout }
 
     if (!realmServer.socket) {
-      logError('Not connected to realm server.')
+      logError(`Not connected to realm server. Call: ${name}`)
       return
     }
 
@@ -450,14 +450,12 @@ async function spawnRandomReward() {
   const rewardRes = (await rsCall('GS_GetRandomRewardRequest') as any)
 
   if (rewardRes?.status !== 1) {
-    setTimeout(spawnRandomReward, 1 * 1000)
     return
   }
 
   const tempReward = rewardRes.reward
 
   if (!tempReward) {
-    setTimeout(spawnRandomReward, 1 * 1000)
     return
   }
 
