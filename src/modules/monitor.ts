@@ -15,6 +15,8 @@ export function initMonitor(app) {
   }, 60 * 1000)
 
   setInterval(function() {
+    console.log(os.freemem(), os.totalmem())
+    
     if ((os.freemem() / os.totalmem()) > 0.8) {
       logs.push(true)
     }
