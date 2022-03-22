@@ -218,7 +218,7 @@ function connectGameServer(app) {
 
       config.totalLegitPlayers = 1
 
-      for (const client of app.gameBridge.state.clients) {
+      for (const client of req.data.clients) {
         if (client.name.indexOf('Guest') !== -1 || client.name.indexOf('Unknown') !== -1) continue
 
         try {
@@ -709,6 +709,8 @@ export function initGameBridge(app) {
   app.gameBridge.state.playerRewards = {} as any
 
   app.gameBridge.state.spawnPort = process.env.GS_PORT || 8443
+
+  app.gameBridge.state.clients = []
 
   app.gameBridge.state.rewards = {
     "runes": [
