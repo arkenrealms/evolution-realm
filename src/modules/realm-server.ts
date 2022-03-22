@@ -208,12 +208,43 @@ function onRealmConnection(app, socket) {
         })
       }
     })
+    
+    socket.on('BanPlayerRequest', async function(req) {
+      try {
+        log('BanPlayerRequest', req)
+
+        if (!currentClient.isMod) {
+          logError('Invalid permissions')
+
+          emitDirect(socket, 'BanPlayerResponse', {
+            id: req.id,
+            data: { status: 2 }
+          })
+
+          return
+        }
+
+        const res = await app.realm.call('BanPlayerRequest', req.data)
+
+        emitDirect(socket, 'BanPlayerResponse', {
+          id: req.id,
+          data: { status: res.status }
+        })
+      } catch (e) {
+        logError(e)
+        
+        emitDirect(socket, 'BanPlayerResponse', {
+          id: req.id,
+          data: { status: 0 }
+        })
+      }
+    })
 
     socket.on('BanUserRequest', async function(req) {
       try {
         log('BanUserRequest', req)
 
-        if (!currentClient.isMod) {
+        if (!currentClient.isAdmin) {
           logError('Invalid permissions')
 
           emitDirect(socket, 'BanUserResponse', {
@@ -222,6 +253,10 @@ function onRealmConnection(app, socket) {
           })
 
           return
+        }
+
+        if (!app.realm.state.banList.includes(req.data.target)) {
+          app.realm.state.banList.push(req.data.target)
         }
 
         app.gameBridge.call('KickUser', await getSignedRequest(app.web3, app.secrets, { target: req.data.target }))
