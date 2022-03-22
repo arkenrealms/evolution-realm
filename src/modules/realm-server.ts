@@ -195,8 +195,9 @@ function onRealmConnection(app, socket) {
 
     socket.on('BanUserRequest', async function(req) {
       try {
-        log('Ban', req)
+        log('BanUserRequest', req)
 
+        console.log(app.realm.state.modList)
         if (await isValidRequest(app.web3, req) && app.realm.state.modList.includes(req.signature.address)) {
           app.gameBridge.call('KickUser', await getSignedRequest(app.web3, app.secrets, { target: req.data.target }))
 
@@ -205,15 +206,47 @@ function onRealmConnection(app, socket) {
             data: { status: 1 }
           })
         } else {
+          logError('Invalid request')
+
           emitDirect(socket, 'BanUserResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 2 }
           })
         }
       } catch (e) {
         logError(e)
         
         emitDirect(socket, 'BanUserResponse', {
+          id: req.id,
+          data: { status: 0 }
+        })
+      }
+    })
+
+    socket.on('BanListRequest', async function(req) {
+      try {
+        log('BanListRequest', {
+          value: req.data.target,
+          caller: req.data.address
+        })
+
+        if (await isValidRequest(app.web3, req) && app.realm.state.modList.includes(req.data.address)) {
+          emitDirect(socket, 'BanListResponse', {
+            id: req.id,
+            data: { status: 1, list: app.realm.state.banList }
+          })
+        } else {
+          logError('Invalid request')
+
+          emitDirect(socket, 'BanListResponse', {
+            id: req.id,
+            data: { status: 2 }
+          })
+        }
+      } catch (e) {
+        logError(e)
+        
+        emitDirect(socket, 'BanListResponse', {
           id: req.id,
           data: { status: 0 }
         })
