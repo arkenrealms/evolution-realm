@@ -235,9 +235,11 @@ function onRealmConnection(app, socket) {
             data: { status: 1 }
           })
         } else {
+          logError('Invalid request')
+
           emitDirect(socket, 'UnbanUserResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 2 }
           })
         }
       } catch (e) {
