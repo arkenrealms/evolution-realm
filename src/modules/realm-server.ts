@@ -304,6 +304,35 @@ function onRealmConnection(app, socket) {
       }
     })
 
+    socket.on('PlayerListRequest', async function(req) {
+      try {
+        log('PlayerListRequest', req)
+
+        if (!currentClient.isMod) {
+          logError('Invalid permissions')
+
+          emitDirect(socket, 'PlayerListResponse', {
+            id: req.id,
+            data: { status: 2 }
+          })
+
+          return
+        }
+
+        emitDirect(socket, 'PlayerListResponse', {
+          id: req.id,
+          data: { status: 1, list: app.gameBridge.state.clients }
+        })
+      } catch (e) {
+        logError(e)
+        
+        emitDirect(socket, 'PlayerListResponse', {
+          id: req.id,
+          data: { status: 0 }
+        })
+      }
+    })
+
     socket.on('UnbanUserRequest', async function(req) {
       try {
         log('Unban', {
