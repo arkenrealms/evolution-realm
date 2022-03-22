@@ -304,14 +304,14 @@ function onRealmConnection(app, socket) {
       }
     })
 
-    socket.on('PlayerListRequest', async function(req) {
+    socket.on('BridgeStateRequest', async function(req) {
       try {
-        log('PlayerListRequest', req)
+        log('BridgeStateRequest', req)
 
         if (!currentClient.isMod) {
           logError('Invalid permissions')
 
-          emitDirect(socket, 'PlayerListResponse', {
+          emitDirect(socket, 'BridgeStateResponse', {
             id: req.id,
             data: { status: 2 }
           })
@@ -319,14 +319,14 @@ function onRealmConnection(app, socket) {
           return
         }
 
-        emitDirect(socket, 'PlayerListResponse', {
+        emitDirect(socket, 'BridgeStateResponse', {
           id: req.id,
-          data: { status: 1, list: app.gameBridge.state.clients }
+          data: { status: 1, state: app.gameBridge.state }
         })
       } catch (e) {
         logError(e)
         
-        emitDirect(socket, 'PlayerListResponse', {
+        emitDirect(socket, 'BridgeStateResponse', {
           id: req.id,
           data: { status: 0 }
         })
