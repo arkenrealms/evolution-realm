@@ -251,7 +251,7 @@ function onRealmConnection(app, socket) {
     })
 
     socket.on('FindGameServer', function() {
-      emitDirect(socket, 'OnFoundGameServer', 'ptr1.runeevolution.com', 7777)
+      emitDirect(socket, 'OnFoundGameServer', app.realm.endpoint, 7777)
     })
 
     socket.onAny(function(eventName, res) {
@@ -316,6 +316,8 @@ export function initRealmServer(app) {
 
   app.realm.version = '2.0.0'
 
+  app.realm.endpoint = 'ptr1.runeevolution.com'
+
   app.realm.clients = [] // to storage clients
 
   app.realm.clientLookup = {}
@@ -329,7 +331,7 @@ export function initRealmServer(app) {
 
   app.realm.state.banList = []
 
-  app.realm.state.modList = ['0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C']
+  app.realm.state.modList = ['0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C', '0xa987f487639920A3c2eFe58C8FBDedB96253ed9B']
 
   app.io.on('connection', onRealmConnection.bind(null, app))
 
