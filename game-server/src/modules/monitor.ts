@@ -27,11 +27,11 @@ export function initMonitor(app) {
 
   setInterval(function() {
     const available = Number(/MemAvailable:[ ]+(\d+)/.exec(fs.readFileSync('/proc/meminfo', 'utf8'))[1]) / 1024
-    const free = os.freemem() / 1024 / 1024
-    const total = os.totalmem() / 1024 / 1024
-    log('Free mem', free)
-    log('Available mem', available)
-    log('Total mem', total)
+    // const free = os.freemem() / 1024 / 1024
+    // const total = os.totalmem() / 1024 / 1024
+    // log('Free mem', free)
+    // log('Available mem', available)
+    // log('Total mem', total)
     if (available < 200) { // if ((os.freemem() / os.totalmem()) < 0.2) {
       log('Memory flagged', available)
       logs.push(true)
