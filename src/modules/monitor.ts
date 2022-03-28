@@ -5,7 +5,7 @@ export function initMonitor(app) {
   let logs = []
 
   setInterval(function() {
-    if ((os.freemem() / os.totalmem()) > 0.8) {
+    if (os.freemem() / 1024 / 1024 < 200) {
       if (logs.length >= 5) {
         console.log('Memory too low', os.freemem() / os.totalmem())
         process.exit()
@@ -16,7 +16,8 @@ export function initMonitor(app) {
   }, 60 * 1000)
 
   setInterval(function() {
-    if ((os.freemem() / os.totalmem()) > 0.8) {
+    console.log('Free mem', os.freemem() / 1024 / 1024)
+    if (os.freemem() / 1024 / 1024 < 200) { // if ((os.freemem() / os.totalmem()) < 0.2) {
       console.log('Memory flagged', os.freemem() / os.totalmem())
       logs.push(true)
     }
