@@ -17,6 +17,7 @@ export function initMonitor(app) {
 
   setInterval(function() {
     if ((os.freemem() / os.totalmem()) < 0.2) {
+      console.log('Memory flagged', os.freemem() / os.totalmem())
       logs.push(true)
     }
   }, 10 * 1000)
