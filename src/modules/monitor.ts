@@ -1,3 +1,5 @@
+import { log, logError, getTime } from '@rune-backend-sdk/util'
+
 const os = require('os')
 const fs = require('fs')
 
@@ -12,9 +14,9 @@ export function initMonitor(app) {
         const free = os.freemem() / 1024 / 1024
         const total = os.totalmem() / 1024 / 1024
         
-        console.log('Free mem', free)
-        console.log('Available mem', available)
-        console.log('Total mem', total)
+        logError('Free mem', free)
+        logError('Available mem', available)
+        logError('Total mem', total)
 
         process.exit()
       }
@@ -27,11 +29,11 @@ export function initMonitor(app) {
     // const free = os.freemem() / 1024 / 1024
     const available = Number(/MemAvailable:[ ]+(\d+)/.exec(fs.readFileSync('/proc/meminfo', 'utf8'))[1]) / 1024
     // const total = os.totalmem() / 1024 / 1024
-    // console.log('Free mem', free)
-    // console.log('Available mem', available)
-    // console.log('Total mem', total)
+    // log('Free mem', free)
+    // log('Available mem', available)
+    // log('Total mem', total)
     if (available < 200) { // if ((os.freemem() / os.totalmem()) < 0.2) {
-      console.log('Memory flagged', available)
+      log('Memory flagged', available)
       logs.push(true)
     }
   }, 10 * 1000)
