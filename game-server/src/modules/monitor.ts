@@ -7,6 +7,7 @@ export function initMonitor(app) {
   setInterval(function() {
     if ((os.freemem() / os.totalmem()) < 0.2) {
       if (logs.length >= 5) {
+        console.log('Memory too low')
         process.exit()
       }
     } else {

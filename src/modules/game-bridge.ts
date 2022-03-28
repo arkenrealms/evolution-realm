@@ -208,7 +208,6 @@ function connectGameServer(app) {
   // })
 
   socket.on('GS_ConfigureRequest', function(req) {
-    // TODO: Validate is authed
     try {
       log('GS_ConfigureRequest', req)
 
@@ -257,7 +256,6 @@ function connectGameServer(app) {
 
     let failed = false
 
-    // TODO: Validate is authed
     try {
       log('GS_SaveRoundRequest', req)
 
@@ -314,11 +312,8 @@ function connectGameServer(app) {
   })
 
   socket.on('GS_ConfirmUserRequest', function(req) {
-    // TODO: Validate is authed
     try {
-      log('GS_ConfirmUser', {
-        caller: req.data.address
-      })
+      log('GS_ConfirmUserRequest', req)
 
       if (!app.realm.state.banList.includes(req.data.address)) {
         emitDirect(socket, 'GS_ConfirmUserResponse', {
@@ -344,9 +339,7 @@ function connectGameServer(app) {
   socket.on('GS_ReportUserRequest', function (req) {
     // TODO: Validate is authed
     try {
-      log('GS_ReportUser', {
-        caller: req.data.address
-      })
+      log('GS_ReportUserRequest', req)
 
       if (req.data.reportedAddress && !app.realm.state.banList.includes(req.data.reportedAddress)) {
         emitDirect(socket, 'GS_ReportUserResponse', {
@@ -371,7 +364,6 @@ function connectGameServer(app) {
 
   socket.on('GS_VerifySignatureRequest', function(req) {
     try {
-      // TODO: Validate is authed
       const hashedData = md5(JSON.stringify(req.data))
       emitDirect(socket, 'GS_VerifySignatureResponse', {
         id: req.id,
@@ -381,7 +373,6 @@ function connectGameServer(app) {
         }
       })
     } catch(e) {
-      // TODO: Validate is authed
       emitDirect(socket, 'GS_VerifySignatureResponse', {
         id: req.id,
         data: {
@@ -395,7 +386,6 @@ function connectGameServer(app) {
 
   socket.on('GS_VerifyAdminSignatureRequest', function(req) {
     try {
-      // TODO: Validate is authed
       const normalizedAddress = app.web3.utils.toChecksumAddress(req.data.signature.address.trim())
       const hashedData = md5(JSON.stringify(req.data))
       emitDirect(socket, 'GS_VerifyAdminSignatureResponse', {
@@ -471,7 +461,6 @@ function connectGameServer(app) {
 
   socket.on('GS_GetRandomRewardRequest', function(req) {
     try {
-      // TODO: Validate is authed
       const now = getTime()
 
       const { config } = app.gameBridge.state

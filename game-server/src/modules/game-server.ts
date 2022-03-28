@@ -1647,7 +1647,9 @@ function fastGameloop(app) {
     lastFastGameloopTime = now
   } catch(e) {
     logError(e)
-    process.exit(1)
+    setTimeout(function() {
+      process.exit(1)
+    }, 2 * 1000)
   }
 
   setTimeout(() => fastGameloop(app), config.fastLoopSeconds * 1000)

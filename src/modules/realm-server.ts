@@ -37,11 +37,11 @@ function onRealmConnection(app, socket) {
       //   return
       // }
 
-      if (await isValidRequest(app.web3, req) && app.realm.state.modList.includes(req.signature.address)) {
-        if (req.signature.address === '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C') {
+      if (await isValidRequest(app.web3, req)) {
+        if (app.realm.state.adminList.includes(req.signature.address)) {
           currentClient.isAdmin = true
           currentClient.isMod = true
-        } else {
+        } else if (app.realm.state.modList.includes(req.signature.address)) {
           currentClient.isMod = true
         }
 
@@ -446,7 +446,22 @@ export function initRealmServer(app) {
 
   app.realm.state.banList = []
 
-  app.realm.state.modList = ['0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C', '0xa987f487639920A3c2eFe58C8FBDedB96253ed9B']
+  app.realm.state.adminList = [
+    '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C', // realm server
+  ]
+
+  app.realm.state.modList = [
+    '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C', // realm server
+    "0xa987f487639920A3c2eFe58C8FBDedB96253ed9B", // me
+    "0x545612032BeaDED7E9f5F5Ab611aF6428026E53E", // kevin
+    "0x37470038C615Def104e1bee33c710bD16a09FdEf", // maiev
+    "0x150F24A67d5541ee1F8aBce2b69046e25d64619c", // maiev
+    "0xfE27380E57e5336eB8FFc017371F2147A3268fbE", // lazy?
+    "0x3551691499D740790C4511CDBD1D64b2f146f6Bd", // panda
+    // "0x2DF94b980FC880100D93072011675E6659C0ca21", // zavox
+    // "0x9b229c01eEf692A780d8Fee2558AaEa9873C032f", // me
+    // "0x1a367CA7bD311F279F1dfAfF1e60c4d797Faa6eb" // me?
+  ]
 
   app.io.on('connection', onRealmConnection.bind(null, app))
 
