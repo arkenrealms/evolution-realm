@@ -1,3 +1,4 @@
+import fetch from 'node-fetch'
 import { isValidRequest, getSignedRequest } from '@rune-backend-sdk/util/web3'
 import { log, logError, getTime } from '@rune-backend-sdk/util'
 import { emitDirect } from '@rune-backend-sdk/util/websocket'
