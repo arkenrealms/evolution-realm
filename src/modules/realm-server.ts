@@ -255,9 +255,7 @@ function onRealmConnection(app, socket) {
           return
         }
 
-        if (!app.realm.state.banList.includes(req.data.target)) {
-          app.realm.state.banList.push(req.data.target)
-        }
+        app.gameBridge.userCache[req.data.target] = (await (await fetch(`https://cache.rune.game/users/${req.data.target}/overview.json`)).json()) as any
 
         app.gameBridge.call('KickUser', await getSignedRequest(app.web3, app.secrets, { target: req.data.target }))
 
