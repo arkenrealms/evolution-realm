@@ -350,7 +350,7 @@ export async function initWebServer(app) {
   app.server.use(rateLimiter)
 
   // Logging
-  app.server.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'))
+  // app.server.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 
   app.server.use(express.static(path.resolve('./public')))
 

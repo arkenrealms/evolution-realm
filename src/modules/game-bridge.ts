@@ -311,11 +311,15 @@ function connectGameServer(app) {
     app.gameBridge.state.config.roundId++
   })
 
-  socket.on('GS_ConfirmUserRequest', function(req) {
+  socket.on('GS_ConfirmUserRequest', async function(req) {
     try {
       log('GS_ConfirmUserRequest', req)
 
-      if (!app.realm.state.banList.includes(req.data.address)) {
+      const overview = app.gameBridge.userCache[req.data.address] || (await (await fetch(`https://cache.rune.game/users/${req.data.address}/overview.json`)).json()) as any
+
+      app.gameBridge.userCache[req.data.address] = overview
+
+      if (!overview?.isBanned) {
         emitDirect(socket, 'GS_ConfirmUserResponse', {
           id: req.id,
           data: { status: 1 }
@@ -336,31 +340,31 @@ function connectGameServer(app) {
     }
   })
 
-  socket.on('GS_ReportUserRequest', function (req) {
-    // TODO: Validate is authed
-    try {
-      log('GS_ReportUserRequest', req)
+  // socket.on('GS_ReportUserRequest', function (req) {
+  //   // TODO: Validate is authed
+  //   try {
+  //     log('GS_ReportUserRequest', req)
 
-      if (req.data.reportedAddress && !app.realm.state.banList.includes(req.data.reportedAddress)) {
-        emitDirect(socket, 'GS_ReportUserResponse', {
-          id: req.id,
-          data: { status: 1 }
-        })
-      } else {
-        emitDirect(socket, 'GS_ReportUserResponse', {
-          id: req.id,
-          data: { status: 0 }
-        })
-      }
-    } catch (e) {
-      logError(e)
+  //     if (req.data.reportedAddress && !app.realm.state.banList.includes(req.data.reportedAddress)) {
+  //       emitDirect(socket, 'GS_ReportUserResponse', {
+  //         id: req.id,
+  //         data: { status: 1 }
+  //       })
+  //     } else {
+  //       emitDirect(socket, 'GS_ReportUserResponse', {
+  //         id: req.id,
+  //         data: { status: 0 }
+  //       })
+  //     }
+  //   } catch (e) {
+  //     logError(e)
       
-      emitDirect(socket, 'GS_ReportUserResponse', {
-        id: req.id,
-        data: { status: 0 }
-      })
-    }
-  })
+  //     emitDirect(socket, 'GS_ReportUserResponse', {
+  //       id: req.id,
+  //       data: { status: 0 }
+  //     })
+  //   }
+  // })
 
   socket.on('GS_VerifySignatureRequest', function(req) {
     try {
@@ -777,6 +781,8 @@ export function initGameBridge(app) {
       }
     ]
   } as any
+
+  app.gameBridge.userCache = {}
   
   app.gameBridge.state.config = jetpack.read(path.resolve('./public/data/config.json'), 'json') || {
     roundId: 1,
