@@ -1,3 +1,4 @@
+import fetch from 'node-fetch'
 import md5 from 'js-md5'
 import jetpack from 'fs-jetpack'
 import { spawn } from 'child_process'
