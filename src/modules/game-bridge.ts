@@ -393,11 +393,13 @@ function connectGameServer(app) {
     try {
       const normalizedAddress = app.web3.utils.toChecksumAddress(req.data.signature.address.trim())
       const hashedData = md5(JSON.stringify(req.data))
+      const isValid = app.web3.eth.accounts.recover(req.data.signature.data, req.data.signature.hash).toLowerCase() === req.data.signature.address.toLowerCase() && hashedData === req.data.signature.data && app.realm.state.modList.includes(normalizedAddress)
+
       emitDirect(socket, 'GS_VerifyAdminSignatureResponse', {
         id: req.id,
         data: {
-          status: 1,
-          address: app.web3.eth.accounts.recover(req.data.signature.data, req.data.signature.hash).toLowerCase() === req.data.signature.address.toLowerCase() && hashedData === req.data.signature.data && app.realm.state.modList.includes(normalizedAddress)
+          status: isValid ? 1 : 0,
+          address: isValid ? normalizedAddress : undefined
         }
       })
     } catch(e) {
