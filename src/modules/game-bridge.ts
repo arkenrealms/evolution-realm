@@ -54,7 +54,7 @@ function startGameServer(app) {
   process.env.GS_PORT = app.gameBridge.state.spawnPort+1 + ''
 }
 
-async function callGameServer(app, name, signature, data = undefined) {
+async function callGameServer(app, name, signature, data = {}) {
   if (!app.gameBridge.socket?.connected) {
     log(`Can't send GS message, not connected.`)
     return Promise.resolve()
