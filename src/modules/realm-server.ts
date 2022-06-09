@@ -77,7 +77,9 @@ function onRealmConnection(app, socket) {
 
         app.gameBridge.state.config = { ...app.gameBridge.state.config, ...req.data.config }
 
-        app.gameBridge.call('RS_SetConfigRequest', { config: app.gameBridge.state.config })
+        const data = { config: app.gameBridge.state.config }
+
+        app.gameBridge.call('RS_SetConfigRequest', await getSignedRequest(app.web3, app.secrets, data), data)
 
         emitDirect(socket, 'SetConfigResponse', {
           id: req.id,
@@ -258,7 +260,7 @@ function onRealmConnection(app, socket) {
 
         app.gameBridge.userCache[req.data.target] = (await (await fetch(`https://cache.rune.game/users/${req.data.target}/overview.json`)).json()) as any
 
-        app.gameBridge.call('KickUser', await getSignedRequest(app.web3, app.secrets, { target: req.data.target }))
+        app.gameBridge.call('KickUser', await getSignedRequest(app.web3, app.secrets, req.data), req.data)
 
         emitDirect(socket, 'BanUserResponse', {
           id: req.id,
