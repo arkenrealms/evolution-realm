@@ -766,7 +766,7 @@ async function isValidAdminRequest(req) {
   if (req.signature.address.length !== 42 || req.signature.address.slice(0, 2) !== '0x') return false
   try {
     const res = await rsCall('GS_VerifyAdminSignatureRequest', req) as any
-    return res
+    return res?.status === 1
   } catch(e) {
     logError(e)
     return false
