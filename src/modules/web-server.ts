@@ -113,204 +113,210 @@ function initRoutes(app) {
       res.json(response)
     })
 
-    app.server.post('/maintenance', async function(req, res) {
-      const response = await app.gameBridge.call('RS_MaintenanceRequest', {
-        address: req.body.address,
-        signature: req.body.signature
-      })
+    app.server.post('/call/:method', async function(req, res) {
+      const response = await app.gameBridge.call(req.params.method, req.body)
 
       res.json(response)
     })
 
-    app.server.post('/unmaintenance', async function(req, res) {
-      const response = await app.gameBridge.call('RS_UnmaintenanceRequest', {
-        address: req.body.address,
-        signature: req.body.signature
-      })
+    // app.server.post('/maintenance', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_MaintenanceRequest', {
+    //     address: req.body.address,
+    //     signature: req.body.signature
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/startBattleRoyale', async function(req, res) {
-      const response = await app.gameBridge.call('RS_StartBattleRoyaleRequest', {
-        address: req.body.address,
-        signature: req.body.signature
-      })
+    // app.server.post('/unmaintenance', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_UnmaintenanceRequest', {
+    //     address: req.body.address,
+    //     signature: req.body.signature
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/stopBattleRoyale', async function(req, res) {
-      const response = await app.gameBridge.call('RS_StopBattleRoyaleRequest', {
-        address: req.body.address,
-        signature: req.body.signature
-      })
+    // app.server.post('/startBattleRoyale', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_StartBattleRoyaleRequest', {
+    //     address: req.body.address,
+    //     signature: req.body.signature
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/pauseRound', async function(req, res) {
-      const response = await app.gameBridge.call('RS_PauseRoundRequest', {
-        address: req.body.address,
-        signature: req.body.signature,
-        gameMode: req.body.gameMode
-      })
+    // app.server.post('/stopBattleRoyale', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_StopBattleRoyaleRequest', {
+    //     address: req.body.address,
+    //     signature: req.body.signature
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/startRound', async function(req, res) {
-      const response = await app.gameBridge.call('RS_StartRoundRequest', {
-        address: req.body.address,
-        signature: req.body.signature,
-        gameMode: req.body.gameMode
-      })
+    // app.server.post('/pauseRound', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_PauseRoundRequest', {
+    //     address: req.body.address,
+    //     signature: req.body.signature,
+    //     gameMode: req.body.gameMode
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/enableForceLevel1', async function(req, res) {
-      const response = await app.gameBridge.call('RS_EnableForceLevel1Request', {
-        address: req.body.address,
-        signature: req.body.signature
-      })
+    // app.server.post('/startRound', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_StartRoundRequest', {
+    //     address: req.body.address,
+    //     signature: req.body.signature,
+    //     gameMode: req.body.gameMode
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/disableForceLevel1', async function(req, res) {
-      const response = await app.gameBridge.call('RS_DisableForceLevel1Request', {
-        address: req.body.address,
-        signature: req.body.signature
-      })
+    // app.server.post('/enableForceLevel1', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_EnableForceLevel1Request', {
+    //     address: req.body.address,
+    //     signature: req.body.signature
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/enableForceLevel2', async function(req, res) {
-      const response = await app.gameBridge.call('RS_EnableForceLevel2Request', {
-        address: req.body.address,
-        signature: req.body.signature
-      })
+    // app.server.post('/disableForceLevel1', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_DisableForceLevel1Request', {
+    //     address: req.body.address,
+    //     signature: req.body.signature
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/disableForceLevel2', async function(req, res) {
-      const response = await app.gameBridge.call('RS_DisableForceLevel2Request', {
-        address: req.body.address,
-        signature: req.body.signature
-      })
+    // app.server.post('/enableForceLevel2', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_EnableForceLevel2Request', {
+    //     address: req.body.address,
+    //     signature: req.body.signature
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/startGodParty', async function(req, res) {
-      const response = await app.gameBridge.call('RS_StartGodPartyRequest', {
-        address: req.body.address,
-        signature: req.body.signature
-      })
+    // app.server.post('/disableForceLevel2', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_DisableForceLevel2Request', {
+    //     address: req.body.address,
+    //     signature: req.body.signature
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/stopGodParty', async function(req, res) {
-      const response = await app.gameBridge.call('RS_StopGodPartyRequest', {
-        address: req.body.address,
-        signature: req.body.signature
-      })
+    // app.server.post('/startGodParty', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_StartGodPartyRequest', {
+    //     address: req.body.address,
+    //     signature: req.body.signature
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/makeBattleHarder', async function(req, res) {
-      const response = await app.gameBridge.call('RS_MakeBattleHarderRequest', {
-        address: req.body.address,
-        signature: req.body.signature
-      })
+    // app.server.post('/stopGodParty', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_StopGodPartyRequest', {
+    //     address: req.body.address,
+    //     signature: req.body.signature
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/makeBattleEasier', async function(req, res) {
-      const response = await app.gameBridge.call('RS_MakeBattleEasierRequest', {
-        address: req.body.address,
-        signature: req.body.signature
-      })
+    // app.server.post('/makeBattleHarder', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_MakeBattleHarderRequest', {
+    //     address: req.body.address,
+    //     signature: req.body.signature
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/resetBattleDifficulty', async function(req, res) {
-      const response = await app.gameBridge.call('RS_ResetBattleDifficultyRequest', {
-        address: req.body.address,
-        signature: req.body.signature
-      })
+    // app.server.post('/makeBattleEasier', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_MakeBattleEasierRequest', {
+    //     address: req.body.address,
+    //     signature: req.body.signature
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/setConfig/:key/:value', async function(req, res) {
-      const response = await app.gameBridge.call('RS_SetConfigRequest', {
-        key: req.params.key,
-        value: req.params.value,
-        address: req.body.address,
-        signature: req.body.signature
-      })
+    // app.server.post('/resetBattleDifficulty', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_ResetBattleDifficultyRequest', {
+    //     address: req.body.address,
+    //     signature: req.body.signature
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/report/:address', async function(req, res) {
-      const response = await app.gameBridge.call('RS_ReportUserRequest', {
-        target: req.params.address,
-        address: req.body.address,
-        signature: req.body.signature
-      })
+    // app.server.post('/setConfig/:key/:value', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_SetConfigRequest', {
+    //     key: req.params.key,
+    //     value: req.params.value,
+    //     address: req.body.address,
+    //     signature: req.body.signature
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/ban/:address', async function(req, res) {
-      const response = await app.gameBridge.call('RS_BanUserRequest', {
-        target: req.params.address,
-        address: req.body.address,
-        signature: req.body.signature
-      })
+    // app.server.post('/report/:address', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_ReportUserRequest', {
+    //     target: req.params.address,
+    //     address: req.body.address,
+    //     signature: req.body.signature
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/unban/:address', async function(req, res) {
-      const response = await app.gameBridge.call('RS_UnbanUserRequest', {
-        target: req.params.address,
-        address: req.body.address,
-        signature: req.body.signature
-      })
+    // app.server.post('/ban/:address', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_BanUserRequest', {
+    //     target: req.params.address,
+    //     address: req.body.address,
+    //     signature: req.body.signature
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/message/:address', async function(req, res) {
-      const response = await app.gameBridge.call('RS_MessageUserRequest', {
-        target: req.params.address,
-        address: req.body.address,
-        signature: req.body.signature,
-        message: req.body.message
-      })
+    // app.server.post('/unban/:address', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_UnbanUserRequest', {
+    //     target: req.params.address,
+    //     address: req.body.address,
+    //     signature: req.body.signature
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
 
-    app.server.post('/broadcast', async function(req, res) {
-      const response = await app.gameBridge.call('RS_BroadcastRequest', {
-        address: req.body.address,
-        signature: req.body.signature,
-        message: req.body.message
-      })
+    // app.server.post('/message/:address', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_MessageUserRequest', {
+    //     target: req.params.address,
+    //     address: req.body.address,
+    //     signature: req.body.signature,
+    //     message: req.body.message
+    //   })
 
-      res.json(response)
-    })
+    //   res.json(response)
+    // })
+
+    // app.server.post('/broadcast', async function(req, res) {
+    //   const response = await app.gameBridge.call('RS_BroadcastRequest', {
+    //     address: req.body.address,
+    //     signature: req.body.signature,
+    //     message: req.body.message
+    //   })
+
+    //   res.json(response)
+    // })
 
     app.server.get('/admin/test/:testName', async function(req, res) {
       try {
