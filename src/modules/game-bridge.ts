@@ -398,6 +398,7 @@ function connectGameServer(app) {
       const hashedData = md5(JSON.stringify(originalReq.data))
       const isValid = app.web3.eth.accounts.recover(originalReq.signature.data, originalReq.signature.hash).toLowerCase() === originalReq.signature.address.toLowerCase() && hashedData === originalReq.signature.data && app.realm.state.modList.includes(normalizedAddress)
 
+      log('Hashed data', hashedData, originalReq.signature.data, originalReq.data)
       log('Address ' + normalizedAddress + ' is in mod list = ' + (app.realm.state.modList.includes(normalizedAddress) ? 'YES' : 'NO'), app.realm.state.modList)
 
       emitDirect(socket, 'GS_VerifyAdminSignatureResponse', {
