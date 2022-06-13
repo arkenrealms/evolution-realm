@@ -1849,8 +1849,20 @@ function initEventHandler(app) {
       socket.on('RS_SetConfigRequest', async function(req) {
         try {
           if (await isValidAdminRequest(req)) {
-            baseConfig = {...baseConfig, ...req.data.config}
-            config = {...config, ...req.data.config}
+            for (const key of Object.keys(req.data.config)) {
+              const value = req.data.config[key]
+
+              const val = isNumeric(value) ? parseFloat(value) : value
+              if (baseConfig.hasOwnProperty(key)) 
+                baseConfig[key] = val
+  
+              if (sharedConfig.hasOwnProperty(key)) 
+                sharedConfig[key] = val
+  
+              config[key] = val
+
+              publishEvent('OnBroadcast', `${key} = ${val}`, 1)
+            }
 
             socket.emit('RS_SetConfigResponse', {
               id: req.id,
