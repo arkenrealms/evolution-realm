@@ -1852,11 +1852,11 @@ function initEventHandler(app) {
             for (const key of Object.keys(req.data.config)) {
               const value = req.data.config[key]
 
-              const val = isNumeric(value) ? parseFloat(value) : value
+              const val = value === "true" ? true : (value === "false" ? false : (isNumeric(value) ? parseFloat(value) : value))
               if (baseConfig.hasOwnProperty(key)) 
                 baseConfig[key] = val
   
-              if (sharedConfig.hasOwnProperty(key)) 
+              if (sharedConfig.hasOwnProperty(key))
                 sharedConfig[key] = val
   
               config[key] = val
