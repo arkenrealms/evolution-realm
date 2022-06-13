@@ -1852,7 +1852,10 @@ function initEventHandler(app) {
             baseConfig = {...baseConfig, ...req.data.config}
             config = {...config, ...req.data.config}
 
-            await rsCall('RS_SetConfigResponse', { status: 1 })
+            socket.emit('RS_SetConfigResponse', {
+              id: req.id,
+              data: { status: 1 }
+            })
           } else {
             socket.emit('RS_SetConfigResponse', {
               id: req.id,
@@ -1862,7 +1865,10 @@ function initEventHandler(app) {
         } catch (e) {
           logError(e)
 
-          await rsCall('RS_SetConfigResponse', { status: 0 })
+          socket.emit('RS_SetConfigResponse', {
+            id: req.id,
+            data: { status: 0 }
+          })
         }
       })
 
