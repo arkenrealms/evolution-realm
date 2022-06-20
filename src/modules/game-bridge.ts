@@ -57,7 +57,7 @@ function startGameServer(app) {
 async function callGameServer(app, name, signature, data = {}) {
   if (!app.gameBridge.socket?.connected) {
     log(`Can't send GS message, not connected.`)
-    return Promise.resolve()
+    return Promise.reject()
   }
 
   return new Promise((resolve, reject) => {
@@ -105,7 +105,7 @@ function connectGameServer(app) {
 
     log('fetchInfo res', res)
 
-    if (res.status === 1) {
+    if (res?.status === 1) {
       return res.data
     }
 

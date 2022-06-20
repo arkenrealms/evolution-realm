@@ -2325,6 +2325,9 @@ function initEventHandler(app) {
                 setTimeout(() => {
                   baseConfig.isBattleRoyale = true
                   config.isBattleRoyale = true
+
+                  baseConfig.isGodParty = false
+                  config.isGodParty = false
       
                   publishEvent('OnBroadcast', `Battle Royale Started`, 3)
                 }, 1000)
@@ -2590,12 +2593,13 @@ function initEventHandler(app) {
             sharedConfig.checkInterval += 1
             config.checkInterval += 1
             
-            sharedConfig.spritesStartCount += 10
-            config.spritesStartCount += 10
+            sharedConfig.spritesStartCount -= 10
+            config.spritesStartCount -= 10
 
             publishEvent('OnSetPositionMonitor', config.checkPositionDistance + ':' + config.checkInterval + ':' + config.resetInterval)
             publishEvent('OnBroadcast', `Difficulty Increased!`, 2)
-        
+
+            syncSprites()
             
             socket.emit('RS_MakeBattleHarderResponse', {
               id: req.id,
@@ -2637,11 +2641,13 @@ function initEventHandler(app) {
             sharedConfig.checkInterval -= 1
             config.checkInterval -= 1
             
-            sharedConfig.spritesStartCount -= 10
-            config.spritesStartCount -= 10
+            sharedConfig.spritesStartCount += 10
+            config.spritesStartCount += 10
 
             publishEvent('OnSetPositionMonitor', config.checkPositionDistance + ':' + config.checkInterval + ':' + config.resetInterval)
             publishEvent('OnBroadcast', `Difficulty Decreased!`, 0)
+
+            syncSprites()
         
             socket.emit('RS_MakeBattleEasierResponse', {
               id: req.id,
