@@ -627,6 +627,9 @@ function disconnectPlayer(player) {
 
     if (config.isBattleRoyale && totalAlivePlayers.length === 1) {
       publishEvent('OnBroadcast', `${totalAlivePlayers[0].name} is the last dragon standing`, 3)
+
+      baseConfig.isBattleRoyale = false
+      config.isBattleRoyale = false
     }
   } catch(e) {
     logError(e)
@@ -2310,11 +2313,24 @@ function initEventHandler(app) {
           log('StartBattleRoyale', req)
 
           if (await isValidAdminRequest(req)) {
-            baseConfig.isBattleRoyale = true
-            config.isBattleRoyale = true
 
-            publishEvent('OnBroadcast', `Battle Royale Started`, 3)
-            
+            publishEvent('OnBroadcast', `Battle Royale in 3...`, 1)
+
+            setTimeout(() => {
+              publishEvent('OnBroadcast', `Battle Royale in 2...`, 1)
+
+              setTimeout(() => {
+                publishEvent('OnBroadcast', `Battle Royale in 1...`, 1)
+  
+                setTimeout(() => {
+                  baseConfig.isBattleRoyale = true
+                  config.isBattleRoyale = true
+      
+                  publishEvent('OnBroadcast', `Battle Royale Started`, 3)
+                }, 1000)
+              }, 1000)
+            }, 1000)
+
             socket.emit('RS_StartBattleRoyaleResponse', {
               id: req.id,
               data: { status: 1 }
@@ -2573,6 +2589,9 @@ function initEventHandler(app) {
             
             sharedConfig.checkInterval += 1
             config.checkInterval += 1
+            
+            sharedConfig.spritesStartCount += 10
+            config.spritesStartCount += 10
 
             publishEvent('OnSetPositionMonitor', config.checkPositionDistance + ':' + config.checkInterval + ':' + config.resetInterval)
             publishEvent('OnBroadcast', `Difficulty Increased!`, 2)
@@ -2617,6 +2636,9 @@ function initEventHandler(app) {
             
             sharedConfig.checkInterval -= 1
             config.checkInterval -= 1
+            
+            sharedConfig.spritesStartCount -= 10
+            config.spritesStartCount -= 10
 
             publishEvent('OnSetPositionMonitor', config.checkPositionDistance + ':' + config.checkInterval + ':' + config.resetInterval)
             publishEvent('OnBroadcast', `Difficulty Decreased!`, 0)
