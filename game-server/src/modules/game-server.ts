@@ -2182,6 +2182,15 @@ function initEventHandler(app) {
               'Game Mode - Sticky Mode',
               'Sticky islands'
             ]
+          } else if (config.gameMode === 'Sprite Juice') {
+            guide = [
+              'Game Mode - Sprite Juice',
+              // 'Sprites have side effects!',
+              'Sprite 1 - Increase Speed',
+              'Sprite 2 - Decrease Speed',
+              'Sprite 3 - Increase Decay',
+              'Sprite 2 - 1 Second Immunity',
+            ]
           } else {
             guide = [
               'Game Mode - ' + config.gameMode,
