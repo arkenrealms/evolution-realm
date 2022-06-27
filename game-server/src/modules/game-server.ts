@@ -71,6 +71,7 @@ let baseConfig = {
   isGodParty: false,
   avatarDirection: 1,
   calcRoundRewards: true,
+  spriteJuice: false,
   flushEventQueueSeconds: 0.02,
   log: {
     connections: false
@@ -278,6 +279,10 @@ const presets = [
     gameMode: 'Sticky Mode',
     stickyIslands: true,
     colliderBuffer: 0
+  },
+  {
+    gameMode: 'Sprite Juice',
+    spriteJuice: true
   },
   // {
   //   gameMode: 'Storm Cuddle',
@@ -832,6 +837,7 @@ const registerKill = (winner, loser) => {
   loser.points = Math.floor(loser.points * ((100 - orbOnDeathPercent) / 100))
   loser.isDead = true
   loser.log.deaths.push(winner.hash)
+  
 
   if (winner.points < 0) winner.points = 0
   if (loser.points < 0) loser.points = 0
@@ -1047,11 +1053,12 @@ async function resetLeaderboard(preset) {
       client.evolves = 0
       client.rewards = 0
       client.powerups = 0
+      client.baseSpeed = 1
       client.pickups = []
       client.avatar = config.startAvatar
       client.orbs = 0
       client.xp = 50
-      client.speed = (config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar])
+      client.speed = (config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed)
       client.cameraSize = client.overrideCameraSize || config.cameraSize
       client.log = {
         kills: [],
@@ -1388,14 +1395,14 @@ function detectCollisions() {
       // Check kills
       for (let i = 0; i < clients.length; i++) {
         const player1 = clients[i]
-        const isPlayer1Invincible = player1.isInvincible ? true : ((player1.joinedAt >= currentTime - config.immunitySeconds))
+        const isPlayer1Invincible = player1.isInvincible ? true : (player1.invincibleUntil > currentTime)
         if (player1.isSpectating) continue
         if (player1.isDead) continue
         if (isPlayer1Invincible) continue
 
         for (let j = 0; j < clients.length; j++) {
           const player2 = clients[j]
-          const isPlayer2Invincible = player2.isInvincible ? true : ((player2.joinedAt >= currentTime - config.immunitySeconds))
+          const isPlayer2Invincible = player2.isInvincible ? true : (player2.invincibleUntil > currentTime)
 
           if (player1.id === player2.id) continue
           if (player2.isDead) continue
@@ -1455,10 +1462,34 @@ function detectCollisions() {
 
           let value = 0
 
-          if (powerup.type == 0) value = config.powerupXp0
-          if (powerup.type == 1) value = config.powerupXp1
-          if (powerup.type == 2) value = config.powerupXp2
-          if (powerup.type == 3) value = config.powerupXp3
+          if (powerup.type == 0) {
+            value = config.powerupXp0
+
+            if (config.spriteJuice) {
+              player.baseSpeed += 0.01
+            }
+          }
+
+          if (powerup.type == 1) {
+            value = config.powerupXp1
+            if (config.spriteJuice) {
+              player.baseSpeed += 0.01
+            }
+          }
+
+          if (powerup.type == 2) {
+            value = config.powerupXp2
+            if (config.spriteJuice) {
+              player.decayPower += 0.01
+            }
+          }
+
+          if (powerup.type == 3) {
+            value = config.powerupXp3
+            if (config.spriteJuice) {
+              player.invincibleUntil = Math.round(getTime() / 1000) + 1
+            }
+          }
 
           player.powerups += 1
           player.points += config.pointsPerPowerup
@@ -1486,6 +1517,8 @@ function detectCollisions() {
             publishEvent('OnUpdatePickup', player.id, orb.id, 0)
       
             removeOrb(orb.id)
+
+            publishEvent('OnBroadcast', `${player.name} stole an orb (${orb.points})`, 0)
           }
       
           const rewards = [currentReward]
@@ -1533,10 +1566,10 @@ function fastGameloop(app) {
       if (client.isJoining) continue
 
       const currentTime = Math.round(now / 1000)
-      const isInvincible = config.isGodParty || (client.isInvincible ? true : ((client.joinedAt >= currentTime - config.immunitySeconds)))
+      const isInvincible = config.isGodParty || (client.isInvincible ? true : ((client.invicibleUntil > currentTime)))
       const isPhased = client.isPhased ? true : now <= client.phasedUntil
 
-      client.speed = client.overrideSpeed || (config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar])
+      client.speed = client.overrideSpeed || (config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed)
 
       if (!config.isRoundPaused) {
         let decay = config.noDecay ? 0 : (client.avatar + 1) / (1 / config.fastLoopSeconds) * ((config['avatarDecayPower' + client.avatar] || 1) * config.decayPower)
@@ -1580,7 +1613,7 @@ function fastGameloop(app) {
             }
           }
         } else {
-          client.xp -= decay
+          client.xp -= decay * client.decayPower
   
           if (client.xp <= 0) {
             client.xp = 0
@@ -1751,6 +1784,8 @@ function initEventHandler(app) {
         cameraSize: config.cameraSize,
         speed: config.baseSpeed * config.avatarSpeedMultiplier0,
         joinedAt: 0,
+        invincibleUntil: 0,
+        decayPower: 1,
         hash: hash.slice(hash.length - 10, hash.length - 1),
         lastReportedTime: getTime(),
         lastUpdate: 0,
@@ -2023,7 +2058,7 @@ function initEventHandler(app) {
 
           currentPlayer.isJoining = true
           currentPlayer.avatar = config.startAvatar
-          currentPlayer.speed = (config.baseSpeed * config['avatarSpeedMultiplier' + currentPlayer.avatar])
+          currentPlayer.speed = (config.baseSpeed * config['avatarSpeedMultiplier' + currentPlayer.avatar] * currentPlayer.baseSpeed)
 
           log("[INFO] player " + currentPlayer.id + ": logged!")
 
@@ -2192,6 +2227,7 @@ function initEventHandler(app) {
             currentPlayer.isDead = false
             currentPlayer.isJoining = false
             currentPlayer.joinedAt = Math.round(getTime() / 1000)
+            currentPlayer.invincibleUntil = currentPlayer.joinedAt + config.immunitySeconds
 
             if (config.isBattleRoyale) {
               spectate(currentPlayer)
