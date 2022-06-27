@@ -1467,7 +1467,7 @@ function detectCollisions() {
 
             if (config.spriteJuice) {
               player.baseSpeed += 0.05
-              publishEvent('OnBroadcast', `Speed up ${player.baseSpeed}`, 0)
+              // publishEvent('OnBroadcast', `Speed up ${player.baseSpeed}`, 0)
             }
           }
 
@@ -1475,15 +1475,15 @@ function detectCollisions() {
             value = config.powerupXp1
             if (config.spriteJuice) {
               player.baseSpeed -= 0.05
-              publishEvent('OnBroadcast', `Speed down ${player.baseSpeed}`, 0)
+              // publishEvent('OnBroadcast', `Speed down ${player.baseSpeed}`, 0)
             }
           }
 
           if (powerup.type == 2) {
             value = config.powerupXp2
             if (config.spriteJuice) {
-              player.decayPower += 0.05
-              publishEvent('OnBroadcast', `Decay ${player.decayPower}`, 0)
+              player.decayPower += 0.1
+              // publishEvent('OnBroadcast', `Decay ${player.decayPower}`, 0)
             }
           }
 
@@ -1491,7 +1491,7 @@ function detectCollisions() {
             value = config.powerupXp3
             if (config.spriteJuice) {
               player.invincibleUntil = Math.round(getTime() / 1000) + 1
-              publishEvent('OnBroadcast', `Invinc`, 0)
+              // publishEvent('OnBroadcast', `Invinc`, 0)
             }
           }
 
