@@ -524,24 +524,24 @@ function moveVectorTowards(current, target, maxDistanceDelta) {
   }
 }
 
-async function claimReward(currentPlayer, reward) {
+async function claimReward(player, reward) {
   if (!reward) return
 
-  if (config.anticheat.samePlayerCantClaimRewardTwiceInRow && lastReward?.winner === currentPlayer.name) return
+  if (config.anticheat.samePlayerCantClaimRewardTwiceInRow && lastReward?.winner === player.name) return
 
-  // const claimRewardRes = await rsCall('GS_ClaimRewardRequest', { reward, currentPlayer }) as any
+  // const claimRewardRes = await rsCall('GS_ClaimRewardRequest', { reward, player }) as any
 
   // if (claimRewardRes.status !== 1) {
   //   publishEvent('OnBroadcast', `Problem claiming reward. Contact support.`, 3)
   // }
 
-  reward.winner = currentPlayer.name
+  reward.winner = player.name
 
-  publishEvent('OnUpdateReward', currentPlayer.id, reward.id)
+  publishEvent('OnUpdateReward', player.id, reward.id)
 
-  currentPlayer.rewards += 1
-  currentPlayer.points += config.pointsPerReward
-  currentPlayer.pickups.push(reward)
+  player.rewards += 1
+  player.points += config.pointsPerReward
+  player.pickups.push(reward)
 
   lastReward = reward
 
@@ -878,46 +878,46 @@ const registerKill = (winner, loser) => {
   }
 }
 
-function spectate(currentPlayer) {
+function spectate(player) {
   try {
-    if (config.isMaintenance && !currentPlayer.isMod) {
+    if (config.isMaintenance && !player.isMod) {
       return
     }
 
-    if (currentPlayer.isSpectating) {
-      // if (!currentPlayer.isMod) {
-        disconnectPlayer(currentPlayer)
+    if (player.isSpectating) {
+      // if (!player.isMod) {
+        disconnectPlayer(player)
         return
       // }
   
-      currentPlayer.isSpectating = false
-      currentPlayer.isInvincible = false
-      currentPlayer.isJoining = true
-      currentPlayer.points = 0
-      currentPlayer.xp = 100
-      currentPlayer.avatar = config.startAvatar
-      currentPlayer.speed = config.baseSpeed * config.avatarSpeedMultiplier0
-      currentPlayer.overrideSpeed = null
-      currentPlayer.cameraSize = config.cameraSize
-      currentPlayer.overrideCameraSize = null
+      player.isSpectating = false
+      player.isInvincible = false
+      player.isJoining = true
+      player.points = 0
+      player.xp = 100
+      player.avatar = config.startAvatar
+      player.speed = config.baseSpeed * config.avatarSpeedMultiplier0
+      player.overrideSpeed = null
+      player.cameraSize = config.cameraSize
+      player.overrideCameraSize = null
   
       syncSprites()
   
-      publishEvent('OnUnspectate', currentPlayer.id, currentPlayer.speed, currentPlayer.cameraSize)
+      publishEvent('OnUnspectate', player.id, player.speed, player.cameraSize)
     } else {
-      currentPlayer.isSpectating = true
-      currentPlayer.isInvincible = true
-      currentPlayer.points = 0
-      currentPlayer.xp = 0
-      currentPlayer.avatar = config.startAvatar
-      currentPlayer.speed = 7
-      currentPlayer.overrideSpeed = 7
-      currentPlayer.cameraSize = 8
-      currentPlayer.overrideCameraSize = 8
+      player.isSpectating = true
+      player.isInvincible = true
+      player.points = 0
+      player.xp = 0
+      player.avatar = config.startAvatar
+      player.speed = 7
+      player.overrideSpeed = 7
+      player.cameraSize = 8
+      player.overrideCameraSize = 8
   
       syncSprites()
   
-      publishEvent('OnSpectate', currentPlayer.id, currentPlayer.speed, currentPlayer.cameraSize)
+      publishEvent('OnSpectate', player.id, player.speed, player.cameraSize)
     }
   } catch(e) {
     logError(e)
@@ -1791,6 +1791,7 @@ function initEventHandler(app) {
         lastUpdate: 0,
         gameMode: config.gameMode,
         phasedUntil: getTime(),
+        baseSpeed: 1,
         log: {
           kills: [],
           deaths: [],
