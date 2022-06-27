@@ -1466,21 +1466,24 @@ function detectCollisions() {
             value = config.powerupXp0
 
             if (config.spriteJuice) {
-              player.baseSpeed += 0.01
+              player.baseSpeed += 0.05
+              publishEvent('OnBroadcast', `Speed up ${player.baseSpeed}`, 0)
             }
           }
 
           if (powerup.type == 1) {
             value = config.powerupXp1
             if (config.spriteJuice) {
-              player.baseSpeed += 0.01
+              player.baseSpeed -= 0.05
+              publishEvent('OnBroadcast', `Speed down ${player.baseSpeed}`, 0)
             }
           }
 
           if (powerup.type == 2) {
             value = config.powerupXp2
             if (config.spriteJuice) {
-              player.decayPower += 0.01
+              player.decayPower += 0.05
+              publishEvent('OnBroadcast', `Decay ${player.decayPower}`, 0)
             }
           }
 
@@ -1488,6 +1491,7 @@ function detectCollisions() {
             value = config.powerupXp3
             if (config.spriteJuice) {
               player.invincibleUntil = Math.round(getTime() / 1000) + 1
+              publishEvent('OnBroadcast', `Invinc`, 0)
             }
           }
 
@@ -1566,7 +1570,7 @@ function fastGameloop(app) {
       if (client.isJoining) continue
 
       const currentTime = Math.round(now / 1000)
-      const isInvincible = config.isGodParty || (client.isInvincible ? true : ((client.invicibleUntil > currentTime)))
+      const isInvincible = config.isGodParty || (client.isInvincible ? true : ((client.invincibleUntil > currentTime)))
       const isPhased = client.isPhased ? true : now <= client.phasedUntil
 
       client.speed = client.overrideSpeed || (config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed)
