@@ -1509,6 +1509,14 @@ function detectCollisions() {
             }
           }
 
+          if (player.cameraSize < 1) {
+            player.cameraSize = 1
+          }
+
+          if (player.cameraSize > 6) {
+            player.cameraSize = 6
+          }
+
           player.powerups += 1
           player.points += config.pointsPerPowerup
           player.xp += (value * config.spriteXpMultiplier)
