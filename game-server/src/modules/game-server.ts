@@ -71,7 +71,6 @@ let baseConfig = {
   isGodParty: false,
   avatarDirection: 1,
   calcRoundRewards: true,
-  spriteJuice: false,
   flushEventQueueSeconds: 0.02,
   log: {
     connections: false
@@ -281,8 +280,7 @@ const presets = [
     colliderBuffer: 0
   },
   {
-    gameMode: 'Sprite Juice',
-    spriteJuice: true
+    gameMode: 'Sprite Juice'
   },
   // {
   //   gameMode: 'Storm Cuddle',
@@ -1465,33 +1463,49 @@ function detectCollisions() {
           if (powerup.type == 0) {
             value = config.powerupXp0
 
-            if (config.spriteJuice) {
+            if (config.gameMode === 'Sprite Juice') {
               player.baseSpeed += 0.05
               // publishEvent('OnBroadcast', `Speed up ${player.baseSpeed}`, 0)
+            }
+
+            if (config.gameMode === 'Marco Polo') {
+              player.cameraSize -= 0.05
             }
           }
 
           if (powerup.type == 1) {
             value = config.powerupXp1
-            if (config.spriteJuice) {
+            if (config.gameMode === 'Sprite Juice') {
               player.baseSpeed -= 0.05
               // publishEvent('OnBroadcast', `Speed down ${player.baseSpeed}`, 0)
+            }
+
+            if (config.gameMode === 'Marco Polo') {
+              player.cameraSize -= 0.01
             }
           }
 
           if (powerup.type == 2) {
             value = config.powerupXp2
-            if (config.spriteJuice) {
+            if (config.gameMode === 'Sprite Juice') {
               player.decayPower += 0.1
               // publishEvent('OnBroadcast', `Decay ${player.decayPower}`, 0)
+            }
+
+            if (config.gameMode === 'Marco Polo') {
+              player.cameraSize += 0.05
             }
           }
 
           if (powerup.type == 3) {
             value = config.powerupXp3
-            if (config.spriteJuice) {
+            if (config.gameMode === 'Sprite Juice') {
               player.invincibleUntil = Math.round(getTime() / 1000) + 1
               // publishEvent('OnBroadcast', `Invinc`, 0)
+            }
+
+            if (config.gameMode === 'Marco Polo') {
+              player.cameraSize += 0.05
             }
           }
 
