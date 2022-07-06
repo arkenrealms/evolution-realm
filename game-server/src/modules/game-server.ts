@@ -1109,7 +1109,7 @@ async function resetLeaderboard(preset) {
 
     syncSprites()
 
-    publishEvent('OnSetRoundInfo', config.roundLoopSeconds + ':' + getRoundInfo().join(':')  + getGameModeGuide(config).join(':'))
+    publishEvent('OnSetRoundInfo', config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'))
 
     publishEvent('OnClearLeaderboard')
 
@@ -1466,20 +1466,32 @@ function detectCollisions() {
             value = config.powerupXp0
 
             if (config.gameMode === 'Sprite Juice') {
-              player.baseSpeed += 0.05
+              player.invincibleUntil = Math.round(getTime() / 1000) + 2
               // publishEvent('OnBroadcast', `Speed up ${player.baseSpeed}`, 0)
             }
 
             if (config.gameMode === 'Marco Polo') {
-              player.cameraSize -= 0.05
+              player.cameraSize += 0.05
             }
           }
 
           if (powerup.type == 1) {
             value = config.powerupXp1
             if (config.gameMode === 'Sprite Juice') {
-              player.baseSpeed -= 0.05
+              player.baseSpeed += 0.05
               // publishEvent('OnBroadcast', `Speed down ${player.baseSpeed}`, 0)
+            }
+
+            if (config.gameMode === 'Marco Polo') {
+              player.cameraSize += 0.01
+            }
+          }
+
+          if (powerup.type == 2) {
+            value = config.powerupXp2
+            if (config.gameMode === 'Sprite Juice') {
+              player.baseSpeed -= 0.05
+              // publishEvent('OnBroadcast', `Decay ${player.decayPower}`, 0)
             }
 
             if (config.gameMode === 'Marco Polo') {
@@ -1487,27 +1499,15 @@ function detectCollisions() {
             }
           }
 
-          if (powerup.type == 2) {
-            value = config.powerupXp2
-            if (config.gameMode === 'Sprite Juice') {
-              player.decayPower += 0.1
-              // publishEvent('OnBroadcast', `Decay ${player.decayPower}`, 0)
-            }
-
-            if (config.gameMode === 'Marco Polo') {
-              player.cameraSize += 0.05
-            }
-          }
-
           if (powerup.type == 3) {
             value = config.powerupXp3
             if (config.gameMode === 'Sprite Juice') {
-              player.invincibleUntil = Math.round(getTime() / 1000) + 2
+              player.decayPower += 0.1
               // publishEvent('OnBroadcast', `Invinc`, 0)
             }
 
             if (config.gameMode === 'Marco Polo') {
-              player.cameraSize += 0.05
+              player.cameraSize -= 0.05
             }
           }
 
@@ -1807,13 +1807,18 @@ function getGameModeGuide(config) {
       'Game Mode - Sticky Mode',
       'Sticky islands'
     ]
+  } else if (config.gameMode === 'Hayai') {
+    guide = [
+      'Game Mode - Hayai',
+      'You feel energy surging...'
+    ]
   } else if (config.gameMode === 'Sprite Juice') {
     guide = [
       'Game Mode - Sprite Juice',
       // 'Sprites have side effects!',
-      'Sprite 1 - Increase Speed',
+      'Sprite 1 - Increase Decay',
       'Sprite 2 - Decrease Speed',
-      'Sprite 3 - Increase Decay',
+      'Sprite 3 - Increase Speed',
       'Sprite 4 - Shield',
     ]
   } else {
