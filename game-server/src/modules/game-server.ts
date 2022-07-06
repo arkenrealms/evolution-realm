@@ -361,7 +361,7 @@ const presets = [
     gameMode: 'Hayai',
     guide: [
       'Game Mode - Hayai',
-      'You feel energy surging...'
+      'You feel energy surging around you...'
     ]
   },
   // {
