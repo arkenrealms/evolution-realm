@@ -181,9 +181,7 @@ function onRealmConnection(app, socket) {
 
     socket.on('RemoveModRequest', async function(req) {
       try {
-        log('RemoveMod', {
-          caller: req.data.address
-        })
+        log('RemoveMod', req)
 
         if (await isValidRequest(app.web3, req) && app.realm.state.modList.includes(req.data.address)) {
           for (const client of app.realm.clients) {
@@ -336,10 +334,7 @@ function onRealmConnection(app, socket) {
 
     socket.on('UnbanUserRequest', async function(req) {
       try {
-        log('Unban', {
-          value: req.data.target,
-          caller: req.data.address
-        })
+        log('Unban', req)
 
         if (await isValidRequest(app.web3, req) && app.realm.state.modList.includes(req.data.address)) {
           app.realm.state.banList.splice(app.realm.state.banList.indexOf(req.data.target), 1)
@@ -368,6 +363,26 @@ function onRealmConnection(app, socket) {
 
     socket.on('FindGameServer', function() {
       emitDirect(socket, 'OnFoundGameServer', app.realm.endpoint, 7777)
+    })
+
+    socket.on('CallRequest', async function(req) {
+      try {
+        log('CallRequest', req)
+
+        const data = await app.gameBridge.call(req.data.method, req.data.signature, req.data.data)
+
+        emitDirect(socket, 'CallResponse', {
+          id: req.id,
+          data: { status: 1, data }
+        })
+      } catch (e) {
+        logError(e)
+        
+        emitDirect(socket, 'CallResponse', {
+          id: req.id,
+          data: { status: 0 }
+        })
+      }
     })
 
     socket.onAny(function(eventName, res) {
