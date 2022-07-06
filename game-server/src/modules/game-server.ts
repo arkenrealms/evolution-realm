@@ -162,7 +162,12 @@ const presets = [
     antifeed1: false,
     antifeed2: false,
     calcRoundRewards: false,
-    preventBadKills: false
+    preventBadKills: false,
+    guide: [
+      'Game Mode - Lets Be Friends',
+      '-200 Points Per Kill',
+      'No Death Orbs'
+    ]
   },
   {
     gameMode: 'Mix Game 1',
@@ -188,10 +193,20 @@ const presets = [
     antifeed1: false,
     dynamicDecayPower: true,
     decayPowerPerMaxEvolvedPlayers: 0.2,
+    guide: [
+      'Game Mode - Deathmatch',
+      '+300 Points Per Kill (Per Evolve)',
+      'No Death Orbs',
+      'Faster Decay'
+    ]
   },
   {
     gameMode: 'Evolution',
     pointsPerEvolve: 10,
+    guide: [
+      'Game Mode - Evolution',
+      '+10 Points Per Evolution'
+    ]
   },
   {
     gameMode: 'Orb Master',
@@ -201,7 +216,13 @@ const presets = [
     pointsPerEvolve: 0,
     pointsPerReward: 0,
     pointsPerKill: 0,
-    orbCutoffSeconds: 0
+    orbCutoffSeconds: 0,
+    guide: [
+      'Game Mode - Orb Master',
+      '+200 Points Per Orb Pickup',
+      'No Points Per Kill, Evolve, etc.',
+      'Orbs Last Until End of Round'
+    ]
   },
   {
     gameMode: 'Sprite Leader',
@@ -216,6 +237,14 @@ const presets = [
     pointsPerKill: 0,
     immunitySeconds: 10,
     orbOnDeathPercent: 0,
+    guide: [
+      'Game Mode - Sprite Leader',
+      '+3 Sprites Per Player',
+      'No Points Per Kill, Evolve, etc.',
+      'No Orbs',
+      'Faster Decay',
+      'Longer Immunity'
+    ]
   },
   {
     gameMode: 'Fast Drake',
@@ -224,12 +253,23 @@ const presets = [
     immunitySeconds: 10,
     orbOnDeathPercent: 0,
     spritesPerPlayerCount: 3,
+    guide: [
+      'Game Mode - Fast Drake',
+      '+50% Speed as Black Drake',
+      'Faster Decay',
+      'Longer Immunity'
+    ]
   },
   {
     gameMode: 'Bird Eye',
     cameraSize: 6,
     baseSpeed: 4,
     decayPower: 2.8,
+    guide: [
+      'Game Mode - Bird Eye',
+      'Faster Movement',
+      'Faster Decay'
+    ]
   },
   {
     gameMode: 'Friendly Reverse',
@@ -245,7 +285,14 @@ const presets = [
     avatarDecayPower2: 2,
     spriteXpMultiplier: -1,
     spritesPerPlayerCount: 10,
-    preventBadKills: false
+    preventBadKills: false,
+    guide: [
+      'Game Mode - Friendly Reverse',
+      '-200 Points Per Kill (Per Evolve)',
+      '+25 Points Per Evolve',
+      'Reverse Evolution',
+      'No Orbs'
+    ]
   },
   {
     gameMode: 'Reverse Evolve',
@@ -258,7 +305,11 @@ const presets = [
     avatarDecayPower1: 3,
     avatarDecayPower2: 2,
     spriteXpMultiplier: -2,
-    // avatarDirection: -1
+    // avatarDirection: -1,
+    guide: [
+      'Game Mode - Reverse Evolve',
+      'Reverse Evolution'
+    ]
   },
   {
     gameMode: 'Marco Polo',
@@ -268,22 +319,50 @@ const presets = [
     avatarSpeedMultiplier0: 1,
     avatarSpeedMultiplier1: 1,
     avatarSpeedMultiplier2: 1,
-    hideMap: true
+    hideMap: true,
+    guide: [
+      'Game Mode - Marco Polo',
+      'Zoomed in + no map',
+      'Faster Movement',
+      'Faster Decay'
+    ]
   },
   {
     gameMode: 'Leadercap',
-    leadercap: true
+    leadercap: true,
+    guide: [
+      'Game Mode - Leadercap',
+      'Kill the last round leader',
+      'Leader -10% Speed',
+      'Leader 75% Death Orb'
+    ]
   },
   {
     gameMode: 'Sticky Mode',
     stickyIslands: true,
-    colliderBuffer: 0
+    colliderBuffer: 0,
+    guide: [
+      'Game Mode - Sticky Mode',
+      'Sticky islands'
+    ]
   },
   {
-    gameMode: 'Sprite Juice'
+    gameMode: 'Sprite Juice',
+    guide: [
+      'Game Mode - Sprite Juice',
+      // 'Sprites have side effects!',
+      'Sprite 1 - Increase Decay',
+      'Sprite 2 - Decrease Speed',
+      'Sprite 3 - Increase Speed',
+      'Sprite 4 - Shield',
+    ]
   },
   {
-    gameMode: 'Hayai'
+    gameMode: 'Hayai',
+    guide: [
+      'Game Mode - Hayai',
+      'You feel energy surging...'
+    ]
   },
   // {
   //   gameMode: 'Storm Cuddle',
@@ -1726,111 +1805,12 @@ function fastGameloop(app) {
 }
 
 function getGameModeGuide(config) {
-  let guide
-
-  if (config.gameMode === 'Lets Be Friends') {
-    guide = [
-      'Game Mode - Lets Be Friends',
-      '-200 Points Per Kill',
-      'No Death Orbs'
-    ]
-  } else if (config.gameMode === 'Deathmatch') {
-    guide = [
-      'Game Mode - Deathmatch',
-      '+300 Points Per Kill (Per Evolve)',
-      'No Death Orbs',
-      'Faster Decay'
-    ]
-  } else if (config.gameMode === 'Evolution') {
-    guide = [
-      'Game Mode - Evolution',
-      '+10 Points Per Evolution'
-    ]
-  } else if (config.gameMode === 'Orb Master') {
-    guide = [
-      'Game Mode - Orb Master',
-      '+200 Points Per Orb Pickup',
-      'No Points Per Kill, Evolve, etc.',
-      'Orbs Last Until End of Round'
-    ]
-  } else if (config.gameMode === 'Sprite Leader') {
-    guide = [
-      'Game Mode - Sprite Leader',
-      '+3 Sprites Per Player',
-      'No Points Per Kill, Evolve, etc.',
-      'No Orbs',
-      'Faster Decay',
-      'Longer Immunity'
-    ]
-  } else if (config.gameMode === 'Fast Drake') {
-    guide = [
-      'Game Mode - Fast Drake',
-      '+50% Speed as Black Drake',
-      'Faster Decay',
-      'Longer Immunity'
-    ]
-  } else if (config.gameMode === 'Bird Eye') {
-    guide = [
-      'Game Mode - Bird Eye',
-      'Faster Movement',
-      'Faster Decay'
-    ]
-  } else if (config.gameMode === 'Friendly Reverse') {
-    guide = [
-      'Game Mode - Friendly Reverse',
-      '-200 Points Per Kill (Per Evolve)',
-      '+25 Points Per Evolve',
-      'Reverse Evolution',
-      'No Orbs'
-    ]
-  } else if (config.gameMode === 'Reverse Evolve') {
-    guide = [
-      'Game Mode - Reverse Evolve',
-      'Reverse Evolution'
-    ]
-  } else if (config.gameMode === 'Marco Polo') {
-    guide = [
-      'Game Mode - Marco Polo',
-      'Zoomed in + no map',
-      'Faster Movement',
-      'Faster Decay'
-    ]
-  } else if (config.gameMode === 'Leadercap') {
-    guide = [
-      'Game Mode - Leadercap',
-      'Kill the last round leader',
-      'Leader -10% Speed',
-      'Leader 75% Death Orb'
-    ]
-  } else if (config.gameMode === 'Sticky Mode') {
-    guide = [
-      'Game Mode - Sticky Mode',
-      'Sticky islands'
-    ]
-  } else if (config.gameMode === 'Hayai') {
-    guide = [
-      'Game Mode - Hayai',
-      'You feel energy surging...'
-    ]
-  } else if (config.gameMode === 'Sprite Juice') {
-    guide = [
-      'Game Mode - Sprite Juice',
-      // 'Sprites have side effects!',
-      'Sprite 1 - Increase Decay',
-      'Sprite 2 - Decrease Speed',
-      'Sprite 3 - Increase Speed',
-      'Sprite 4 - Shield',
-    ]
-  } else {
-    guide = [
-      'Game Mode - ' + config.gameMode,
-      'Eat sprites to stay alive',
-      'Avoid bigger dragons',
-      'Eat smaller dragons'
-    ]
-  }
-
-  return guide
+  return config.guide || [
+    'Game Mode - ' + config.gameMode,
+    'Eat sprites to stay alive',
+    'Avoid bigger dragons',
+    'Eat smaller dragons'
+  ]
 }
 
 let eventFlushedAt = getTime()
