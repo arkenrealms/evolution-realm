@@ -1810,13 +1810,13 @@ function fastGameloop(app) {
     if (config.gameMode === 'Hayai') {
       const timeStep = ((5*60)*(config.fastLoopSeconds * 1000)) // +5 base speed total, timestepped
 
-      config.baseSpeed += 5 / timeStep
+      config.baseSpeed += 15 / timeStep
 
       // sharedConfig.checkPositionDistance += Math.round(6 / timeStep)
-      config.checkPositionDistance += Math.round(6 / timeStep)
+      config.checkPositionDistance += Math.round(18 / timeStep)
       
       // sharedConfig.checkInterval += Math.round(3 / timeStep)
-      config.checkInterval += Math.round(3 / timeStep)
+      config.checkInterval += Math.round(9 / timeStep)
     }
 
     lastFastGameloopTime = now
