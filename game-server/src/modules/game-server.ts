@@ -1554,7 +1554,7 @@ function detectCollisions() {
           if (distanceBetweenPoints(player.position, powerup.position) > touchDistance) continue
 
           if (config.gameMode === 'Hayai') {
-            player.baseSpeed -= 0.005
+            player.baseSpeed -= 0.002
           }
 
           let value = 0
