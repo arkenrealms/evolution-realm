@@ -1773,7 +1773,7 @@ function fastGameloop(app) {
       publishEvent('OnUpdatePlayer',
         client.id, 
         client.overrideSpeed || client.speed, 
-        client.cameraSize, 
+        client.overrideCameraSize || client.cameraSize, 
         client.position.x, 
         client.position.y, 
         client.target.x, 
