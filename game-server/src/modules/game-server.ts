@@ -2332,7 +2332,7 @@ function initEventHandler(app) {
 
       socket.on('RS_MaintenanceRequest', async function(req) {
         try {
-          log('Maintenance', req)
+          log('RS_MaintenanceRequest', req)
 
           if (await isValidAdminRequest(req)) {
             sharedConfig.isMaintenance = true
@@ -2362,7 +2362,7 @@ function initEventHandler(app) {
 
       socket.on('RS_UnmaintenanceRequest', async function(req) {
         try {
-          log('Unmaintenance', req)
+          log('RS_UnmaintenanceRequest', req)
 
           if (await isValidAdminRequest(req)) {
             sharedConfig.isMaintenance = false
@@ -2392,7 +2392,7 @@ function initEventHandler(app) {
 
       socket.on('RS_StartBattleRoyaleRequest', async function(req) {
         try {
-          log('StartBattleRoyale', req)
+          log('RS_StartBattleRoyaleRequest', req)
 
           if (await isValidAdminRequest(req)) {
 
@@ -2412,6 +2412,7 @@ function initEventHandler(app) {
                   config.isGodParty = false
       
                   publishEvent('OnBroadcast', `Battle Royale Started`, 3)
+                  publishEvent('OnBroadcast', `God Party Stopped`, 3)
                 }, 1000)
               }, 1000)
             }, 1000)
@@ -2438,7 +2439,7 @@ function initEventHandler(app) {
 
       socket.on('RS_StopBattleRoyaleRequest', async function(req) {
         try {
-          log('StopBattleRoyale', req)
+          log('RS_StopBattleRoyaleRequest', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.isBattleRoyale = false
@@ -2468,7 +2469,7 @@ function initEventHandler(app) {
 
       socket.on('RS_PauseRoundRequest', async function(req) {
         try {
-          log('PauseRound', req)
+          log('RS_PauseRoundRequest', req)
 
           if (await isValidAdminRequest(req)) {
             clearTimeout(roundLoopTimeout)
@@ -2501,7 +2502,7 @@ function initEventHandler(app) {
 
       socket.on('RS_StartRoundRequest', async function(req) {
         try {
-          log('StartRound', req)
+          log('RS_StartRoundRequest', req)
 
           if (await isValidAdminRequest(req)) {
             clearTimeout(roundLoopTimeout)
@@ -2535,7 +2536,7 @@ function initEventHandler(app) {
 
       socket.on('RS_EnableForceLevel2Request', async function(req) {
         try {
-          log('EnableForceLevel2', req)
+          log('RS_EnableForceLevel2Request', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.level2forced = true
@@ -2563,7 +2564,7 @@ function initEventHandler(app) {
 
       socket.on('RS_DisableForceLevel2Request', async function(req) {
         try {
-          log('DisableForceLevel2', req)
+          log('RS_DisableForceLevel2Request', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.level2forced = false
@@ -2591,7 +2592,7 @@ function initEventHandler(app) {
 
       socket.on('RS_StartGodPartyRequest', async function(req) {
         try {
-          log('StartGodParty', req)
+          log('RS_StartGodPartyRequest', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.isGodParty = true
@@ -2621,7 +2622,7 @@ function initEventHandler(app) {
 
       socket.on('RS_StopGodPartyRequest', async function(req) {
         try {
-          log('StopGodParty', req)
+          log('RS_StopGodPartyRequest', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.isGodParty = false
@@ -2657,7 +2658,7 @@ function initEventHandler(app) {
 
       socket.on('RS_MakeBattleHarderRequest', async function(req) {
         try {
-          log('MakeBattleHarder', req)
+          log('RS_MakeBattleHarderRequest', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.dynamicDecayPower = false
@@ -2705,7 +2706,7 @@ function initEventHandler(app) {
 
       socket.on('RS_MakeBattleEasierRequest', async function(req) {
         try {
-          log('MakeBattleEasier', req)
+          log('RS_MakeBattleEasierRequest', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.dynamicDecayPower = false
@@ -2751,7 +2752,7 @@ function initEventHandler(app) {
 
       socket.on('RS_ResetBattleDifficultyRequest', async function(req) {
         try {
-          log('ResetBattleDifficulty', req)
+          log('RS_ResetBattleDifficultyRequest', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.dynamicDecayPower = true
@@ -2828,7 +2829,7 @@ function initEventHandler(app) {
 
       socket.on('RS_MessageUserRequest', async function(req) {
         try {
-          log('Message', req)
+          log('RS_MessageUserRequest', req)
 
           if (await isValidAdminRequest(req)) {
             const socket = sockets[clients.find(c => c.address === req.data.target).id]
@@ -2853,9 +2854,38 @@ function initEventHandler(app) {
         }
       })
 
+      socket.on('RS_ChangeUserRequest', async function(req) {
+        try {
+          log('RS_ChangeUserRequest', req)
+
+          if (await isValidAdminRequest(req)) {
+            const socket = sockets[clients.find(c => c.address === req.data.target).id]
+
+            for (const key of Object.keys(req.data.config)) {
+              socket[key] = req.data[key]
+            }
+
+            socket.emit('RS_ChangeUserResponse', {
+              id: req.id,
+              data: { status: 1 }
+            })
+          } else {
+            socket.emit('RS_ChangeUserResponse', {
+              id: req.id,
+              data: { status: 0 }
+            })
+          }
+        } catch (e) {
+          socket.emit('RS_ChangeUserResponse', {
+            id: req.id,
+            data: { status: 0 }
+          })
+        }
+      })
+
       socket.on('RS_BroadcastRequest', async function(req) {
         try {
-          log('Broadcast', {
+          log('RS_BroadcastRequest', {
             caller: req.address,
             message: req.data.message
           })
