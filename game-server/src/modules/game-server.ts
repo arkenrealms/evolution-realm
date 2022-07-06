@@ -333,7 +333,7 @@ const presets = [
     guide: [
       'Game Mode - Leadercap',
       'Kill the last round leader',
-      'Leader -10% Speed',
+      'Leader -20% Speed',
       'Leader 75% Death Orb'
     ]
   },
@@ -1248,6 +1248,7 @@ function checkConnectionLoop() {
       const client = clients[i]
 
       if (client.isSpectating) continue
+      if (client.isGod) continue
       // if (client.isInvincible) continue
       // if (client.isDead) continue
 
@@ -1307,6 +1308,7 @@ function detectCollisions() {
 
       if (player.isDead) continue
       if (player.isSpectating) continue
+      if (player.isGod) continue
       if (player.isJoining) continue
 
       if (!Number.isFinite(player.position.x) || !Number.isFinite(player.speed)) { // Not sure what happened
@@ -1706,7 +1708,7 @@ function fastGameloop(app) {
               client.points += config.pointsPerEvolve
       
               if (config.leadercap && client.name === lastLeaderName) {
-                client.speed = client.speed * 0.9
+                client.speed = client.speed * 0.8
               }
       
               publishEvent('OnUpdateEvolution', client.id, client.avatar, client.speed)
@@ -1729,7 +1731,7 @@ function fastGameloop(app) {
               client.points += config.pointsPerEvolve
       
               if (config.leadercap && client.name === lastLeaderName) {
-                client.speed = client.speed * 0.9
+                client.speed = client.speed * 0.8
               }
       
               publishEvent('OnUpdateEvolution', client.id, client.avatar, client.speed)
@@ -1757,7 +1759,7 @@ function fastGameloop(app) {
                 client.avatar = Math.max(Math.min(client.avatar - (1 * config.avatarDirection), config.maxEvolves - 1), 0)
   
                 if (config.leadercap && client.name === lastLeaderName) {
-                  client.speed = client.speed * 0.9
+                  client.speed = client.speed * 0.8
                 }
         
                 publishEvent('OnUpdateRegression', client.id, client.avatar, client.speed)
@@ -1770,7 +1772,7 @@ function fastGameloop(app) {
                 client.avatar = Math.max(Math.min(client.avatar - (1 * config.avatarDirection), config.maxEvolves - 1), 0)
   
                 if (config.leadercap && client.name === lastLeaderName) {
-                  client.speed = client.speed * 0.9
+                  client.speed = client.speed * 0.8
                 }
         
                 publishEvent('OnUpdateRegression', client.id, client.avatar, client.speed)
