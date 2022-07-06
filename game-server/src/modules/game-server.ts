@@ -1549,6 +1549,10 @@ function detectCollisions() {
         for (const powerup of powerups) {
           if (distanceBetweenPoints(player.position, powerup.position) > touchDistance) continue
 
+          if (config.gameMode === 'Hayai') {
+            player.baseSpeed -= 0.005
+          }
+
           let value = 0
 
           if (powerup.type == 0) {
