@@ -1711,7 +1711,7 @@ function fastGameloop(app) {
     flushEventQueue(app)
 
     if (config.gameMode === 'Hayai') {
-      config.baseSpeed += 5 / (5*60)*(config.fastLoopSeconds * 1000) // +5 base speed total
+      config.baseSpeed += 5 / ((5*60)*(config.fastLoopSeconds * 1000)) // +5 base speed total
     }
 
     lastFastGameloopTime = now
