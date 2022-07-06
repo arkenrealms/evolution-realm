@@ -96,7 +96,7 @@ const sharedConfig = {
   avatarSpeedMultiplier0: 1,
   avatarSpeedMultiplier1: 1,
   avatarSpeedMultiplier2: 0.85,
-  baseSpeed: 4,
+  baseSpeed: 3.25,
   cameraSize: 3,
   checkConnectionLoopSeconds: 2,
   checkInterval: 1,
