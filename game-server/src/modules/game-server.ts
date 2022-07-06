@@ -2946,6 +2946,7 @@ function initEventHandler(app) {
         })
       })
 
+
       socket.onAny(function(eventName, res) {
         if (!res || !res.id) return
         // log('onAny', eventName, res)
