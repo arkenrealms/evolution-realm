@@ -359,9 +359,10 @@ const presets = [
   },
   {
     gameMode: 'Hayai',
+    level2forced: true,
     guide: [
       'Game Mode - Hayai',
-      'You feel energy surging around you...'
+      'You feel the energy around you...'
     ]
   },
   // {
@@ -1790,7 +1791,15 @@ function fastGameloop(app) {
     flushEventQueue(app)
 
     if (config.gameMode === 'Hayai') {
-      config.baseSpeed += 5 / ((5*60)*(config.fastLoopSeconds * 1000)) // +5 base speed total
+      const timeStep = ((5*60)*(config.fastLoopSeconds * 1000)) // +5 base speed total, timestepped
+
+      config.baseSpeed += 5 / timeStep
+
+      sharedConfig.checkPositionDistance += 6 / timeStep
+      config.checkPositionDistance += 6 / timeStep
+      
+      sharedConfig.checkInterval += 3 / timeStep
+      config.checkInterval += 3 / timeStep
     }
 
     lastFastGameloopTime = now
