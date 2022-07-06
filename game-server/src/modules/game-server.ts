@@ -308,7 +308,7 @@ const presets = [
     // avatarDirection: -1,
     guide: [
       'Game Mode - Reverse Evolve',
-      'Reverse Evolution'
+      'Evolution is reversed'
     ]
   },
   {
@@ -362,7 +362,7 @@ const presets = [
     level2forced: true,
     guide: [
       'Game Mode - Hayai',
-      'You feel the energy around you...'
+      'You feel energy growing around you...'
     ]
   },
   // {
@@ -1200,6 +1200,8 @@ async function resetLeaderboard(preset = null) {
 
     publishEvent('OnSetRoundInfo', config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'))
 
+    console.log(config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'), (config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':')).split(':').length)
+
     publishEvent('OnClearLeaderboard')
 
     publishEvent('OnBroadcast', `Game Mode - ${config.gameMode} (Round ${config.roundId})`, 0)
@@ -1829,9 +1831,9 @@ function fastGameloop(app) {
 function getGameModeGuide(config) {
   return config.guide || [
     'Game Mode - ' + config.gameMode,
-    'Eat sprites to stay alive',
-    'Avoid bigger dragons',
-    'Eat smaller dragons'
+    '1. Eat sprites to stay alive',
+    '2. Avoid bigger dragons',
+    '3. Eat smaller dragons'
   ]
 }
 
