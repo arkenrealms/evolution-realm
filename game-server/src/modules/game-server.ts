@@ -1812,11 +1812,11 @@ function fastGameloop(app) {
 
       config.baseSpeed += 5 / timeStep
 
-      sharedConfig.checkPositionDistance += 6 / timeStep
-      config.checkPositionDistance += 6 / timeStep
+      // sharedConfig.checkPositionDistance += Math.round(6 / timeStep)
+      config.checkPositionDistance += Math.round(6 / timeStep)
       
-      sharedConfig.checkInterval += 3 / timeStep
-      config.checkInterval += 3 / timeStep
+      // sharedConfig.checkInterval += Math.round(3 / timeStep)
+      config.checkInterval += Math.round(3 / timeStep)
     }
 
     lastFastGameloopTime = now
