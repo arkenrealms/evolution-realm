@@ -2862,7 +2862,7 @@ function initEventHandler(app) {
             const socket = sockets[clients.find(c => c.address === req.data.target).id]
 
             for (const key of Object.keys(req.data.config)) {
-              socket[key] = req.data[key]
+              socket[key] = req.data.config[key]
             }
 
             socket.emit('RS_ChangeUserResponse', {
