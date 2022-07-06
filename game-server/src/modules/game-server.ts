@@ -2859,7 +2859,7 @@ function initEventHandler(app) {
           log('RS_ChangeUserRequest', req)
 
           if (await isValidAdminRequest(req)) {
-            const client = sockets[clients.find(c => c.address === req.data.target).id]
+            const client = clients.find(c => c.address === req.data.target)
 
             for (const key of Object.keys(req.data.config)) {
               client[key] = req.data.config[key]
