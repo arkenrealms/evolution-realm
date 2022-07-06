@@ -577,7 +577,7 @@ function distanceBetweenPoints(pos1, pos2) {
 
 function syncSprites() {
   log('Syncing sprites')
-  const playerCount = clients.filter(c => !c.isDead && !c.isSpectating && !c.isInvincible).length
+  const playerCount = clients.filter(c => !c.isDead && !c.isSpectating && !c.isGod).length
   const length = config.spritesStartCount + playerCount * config.spritesPerPlayerCount
 
   if (powerups.length > length) {
@@ -790,8 +790,8 @@ const registerKill = (winner, loser) => {
   const now = getTime()
 
   if (config.isGodParty) return
-  if (winner.isInvincible) return
-  if (loser.isInvincible) return
+  if (winner.isInvincible || loser.isInvincible) return
+  if (winner.isGod || loser.isGod) return
   if (config.preventBadKills && (winner.isPhased || now < winner.phasedUntil)) return
 
   const totalKills = winner.log.kills.filter(h => h === loser.hash).length
@@ -1594,7 +1594,7 @@ function fastGameloop(app) {
       if (client.isJoining) continue
 
       const currentTime = Math.round(now / 1000)
-      const isInvincible = config.isGodParty || (client.isInvincible ? true : ((client.invincibleUntil > currentTime)))
+      const isInvincible = config.isGodParty || client.isGod || client.isInvincible || (client.invincibleUntil > currentTime)
       const isPhased = client.isPhased ? true : now <= client.phasedUntil
 
       client.speed = client.overrideSpeed || (config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed)
@@ -1641,7 +1641,9 @@ function fastGameloop(app) {
             }
           }
         } else {
-          client.xp -= decay * client.decayPower
+          if (!isInvincible) {
+            client.xp -= decay * client.decayPower
+          }
   
           if (client.xp <= 0) {
             client.xp = 0
@@ -1912,6 +1914,7 @@ function initEventHandler(app) {
         isJoining: false,
         isSpectating: false,
         isStuck: false,
+        isGod: false,
         isInvincible: config.isGodParty ? true : false,
         isPhased: false,
         overrideSpeed: null,
