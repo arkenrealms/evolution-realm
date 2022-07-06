@@ -373,7 +373,7 @@ function onRealmConnection(app, socket) {
 
         emitDirect(socket, 'CallResponse', {
           id: req.id,
-          data: { status: 1, data }
+          data
         })
       } catch (e) {
         logError(e)

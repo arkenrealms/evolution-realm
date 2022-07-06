@@ -2878,7 +2878,7 @@ function initEventHandler(app) {
         } catch (e) {
           socket.emit('RS_ChangeUserResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0, message: e.toString() }
           })
         }
       })
