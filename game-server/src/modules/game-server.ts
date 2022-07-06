@@ -2870,7 +2870,12 @@ function initEventHandler(app) {
             const client = clients.find(c => c.address === req.data.target)
 
             for (const key of Object.keys(req.data.config)) {
-              client[key] = req.data.config[key]
+              const value = req.data.config[key]
+              const val = value === "true" ? true : (value === "false" ? false : (isNumeric(value) ? parseFloat(value) : value))
+              if (client.hasOwnProperty(key))
+                client[key] = val
+              else
+                throw new Error('User doesnt have that option')
             }
 
             socket.emit('RS_ChangeUserResponse', {
