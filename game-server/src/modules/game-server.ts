@@ -1047,7 +1047,7 @@ async function calcRoundRewards() {
 let lastFastGameloopTime = getTime()
 let lastFastestGameloopTime = getTime()
 
-async function resetLeaderboard(preset) {
+async function resetLeaderboard(preset = null) {
   try {
     updateObservers()
 
@@ -1083,14 +1083,23 @@ async function resetLeaderboard(preset) {
       winners
     }) as any
 
-    clearInterval(problemInterval)
+    // clearInterval(problemInterval)
 
     if (saveRoundRes.status !== 1) {
       sharedConfig.rewardWinnerAmount = 0
       config.rewardWinnerAmount = 0
       sharedConfig.rewardItemAmount = 0
       config.rewardItemAmount = 0
-      problemInterval = setInterval(() => publishEvent('OnBroadcast', `Problem saving the round. Contact support.`, 3), 10 * 1000)
+
+      if (!preset) {
+        setTimeout(() => {
+          publishEvent('OnBroadcast', `Problem saving the round. Restarting round.`, 3)
+  
+          clearTimeout(roundLoopTimeout)
+  
+          resetLeaderboard()
+        }, 30 * 1000)
+      }
     }
 
     if (config.calcRoundRewards) {
