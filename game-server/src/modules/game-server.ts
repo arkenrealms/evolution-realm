@@ -1815,13 +1815,13 @@ function fastGameloop(app) {
       const timeStep = ((5*60)*(config.fastLoopSeconds * 1000)) // +5 base speed total, timestepped
       const speedMultiplier = 1
 
-      config.baseSpeed += (5*speedMultiplier) / timeStep
+      config.baseSpeed += (3*speedMultiplier) / timeStep
 
       // sharedConfig.checkPositionDistance += Math.round(6 / timeStep)
       config.checkPositionDistance += (6*speedMultiplier) / timeStep
       
       // sharedConfig.checkInterval += Math.round(3 / timeStep)
-      config.checkInterval +=(3*speedMultiplier) / timeStep
+      config.checkInterval += (3*speedMultiplier) / timeStep
     }
 
     lastFastGameloopTime = now
