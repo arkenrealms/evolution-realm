@@ -1818,10 +1818,10 @@ function fastGameloop(app) {
       config.baseSpeed += (5*speedMultiplier) / timeStep
 
       // sharedConfig.checkPositionDistance += Math.round(6 / timeStep)
-      config.checkPositionDistance += Math.round((6*speedMultiplier) / timeStep)
+      config.checkPositionDistance += (6*speedMultiplier) / timeStep
       
       // sharedConfig.checkInterval += Math.round(3 / timeStep)
-      config.checkInterval += Math.round((3*speedMultiplier) / timeStep)
+      config.checkInterval +=(3*speedMultiplier) / timeStep
     }
 
     lastFastGameloopTime = now
@@ -2219,7 +2219,7 @@ function initEventHandler(app) {
           log("[INFO] Total players: " + Object.keys(clientLookup).length)
 
           const roundTimer = (round.startedAt + config.roundLoopSeconds) - Math.round(getTime() / 1000)
-          emitDirect(socket, 'OnSetPositionMonitor', config.checkPositionDistance + ':' + config.checkInterval + ':' + config.resetInterval)
+          emitDirect(socket, 'OnSetPositionMonitor', Math.round(config.checkPositionDistance) + ':' + Math.round(config.checkInterval) + ':' + Math.round(config.resetInterval))
           emitDirect(socket, 'OnJoinGame', currentPlayer.id, currentPlayer.name, currentPlayer.avatar, currentPlayer.isMasterClient ? 'true' : 'false', roundTimer, currentPlayer.position.x, currentPlayer.position.y)
           // emitDirect(socket, 'OnSetInfo', currentPlayer.id, currentPlayer.name, currentPlayer.address, currentPlayer.network, currentPlayer.device)
 
