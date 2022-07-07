@@ -1556,8 +1556,8 @@ function detectCollisions() {
           if (config.gameMode === 'Hayai') {
             player.baseSpeed -= 0.001
 
-            if (player.baseSpeed < 3) {
-              player.baseSpeed = 3
+            if (player.baseSpeed <= 0.5) {
+              player.baseSpeed = 0.5
             }
           }
 
