@@ -191,8 +191,8 @@ const presets = [
     pointsPerReward: 0,
     baseSpeed: 4,
     antifeed1: false,
-    dynamicDecayPower: true,
-    decayPowerPerMaxEvolvedPlayers: 0.2,
+    // dynamicDecayPower: true,
+    // decayPowerPerMaxEvolvedPlayers: 0.2,
     guide: [
       'Game Mode - Deathmatch',
       '+300 Points Per Kill (Per Evolve)',
@@ -360,6 +360,7 @@ const presets = [
   {
     gameMode: 'Hayai',
     level2forced: true,
+    // decayPower: 2.8,
     guide: [
       'Game Mode - Hayai',
       'You feel energy growing around you...'
@@ -1813,9 +1814,9 @@ function fastGameloop(app) {
 
     if (config.gameMode === 'Hayai') {
       const timeStep = ((5*60)*(config.fastLoopSeconds * 1000)) // +5 base speed total, timestepped
-      const speedMultiplier = 1
+      const speedMultiplier = 1.5
 
-      config.baseSpeed += (3*speedMultiplier) / timeStep
+      config.baseSpeed += (5*speedMultiplier) / timeStep
 
       // sharedConfig.checkPositionDistance += Math.round(6 / timeStep)
       config.checkPositionDistance += (6*speedMultiplier) / timeStep
