@@ -1554,10 +1554,10 @@ function detectCollisions() {
           if (distanceBetweenPoints(player.position, powerup.position) > touchDistance) continue
 
           if (config.gameMode === 'Hayai') {
-            player.baseSpeed -= 0.005
+            player.baseSpeed -= 0.001
 
-            if (player.baseSpeed < 2) {
-              player.baseSpeed = 2
+            if (player.baseSpeed < 3) {
+              player.baseSpeed = 3
             }
           }
 
@@ -1813,7 +1813,7 @@ function fastGameloop(app) {
 
     if (config.gameMode === 'Hayai') {
       const timeStep = ((5*60)*(config.fastLoopSeconds * 1000)) // +5 base speed total, timestepped
-      const speedMultiplier = 10
+      const speedMultiplier = 1
 
       config.baseSpeed += (5*speedMultiplier) / timeStep
 
