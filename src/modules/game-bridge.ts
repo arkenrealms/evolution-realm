@@ -47,7 +47,13 @@ function startGameServer(app) {
   app.gameBridge.process.stdout.pipe(process.stdout)
   app.gameBridge.process.stderr.pipe(process.stderr)
 
-  app.gameBridge.process.on('exit', (code, signal) => log(`Child process exited with code ${code} and signal ${signal}`))
+  app.gameBridge.process.on('exit', (code, signal) => {
+    log(`Child process exited with code ${code} and signal ${signal}. Lets restart.`)
+
+    setTimeout(() => {
+      startGameServer(app)
+    }, 1000)
+  })
 
   app.subProcesses.push(app.gameBridge.process)
 
