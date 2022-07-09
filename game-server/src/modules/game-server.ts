@@ -1814,7 +1814,7 @@ function fastGameloop(app) {
 
     if (config.gameMode === 'Hayai') {
       const timeStep = ((5*60)*(config.fastLoopSeconds * 1000)) // +5 base speed total, timestepped
-      const speedMultiplier = 1
+      const speedMultiplier = 0.5
 
       config.baseSpeed += (5*speedMultiplier) / timeStep
 
