@@ -58,7 +58,7 @@ let baseConfig = {
   level3open: false,
   hideMap: false,
   dynamicDecayPower: true,
-  decayPowerPerMaxEvolvedPlayers: 0.2,
+  decayPowerPerMaxEvolvedPlayers: 0.6,
   pickupCheckPositionDistance: 1,
   playersRequiredForLevel2: 15,
   preventBadKills: false,
@@ -102,7 +102,7 @@ const sharedConfig = {
   checkInterval: 1,
   checkPositionDistance: 2,
   claimingRewards: false,
-  decayPower: 1.6,
+  decayPower: 2,
   disconnectPlayerSeconds: testMode ? 999 : 30,
   disconnectPositionJumps: true, // TODO: remove
   fastestLoopSeconds: 0.02,
@@ -360,7 +360,7 @@ const presets = [
   {
     gameMode: 'Hayai',
     level2forced: true,
-    // decayPower: 2.8,
+    decayPower: 3.6,
     guide: [
       'Game Mode - Hayai',
       'You feel energy growing around you...'
@@ -1309,7 +1309,7 @@ function detectCollisions() {
 
       if (player.isDead) continue
       if (player.isSpectating) continue
-      if (player.isGod) continue
+      // if (player.isGod) continue
       if (player.isJoining) continue
 
       if (!Number.isFinite(player.position.x) || !Number.isFinite(player.speed)) { // Not sure what happened
@@ -2970,7 +2970,6 @@ function initEventHandler(app) {
           }
         })
       })
-
 
       socket.onAny(function(eventName, res) {
         if (!res || !res.id) return
