@@ -96,13 +96,13 @@ const sharedConfig = {
   avatarSpeedMultiplier0: 1,
   avatarSpeedMultiplier1: 1,
   avatarSpeedMultiplier2: 0.85,
-  baseSpeed: 3,
+  baseSpeed: 3.25,
   cameraSize: 3,
   checkConnectionLoopSeconds: 2,
   checkInterval: 1,
   checkPositionDistance: 2,
   claimingRewards: false,
-  decayPower: 1.4,
+  decayPower: 1.6,
   disconnectPlayerSeconds: testMode ? 999 : 30,
   disconnectPositionJumps: true, // TODO: remove
   fastestLoopSeconds: 0.02,
@@ -162,14 +162,19 @@ const presets = [
     antifeed1: false,
     antifeed2: false,
     calcRoundRewards: false,
-    preventBadKills: false
+    preventBadKills: false,
+    guide: [
+      'Game Mode - Lets Be Friends',
+      '-200 Points Per Kill',
+      'No Death Orbs'
+    ]
   },
   {
     gameMode: 'Mix Game 1',
-    pointsPerEvolve: 2,
-    pointsPerPowerup: 2,
-    pointsPerKill: 50,
-    pointsPerReward: 10,
+    pointsPerEvolve: 5,
+    pointsPerPowerup: 5,
+    pointsPerKill: 20,
+    pointsPerReward: 100,
   },
   {
     gameMode: 'Mix Game 2',
@@ -186,12 +191,22 @@ const presets = [
     pointsPerReward: 0,
     baseSpeed: 4,
     antifeed1: false,
-    dynamicDecayPower: true,
-    decayPowerPerMaxEvolvedPlayers: 0.2,
+    // dynamicDecayPower: true,
+    // decayPowerPerMaxEvolvedPlayers: 0.2,
+    guide: [
+      'Game Mode - Deathmatch',
+      '+300 Points Per Kill (Per Evolve)',
+      'No Death Orbs',
+      'Faster Decay'
+    ]
   },
   {
     gameMode: 'Evolution',
     pointsPerEvolve: 10,
+    guide: [
+      'Game Mode - Evolution',
+      '+10 Points Per Evolution'
+    ]
   },
   {
     gameMode: 'Orb Master',
@@ -201,7 +216,13 @@ const presets = [
     pointsPerEvolve: 0,
     pointsPerReward: 0,
     pointsPerKill: 0,
-    orbCutoffSeconds: 0
+    orbCutoffSeconds: 0,
+    guide: [
+      'Game Mode - Orb Master',
+      '+200 Points Per Orb Pickup',
+      'No Points Per Kill, Evolve, etc.',
+      'Orbs Last Until End of Round'
+    ]
   },
   {
     gameMode: 'Sprite Leader',
@@ -216,6 +237,14 @@ const presets = [
     pointsPerKill: 0,
     immunitySeconds: 10,
     orbOnDeathPercent: 0,
+    guide: [
+      'Game Mode - Sprite Leader',
+      '+3 Sprites Per Player',
+      'No Points Per Kill, Evolve, etc.',
+      'No Orbs',
+      'Faster Decay',
+      'Longer Immunity'
+    ]
   },
   {
     gameMode: 'Fast Drake',
@@ -224,12 +253,23 @@ const presets = [
     immunitySeconds: 10,
     orbOnDeathPercent: 0,
     spritesPerPlayerCount: 3,
+    guide: [
+      'Game Mode - Fast Drake',
+      '+50% Speed as Black Drake',
+      'Faster Decay',
+      'Longer Immunity'
+    ]
   },
   {
     gameMode: 'Bird Eye',
     cameraSize: 6,
     baseSpeed: 4,
     decayPower: 2.8,
+    guide: [
+      'Game Mode - Bird Eye',
+      'Faster Movement',
+      'Faster Decay'
+    ]
   },
   {
     gameMode: 'Friendly Reverse',
@@ -245,7 +285,14 @@ const presets = [
     avatarDecayPower2: 2,
     spriteXpMultiplier: -1,
     spritesPerPlayerCount: 10,
-    preventBadKills: false
+    preventBadKills: false,
+    guide: [
+      'Game Mode - Friendly Reverse',
+      '-200 Points Per Kill (Per Evolve)',
+      '+25 Points Per Evolve',
+      'Reverse Evolution',
+      'No Orbs'
+    ]
   },
   {
     gameMode: 'Reverse Evolve',
@@ -258,7 +305,11 @@ const presets = [
     avatarDecayPower1: 3,
     avatarDecayPower2: 2,
     spriteXpMultiplier: -2,
-    // avatarDirection: -1
+    // avatarDirection: -1,
+    guide: [
+      'Game Mode - Reverse Evolve',
+      'Evolution is reversed'
+    ]
   },
   {
     gameMode: 'Marco Polo',
@@ -268,19 +319,52 @@ const presets = [
     avatarSpeedMultiplier0: 1,
     avatarSpeedMultiplier1: 1,
     avatarSpeedMultiplier2: 1,
-    hideMap: true
+    hideMap: true,
+    guide: [
+      'Game Mode - Marco Polo',
+      'Zoomed in + no map',
+      'Faster Movement',
+      'Faster Decay'
+    ]
   },
   {
     gameMode: 'Leadercap',
-    leadercap: true
+    leadercap: true,
+    guide: [
+      'Game Mode - Leadercap',
+      'Kill the last round leader',
+      'Leader -20% Speed',
+      'Leader 75% Death Orb'
+    ]
   },
   {
     gameMode: 'Sticky Mode',
     stickyIslands: true,
-    colliderBuffer: 0
+    colliderBuffer: 0,
+    guide: [
+      'Game Mode - Sticky Mode',
+      'Sticky islands'
+    ]
   },
   {
-    gameMode: 'Sprite Juice'
+    gameMode: 'Sprite Juice',
+    guide: [
+      'Game Mode - Sprite Juice',
+      // 'Sprites have side effects!',
+      'Sprite 1 - Increase Decay',
+      'Sprite 2 - Decrease Speed',
+      'Sprite 3 - Increase Speed',
+      'Sprite 4 - Shield',
+    ]
+  },
+  {
+    gameMode: 'Hayai',
+    level2forced: true,
+    // decayPower: 2.8,
+    guide: [
+      'Game Mode - Hayai',
+      'You feel energy growing around you...'
+    ]
   },
   // {
   //   gameMode: 'Storm Cuddle',
@@ -309,7 +393,6 @@ const mapBoundary = {
   x: {min: -38, max: 2},
   y: {min: -20, max: 2}
 }
-
 
 const playerSpawnPoints = [
   {x: -4.14, y: -11.66},
@@ -575,7 +658,7 @@ function distanceBetweenPoints(pos1, pos2) {
 
 function syncSprites() {
   log('Syncing sprites')
-  const playerCount = clients.filter(c => !c.isDead && !c.isSpectating && !c.isInvincible).length
+  const playerCount = clients.filter(c => !c.isDead && !c.isSpectating && !c.isGod).length
   const length = config.spritesStartCount + playerCount * config.spritesPerPlayerCount
 
   if (powerups.length > length) {
@@ -788,8 +871,8 @@ const registerKill = (winner, loser) => {
   const now = getTime()
 
   if (config.isGodParty) return
-  if (winner.isInvincible) return
-  if (loser.isInvincible) return
+  if (winner.isInvincible || loser.isInvincible) return
+  if (winner.isGod || loser.isGod) return
   if (config.preventBadKills && (winner.isPhased || now < winner.phasedUntil)) return
 
   const totalKills = winner.log.kills.filter(h => h === loser.hash).length
@@ -965,7 +1048,7 @@ async function calcRoundRewards() {
 let lastFastGameloopTime = getTime()
 let lastFastestGameloopTime = getTime()
 
-async function resetLeaderboard(preset) {
+async function resetLeaderboard(preset = null) {
   try {
     updateObservers()
 
@@ -1001,14 +1084,23 @@ async function resetLeaderboard(preset) {
       winners
     }) as any
 
-    clearInterval(problemInterval)
+    // clearInterval(problemInterval)
 
     if (saveRoundRes.status !== 1) {
       sharedConfig.rewardWinnerAmount = 0
       config.rewardWinnerAmount = 0
       sharedConfig.rewardItemAmount = 0
       config.rewardItemAmount = 0
-      problemInterval = setInterval(() => publishEvent('OnBroadcast', `Problem saving the round. Contact support.`, 3), 10 * 1000)
+
+      if (!preset) {
+        setTimeout(() => {
+          publishEvent('OnBroadcast', `Problem saving the round. Restarting round.`, 3)
+  
+          clearTimeout(roundLoopTimeout)
+  
+          resetLeaderboard()
+        }, 30 * 1000)
+      }
     }
 
     if (config.calcRoundRewards) {
@@ -1107,7 +1199,9 @@ async function resetLeaderboard(preset) {
 
     syncSprites()
 
-    publishEvent('OnSetRoundInfo', config.roundLoopSeconds + ':' + getRoundInfo().join(':')  + '1. Eat sprites to stay alive' + ':' + '2. Avoid bigger dragons' + ':' + '3. Eat smaller dragons')
+    publishEvent('OnSetRoundInfo', config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'))
+
+    console.log(config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'), (config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':')).split(':').length)
 
     publishEvent('OnClearLeaderboard')
 
@@ -1155,6 +1249,7 @@ function checkConnectionLoop() {
       const client = clients[i]
 
       if (client.isSpectating) continue
+      if (client.isGod) continue
       // if (client.isInvincible) continue
       // if (client.isDead) continue
 
@@ -1214,6 +1309,7 @@ function detectCollisions() {
 
       if (player.isDead) continue
       if (player.isSpectating) continue
+      if (player.isGod) continue
       if (player.isJoining) continue
 
       if (!Number.isFinite(player.position.x) || !Number.isFinite(player.speed)) { // Not sure what happened
@@ -1458,26 +1554,46 @@ function detectCollisions() {
         for (const powerup of powerups) {
           if (distanceBetweenPoints(player.position, powerup.position) > touchDistance) continue
 
+          if (config.gameMode === 'Hayai') {
+            player.baseSpeed -= 0.001
+
+            if (player.baseSpeed <= 0.5) {
+              player.baseSpeed = 0.5
+            }
+          }
+
           let value = 0
 
           if (powerup.type == 0) {
             value = config.powerupXp0
 
             if (config.gameMode === 'Sprite Juice') {
-              player.baseSpeed += 0.05
+              player.invincibleUntil = Math.round(getTime() / 1000) + 2
               // publishEvent('OnBroadcast', `Speed up ${player.baseSpeed}`, 0)
             }
 
             if (config.gameMode === 'Marco Polo') {
-              player.cameraSize -= 0.05
+              player.cameraSize += 0.05
             }
           }
 
           if (powerup.type == 1) {
             value = config.powerupXp1
             if (config.gameMode === 'Sprite Juice') {
-              player.baseSpeed -= 0.05
+              player.baseSpeed += 0.05
               // publishEvent('OnBroadcast', `Speed down ${player.baseSpeed}`, 0)
+            }
+
+            if (config.gameMode === 'Marco Polo') {
+              player.cameraSize += 0.01
+            }
+          }
+
+          if (powerup.type == 2) {
+            value = config.powerupXp2
+            if (config.gameMode === 'Sprite Juice') {
+              player.baseSpeed -= 0.05
+              // publishEvent('OnBroadcast', `Decay ${player.decayPower}`, 0)
             }
 
             if (config.gameMode === 'Marco Polo') {
@@ -1485,27 +1601,15 @@ function detectCollisions() {
             }
           }
 
-          if (powerup.type == 2) {
-            value = config.powerupXp2
-            if (config.gameMode === 'Sprite Juice') {
-              player.decayPower += 0.1
-              // publishEvent('OnBroadcast', `Decay ${player.decayPower}`, 0)
-            }
-
-            if (config.gameMode === 'Marco Polo') {
-              player.cameraSize += 0.05
-            }
-          }
-
           if (powerup.type == 3) {
             value = config.powerupXp3
             if (config.gameMode === 'Sprite Juice') {
-              player.invincibleUntil = Math.round(getTime() / 1000) + 2
+              player.decayPower += 0.1
               // publishEvent('OnBroadcast', `Invinc`, 0)
             }
 
             if (config.gameMode === 'Marco Polo') {
-              player.cameraSize += 0.05
+              player.cameraSize -= 0.05
             }
           }
 
@@ -1592,7 +1696,7 @@ function fastGameloop(app) {
       if (client.isJoining) continue
 
       const currentTime = Math.round(now / 1000)
-      const isInvincible = config.isGodParty || (client.isInvincible ? true : ((client.invincibleUntil > currentTime)))
+      const isInvincible = config.isGodParty || client.isGod || client.isInvincible || (client.invincibleUntil > currentTime)
       const isPhased = client.isPhased ? true : now <= client.phasedUntil
 
       client.speed = client.overrideSpeed || (config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed)
@@ -1609,7 +1713,7 @@ function fastGameloop(app) {
               client.points += config.pointsPerEvolve
       
               if (config.leadercap && client.name === lastLeaderName) {
-                client.speed = client.speed * 0.9
+                client.speed = client.speed * 0.8
               }
       
               publishEvent('OnUpdateEvolution', client.id, client.avatar, client.speed)
@@ -1632,14 +1736,16 @@ function fastGameloop(app) {
               client.points += config.pointsPerEvolve
       
               if (config.leadercap && client.name === lastLeaderName) {
-                client.speed = client.speed * 0.9
+                client.speed = client.speed * 0.8
               }
       
               publishEvent('OnUpdateEvolution', client.id, client.avatar, client.speed)
             }
           }
         } else {
-          client.xp -= decay * client.decayPower
+          if (!isInvincible) {
+            client.xp -= decay * client.decayPower
+          }
   
           if (client.xp <= 0) {
             client.xp = 0
@@ -1658,7 +1764,7 @@ function fastGameloop(app) {
                 client.avatar = Math.max(Math.min(client.avatar - (1 * config.avatarDirection), config.maxEvolves - 1), 0)
   
                 if (config.leadercap && client.name === lastLeaderName) {
-                  client.speed = client.speed * 0.9
+                  client.speed = client.speed * 0.8
                 }
         
                 publishEvent('OnUpdateRegression', client.id, client.avatar, client.speed)
@@ -1671,7 +1777,7 @@ function fastGameloop(app) {
                 client.avatar = Math.max(Math.min(client.avatar - (1 * config.avatarDirection), config.maxEvolves - 1), 0)
   
                 if (config.leadercap && client.name === lastLeaderName) {
-                  client.speed = client.speed * 0.9
+                  client.speed = client.speed * 0.8
                 }
         
                 publishEvent('OnUpdateRegression', client.id, client.avatar, client.speed)
@@ -1690,7 +1796,7 @@ function fastGameloop(app) {
       publishEvent('OnUpdatePlayer',
         client.id, 
         client.overrideSpeed || client.speed, 
-        client.cameraSize, 
+        client.overrideCameraSize || client.cameraSize, 
         client.position.x, 
         client.position.y, 
         client.target.x, 
@@ -1706,6 +1812,19 @@ function fastGameloop(app) {
 
     flushEventQueue(app)
 
+    if (config.gameMode === 'Hayai') {
+      const timeStep = ((5*60)*(config.fastLoopSeconds * 1000)) // +5 base speed total, timestepped
+      const speedMultiplier = 1
+
+      config.baseSpeed += (5*speedMultiplier) / timeStep
+
+      // sharedConfig.checkPositionDistance += Math.round(6 / timeStep)
+      config.checkPositionDistance += (6*speedMultiplier) / timeStep
+      
+      // sharedConfig.checkInterval += Math.round(3 / timeStep)
+      config.checkInterval += (3*speedMultiplier) / timeStep
+    }
+
     lastFastGameloopTime = now
   } catch(e) {
     logError(e)
@@ -1715,6 +1834,15 @@ function fastGameloop(app) {
   }
 
   setTimeout(() => fastGameloop(app), config.fastLoopSeconds * 1000)
+}
+
+function getGameModeGuide(config) {
+  return config.guide || [
+    'Game Mode - ' + config.gameMode,
+    '1. Eat sprites to stay alive',
+    '2. Avoid bigger dragons',
+    '3. Eat smaller dragons'
+  ]
 }
 
 let eventFlushedAt = getTime()
@@ -1803,6 +1931,7 @@ function initEventHandler(app) {
         isJoining: false,
         isSpectating: false,
         isStuck: false,
+        isGod: false,
         isInvincible: config.isGodParty ? true : false,
         isPhased: false,
         overrideSpeed: null,
@@ -2088,10 +2217,10 @@ function initEventHandler(app) {
           currentPlayer.speed = (config.baseSpeed * config['avatarSpeedMultiplier' + currentPlayer.avatar] * currentPlayer.baseSpeed)
 
           log("[INFO] player " + currentPlayer.id + ": logged!")
-
           log("[INFO] Total players: " + Object.keys(clientLookup).length)
+
           const roundTimer = (round.startedAt + config.roundLoopSeconds) - Math.round(getTime() / 1000)
-          emitDirect(socket, 'OnSetPositionMonitor', config.checkPositionDistance + ':' + config.checkInterval + ':' + config.resetInterval)
+          emitDirect(socket, 'OnSetPositionMonitor', Math.round(config.checkPositionDistance) + ':' + Math.round(config.checkInterval) + ':' + Math.round(config.resetInterval))
           emitDirect(socket, 'OnJoinGame', currentPlayer.id, currentPlayer.name, currentPlayer.avatar, currentPlayer.isMasterClient ? 'true' : 'false', roundTimer, currentPlayer.position.x, currentPlayer.position.y)
           // emitDirect(socket, 'OnSetInfo', currentPlayer.id, currentPlayer.name, currentPlayer.address, currentPlayer.network, currentPlayer.device)
 
@@ -2101,107 +2230,8 @@ function initEventHandler(app) {
             return
           }
 
-          let guide
-
-          if (config.gameMode === 'Lets Be Friends') {
-            guide = [
-              'Game Mode - Lets Be Friends',
-              '-200 Points Per Kill',
-              'No Death Orbs'
-            ]
-          } else if (config.gameMode === 'Deathmatch') {
-            guide = [
-              'Game Mode - Deathmatch',
-              '+300 Points Per Kill (Per Evolve)',
-              'No Death Orbs',
-              'Faster Decay'
-            ]
-          } else if (config.gameMode === 'Evolution') {
-            guide = [
-              'Game Mode - Evolution',
-              '+10 Points Per Evolution'
-            ]
-          } else if (config.gameMode === 'Orb Master') {
-            guide = [
-              'Game Mode - Orb Master',
-              '+200 Points Per Orb Pickup',
-              'No Points Per Kill, Evolve, etc.',
-              'Orbs Last Until End of Round'
-            ]
-          } else if (config.gameMode === 'Sprite Leader') {
-            guide = [
-              'Game Mode - Sprite Leader',
-              '+3 Sprites Per Player',
-              'No Points Per Kill, Evolve, etc.',
-              'No Orbs',
-              'Faster Decay',
-              'Longer Immunity'
-            ]
-          } else if (config.gameMode === 'Fast Drake') {
-            guide = [
-              'Game Mode - Fast Drake',
-              '+50% Speed as Black Drake',
-              'Faster Decay',
-              'Longer Immunity'
-            ]
-          } else if (config.gameMode === 'Bird Eye') {
-            guide = [
-              'Game Mode - Bird Eye',
-              'Faster Movement',
-              'Faster Decay'
-            ]
-          } else if (config.gameMode === 'Friendly Reverse') {
-            guide = [
-              'Game Mode - Friendly Reverse',
-              '-200 Points Per Kill (Per Evolve)',
-              '+25 Points Per Evolve',
-              'Reverse Evolution',
-              'No Orbs'
-            ]
-          } else if (config.gameMode === 'Reverse Evolve') {
-            guide = [
-              'Game Mode - Reverse Evolve',
-              'Reverse Evolution'
-            ]
-          } else if (config.gameMode === 'Marco Polo') {
-            guide = [
-              'Game Mode - Marco Polo',
-              'Zoomed in + no map',
-              'Faster Movement',
-              'Faster Decay'
-            ]
-          } else if (config.gameMode === 'Leadercap') {
-            guide = [
-              'Game Mode - Leadercap',
-              'Kill the last round leader',
-              'Leader -10% Speed',
-              'Leader 75% Death Orb'
-            ]
-          } else if (config.gameMode === 'Sticky Mode') {
-            guide = [
-              'Game Mode - Sticky Mode',
-              'Sticky islands'
-            ]
-          } else if (config.gameMode === 'Sprite Juice') {
-            guide = [
-              'Game Mode - Sprite Juice',
-              // 'Sprites have side effects!',
-              'Sprite 1 - Increase Speed',
-              'Sprite 2 - Decrease Speed',
-              'Sprite 3 - Increase Decay',
-              'Sprite 4 - Shield',
-            ]
-          } else {
-            guide = [
-              'Game Mode - ' + config.gameMode,
-              'Eat sprites to stay alive',
-              'Avoid bigger dragons',
-              'Eat smaller dragons'
-            ]
-          }
-
           if (!config.isRoundPaused) {
-            emitDirect(socket, 'OnSetRoundInfo', roundTimer + ':' + getRoundInfo().join(':') + ':' + guide.join(':'))
+            emitDirect(socket, 'OnSetRoundInfo', roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'))
             emitDirect(socket, 'OnBroadcast', `Game Mode - ${config.gameMode} (Round ${config.roundId})`, 0)
           }
 
@@ -2322,7 +2352,7 @@ function initEventHandler(app) {
 
       socket.on('RS_MaintenanceRequest', async function(req) {
         try {
-          log('Maintenance', req)
+          log('RS_MaintenanceRequest', req)
 
           if (await isValidAdminRequest(req)) {
             sharedConfig.isMaintenance = true
@@ -2352,7 +2382,7 @@ function initEventHandler(app) {
 
       socket.on('RS_UnmaintenanceRequest', async function(req) {
         try {
-          log('Unmaintenance', req)
+          log('RS_UnmaintenanceRequest', req)
 
           if (await isValidAdminRequest(req)) {
             sharedConfig.isMaintenance = false
@@ -2382,7 +2412,7 @@ function initEventHandler(app) {
 
       socket.on('RS_StartBattleRoyaleRequest', async function(req) {
         try {
-          log('StartBattleRoyale', req)
+          log('RS_StartBattleRoyaleRequest', req)
 
           if (await isValidAdminRequest(req)) {
 
@@ -2402,6 +2432,7 @@ function initEventHandler(app) {
                   config.isGodParty = false
       
                   publishEvent('OnBroadcast', `Battle Royale Started`, 3)
+                  publishEvent('OnBroadcast', `God Party Stopped`, 3)
                 }, 1000)
               }, 1000)
             }, 1000)
@@ -2428,7 +2459,7 @@ function initEventHandler(app) {
 
       socket.on('RS_StopBattleRoyaleRequest', async function(req) {
         try {
-          log('StopBattleRoyale', req)
+          log('RS_StopBattleRoyaleRequest', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.isBattleRoyale = false
@@ -2458,7 +2489,7 @@ function initEventHandler(app) {
 
       socket.on('RS_PauseRoundRequest', async function(req) {
         try {
-          log('PauseRound', req)
+          log('RS_PauseRoundRequest', req)
 
           if (await isValidAdminRequest(req)) {
             clearTimeout(roundLoopTimeout)
@@ -2491,7 +2522,7 @@ function initEventHandler(app) {
 
       socket.on('RS_StartRoundRequest', async function(req) {
         try {
-          log('StartRound', req)
+          log('RS_StartRoundRequest', req)
 
           if (await isValidAdminRequest(req)) {
             clearTimeout(roundLoopTimeout)
@@ -2525,7 +2556,7 @@ function initEventHandler(app) {
 
       socket.on('RS_EnableForceLevel2Request', async function(req) {
         try {
-          log('EnableForceLevel2', req)
+          log('RS_EnableForceLevel2Request', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.level2forced = true
@@ -2553,7 +2584,7 @@ function initEventHandler(app) {
 
       socket.on('RS_DisableForceLevel2Request', async function(req) {
         try {
-          log('DisableForceLevel2', req)
+          log('RS_DisableForceLevel2Request', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.level2forced = false
@@ -2581,7 +2612,7 @@ function initEventHandler(app) {
 
       socket.on('RS_StartGodPartyRequest', async function(req) {
         try {
-          log('StartGodParty', req)
+          log('RS_StartGodPartyRequest', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.isGodParty = true
@@ -2611,7 +2642,7 @@ function initEventHandler(app) {
 
       socket.on('RS_StopGodPartyRequest', async function(req) {
         try {
-          log('StopGodParty', req)
+          log('RS_StopGodPartyRequest', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.isGodParty = false
@@ -2647,7 +2678,7 @@ function initEventHandler(app) {
 
       socket.on('RS_MakeBattleHarderRequest', async function(req) {
         try {
-          log('MakeBattleHarder', req)
+          log('RS_MakeBattleHarderRequest', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.dynamicDecayPower = false
@@ -2695,7 +2726,7 @@ function initEventHandler(app) {
 
       socket.on('RS_MakeBattleEasierRequest', async function(req) {
         try {
-          log('MakeBattleEasier', req)
+          log('RS_MakeBattleEasierRequest', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.dynamicDecayPower = false
@@ -2741,7 +2772,7 @@ function initEventHandler(app) {
 
       socket.on('RS_ResetBattleDifficultyRequest', async function(req) {
         try {
-          log('ResetBattleDifficulty', req)
+          log('RS_ResetBattleDifficultyRequest', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.dynamicDecayPower = true
@@ -2818,7 +2849,7 @@ function initEventHandler(app) {
 
       socket.on('RS_MessageUserRequest', async function(req) {
         try {
-          log('Message', req)
+          log('RS_MessageUserRequest', req)
 
           if (await isValidAdminRequest(req)) {
             const socket = sockets[clients.find(c => c.address === req.data.target).id]
@@ -2843,9 +2874,43 @@ function initEventHandler(app) {
         }
       })
 
+      socket.on('RS_ChangeUserRequest', async function(req) {
+        try {
+          log('RS_ChangeUserRequest', req)
+
+          if (await isValidAdminRequest(req)) {
+            const client = clients.find(c => c.address === req.data.target)
+
+            for (const key of Object.keys(req.data.config)) {
+              const value = req.data.config[key]
+              const val = value === "true" ? true : (value === "false" ? false : (isNumeric(value) ? parseFloat(value) : value))
+              if (client.hasOwnProperty(key))
+                client[key] = val
+              else
+                throw new Error('User doesnt have that option')
+            }
+
+            socket.emit('RS_ChangeUserResponse', {
+              id: req.id,
+              data: { status: 1 }
+            })
+          } else {
+            socket.emit('RS_ChangeUserResponse', {
+              id: req.id,
+              data: { status: 0 }
+            })
+          }
+        } catch (e) {
+          socket.emit('RS_ChangeUserResponse', {
+            id: req.id,
+            data: { status: 0, message: e.toString() }
+          })
+        }
+      })
+
       socket.on('RS_BroadcastRequest', async function(req) {
         try {
-          log('Broadcast', {
+          log('RS_BroadcastRequest', {
             caller: req.address,
             message: req.data.message
           })
@@ -2905,6 +2970,7 @@ function initEventHandler(app) {
           }
         })
       })
+
 
       socket.onAny(function(eventName, res) {
         if (!res || !res.id) return
