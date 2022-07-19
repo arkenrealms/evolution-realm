@@ -2002,6 +2002,7 @@ function initEventHandler(app) {
         currentPlayer.isMasterClient = true // first client to join the game
       }
 
+      clients = clients.filter(c => c.address !== currentPlayer.address)
       clients.push(currentPlayer)
 
       socket.on('RS_Connected', async function() {
