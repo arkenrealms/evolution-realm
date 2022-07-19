@@ -2140,11 +2140,11 @@ function initEventHandler(app) {
 
             log('Username: ' + name)
             addressToUsername[address] = name
+          }
 
-            if (name === 'Testman') {
-              currentPlayer.isGod = true
-              currentPlayer.overrideCameraSize = 12
-            }
+          if (name === 'Testman') {
+            currentPlayer.isGod = true
+            currentPlayer.overrideCameraSize = 12
           }
 
           const now = getTime()
