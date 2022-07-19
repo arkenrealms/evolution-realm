@@ -404,6 +404,11 @@ function onRealmConnection(app, socket) {
       log('Observer has disconnected')
 
       currentClient.log.clientDisconnected += 1
+
+      delete app.realm.sockets[currentClient.id]
+      delete app.realm.clientLookup[currentClient.id]
+
+      app.realm.clients = app.realm.clients.filter(c => c.id !== currentClient.id)
     })
   } catch(e) {
     logError(e)
