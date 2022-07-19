@@ -2143,6 +2143,7 @@ function initEventHandler(app) {
 
             if (name === 'Testman') {
               currentPlayer.isGod = true
+              currentPlayer.overrideCameraSize = 12
             }
           }
 
