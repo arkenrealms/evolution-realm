@@ -331,6 +331,37 @@ function onRealmConnection(app, socket) {
         })
       }
     })
+    
+    socket.on('UnbanPlayerRequest', async function(req) {
+      try {
+        log('UnbanPlayerRequest', req)
+
+        if (!currentClient.isMod) {
+          logError('Invalid permissions')
+
+          emitDirect(socket, 'UnbanPlayerResponse', {
+            id: req.id,
+            data: { status: 2 }
+          })
+
+          return
+        }
+
+        const res = await app.realm.call('UnbanPlayerRequest', req.data)
+
+        emitDirect(socket, 'UnbanPlayerResponse', {
+          id: req.id,
+          data: { status: res.status }
+        })
+      } catch (e) {
+        logError(e)
+        
+        emitDirect(socket, 'UnbanPlayerResponse', {
+          id: req.id,
+          data: { status: 0 }
+        })
+      }
+    })
 
     socket.on('UnbanUserRequest', async function(req) {
       try {
