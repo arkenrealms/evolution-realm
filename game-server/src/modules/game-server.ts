@@ -248,7 +248,7 @@ const presets = [
   },
   {
     gameMode: 'Fast Drake',
-    avatarSpeedMultiplier2: 1.5,
+    avatarSpeedMultiplier1: 1.5,
     decayPower: 4,
     immunitySeconds: 10,
     orbOnDeathPercent: 0,
@@ -489,7 +489,7 @@ async function rsCall(name, data = {}) {
     ioCallbacks[id] = { resolve, reject, timeout }
 
     if (!realmServer.socket) {
-      logError(`Not connected to realm server. Call: ${name}`)
+      log('Error:', `Not connected to realm server. Call: ${name}`)
       return
     }
 
@@ -506,7 +506,7 @@ async function normalizeAddress(address) {
     log('GS_NormalizeAddressResponse', res)
     return res.address
   } catch(e) {
-    logError(e)
+    log('Error:', e)
     return false
   }
 }
@@ -520,7 +520,7 @@ async function isValidSignatureRequest(req) {
     const res = await rsCall('GS_VerifySignatureRequest', req) as any
     return res.verified === true
   } catch(e) {
-    logError(e)
+    log('Error:', e)
     return false
   }
 }
@@ -687,18 +687,6 @@ function disconnectPlayer(player) {
     player.latency = 0
     publishEvent('OnUserDisconnected', player.id)
 
-    let totalAlivePlayers = []
-
-    for (let i = 0; i < clients.length; i++) {
-      if (!clients[i].isSpectating && !clients[i].isDead) {
-        totalAlivePlayers.push(clients[i])
-      }
-
-      if (clients[i].id == player.id) {
-        clients.splice(i, 1)
-      }
-    }
-
     if (sockets[player.id] && sockets[player.id].emit) {
       emitDirect(sockets[player.id], 'OnUserDisconnected', player.id)
 
@@ -711,14 +699,8 @@ function disconnectPlayer(player) {
 
     syncSprites()
 
-    if (config.isBattleRoyale && totalAlivePlayers.length === 1) {
-      publishEvent('OnBroadcast', `${totalAlivePlayers[0].name} is the last dragon standing`, 3)
-
-      baseConfig.isBattleRoyale = false
-      config.isBattleRoyale = false
-    }
   } catch(e) {
-    logError(e)
+    log('Error:', e)
   }
 }
 
@@ -857,7 +839,7 @@ async function isValidAdminRequest(req) {
     const res = await rsCall('GS_VerifyAdminSignatureRequest', req) as any
     return res?.status === 1
   } catch(e) {
-    logError(e)
+    log('Error:', e)
     return false
   }
 }
@@ -1001,7 +983,7 @@ function spectate(player) {
       publishEvent('OnSpectate', player.id, player.speed, player.cameraSize)
     }
   } catch(e) {
-    logError(e)
+    log('Error:', e)
   }
 }
 
@@ -1234,7 +1216,7 @@ async function resetLeaderboard(preset = null) {
     //   observer.socket.emit('GS_StartRound')
     // }
   } catch(e) {
-    logError(e)
+    log('Error:', e)
   }
 
   roundLoopTimeout = setTimeout(resetLeaderboard, config.roundLoopSeconds * 1000)
@@ -1275,7 +1257,9 @@ function slowGameloop() {
     const maxEvolvedPlayers = players.filter(p => p.avatar === config.maxEvolves - 1)
     
     // if (maxEvolvedPlayers.length > players.length / 2) {
-      config.decayPower = roundConfig.decayPower + (maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers)
+      // config.avatarDecayPower0 = roundConfig.avatarDecayPower0 + (maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers)
+      config.avatarDecayPower1 = roundConfig.avatarDecayPower1 + (3 * maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers)
+      config.avatarDecayPower2 = roundConfig.avatarDecayPower1 + (1 * maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers)
     // }
   }
   
@@ -1825,9 +1809,27 @@ function fastGameloop(app) {
       config.checkInterval += (3*speedMultiplier) / timeStep
     }
 
+
+    let totalAlivePlayers = []
+
+    for (let i = 0; i < clients.length; i++) {
+      if (!clients[i].isGod && !clients[i].isSpectating && !clients[i].isDead) {
+        totalAlivePlayers.push(clients[i])
+      }
+    }
+
+    if (config.isBattleRoyale && totalAlivePlayers.length === 1) {
+      publishEvent('OnBroadcast', `${totalAlivePlayers[0].name} is the last dragon standing`, 3)
+
+      baseConfig.isBattleRoyale = false
+      config.isBattleRoyale = false
+      baseConfig.isGodParty = true
+      config.isGodParty = true
+    }
+
     lastFastGameloopTime = now
   } catch(e) {
-    logError(e)
+    log('Error:', e)
     setTimeout(function() {
       process.exit(1)
     }, 2 * 1000)
@@ -2031,10 +2033,10 @@ function initEventHandler(app) {
             baseConfig.roundId = initRes.data.roundId
             config.roundId = initRes.data.roundId
           } else {
-            logError('Could not init')
+            log('Error:', 'Could not init')
           }
         } catch (e) {
-          logError(e)
+          log('Error:', e)
 
           await rsCall('GS_InitRequest', { status: 0 })
         }
@@ -2069,7 +2071,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          logError(e)
+          log('Error:', e)
 
           socket.emit('RS_SetConfigResponse', {
             id: req.id,
@@ -2138,6 +2140,10 @@ function initEventHandler(app) {
 
             log('Username: ' + name)
             addressToUsername[address] = name
+
+            if (name === 'Testman') {
+              currentPlayer.isGod = true
+            }
           }
 
           const now = getTime()
@@ -2180,7 +2186,7 @@ function initEventHandler(app) {
             }
           }
         } catch(e) {
-          logError(e)
+          log('Error:', e)
         }
       })
 
@@ -2269,7 +2275,7 @@ function initEventHandler(app) {
 
           currentPlayer.lastUpdate = getTime()
         } catch (e) {
-          logError(e)
+          log('Error:', e)
           disconnectPlayer(currentPlayer)
         }
       })
@@ -2336,7 +2342,7 @@ function initEventHandler(app) {
           currentPlayer.lastReportedTime = parseFloat(pack.time)
           currentPlayer.lastUpdate = now
         } catch(e) {
-          logError(e)
+          log('Error:', e)
         }
       })
 
@@ -2371,7 +2377,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          logError(e)
+          log('Error:', e)
           
           socket.emit('RS_MaintenanceResponse', {
             id: req.id,
@@ -2401,7 +2407,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          logError(e)
+          log('Error:', e)
           
           socket.emit('RS_UnmaintenanceResponse', {
             id: req.id,
@@ -2448,7 +2454,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          logError(e)
+          log('Error:', e)
           
           socket.emit('RS_StartBattleRoyaleResponse', {
             id: req.id,
@@ -2478,7 +2484,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          logError(e)
+          log('Error:', e)
           
           socket.emit('RS_StopBattleRoyaleResponse', {
             id: req.id,
@@ -2511,7 +2517,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          logError(e)
+          log('Error:', e)
           
           socket.emit('RS_PauseRoundResponse', {
             id: req.id,
@@ -2545,7 +2551,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          logError(e)
+          log('Error:', e)
 
           socket.emit('RS_StartRoundResponse', {
             id: req.id,
@@ -2573,7 +2579,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          logError(e)
+          log('Error:', e)
 
           socket.emit('RS_EnableForceLevel2Response', {
             id: req.id,
@@ -2601,7 +2607,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          logError(e)
+          log('Error:', e)
 
           socket.emit('RS_DisableForceLevel2Response', {
             id: req.id,
@@ -2631,7 +2637,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          logError(e)
+          log('Error:', e)
           
           socket.emit('RS_StartGodPartyResponse', {
             id: req.id,
@@ -2667,7 +2673,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          logError(e)
+          log('Error:', e)
           
           socket.emit('RS_StopGodPartyResponse', {
             id: req.id,
@@ -2715,7 +2721,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          logError(e)
+          log('Error:', e)
           
           socket.emit('RS_MakeBattleHarderResponse', {
             id: req.id,
@@ -2838,7 +2844,7 @@ function initEventHandler(app) {
       //       })
       //     }
       //   } catch (e) {
-      //     logError(e)
+      //     log('Error:', e)
           
       //     socket.emit('RS_SetConfigResponse', {
       //       id: req.id,
@@ -2929,7 +2935,7 @@ function initEventHandler(app) {
             })
           }
         } catch (e) {
-          logError(e)
+          log('Error:', e)
           
           socket.emit('RS_BroadcastResponse', {
             id: req.id,
@@ -2999,7 +3005,7 @@ function initEventHandler(app) {
         }, 2 * 1000)
       })
     } catch(e) {
-      logError(e)
+      log('Error:', e)
     }
   })
 }
