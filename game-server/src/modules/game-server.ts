@@ -1229,7 +1229,7 @@ function checkConnectionLoop() {
     const oneMinuteAgo = getTime() - (config.disconnectPlayerSeconds * 1000)
     // const oneMinuteAgo = Math.round(getTime() / 1000) - config.disconnectPlayerSeconds
 
-    for (const client of clients)) {
+    for (const client of clients) {
       if (client.isSpectating) continue
       if (client.isGod) continue
       // if (client.isInvincible) continue
