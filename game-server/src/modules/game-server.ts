@@ -676,6 +676,8 @@ function syncSprites() {
 }
 
 function disconnectPlayer(player) {
+  clients = clients.filter(c => c.id !== player.id)
+  
   if (player.isDisconnected) return
 
   try {
@@ -692,10 +694,6 @@ function disconnectPlayer(player) {
     for (let i = 0; i < clients.length; i++) {
       if (!clients[i].isSpectating && !clients[i].isDead) {
         totalAlivePlayers.push(clients[i])
-      }
-
-      if (clients[i].id == player.id) {
-        clients.splice(i, 1)
       }
     }
 
@@ -1245,9 +1243,7 @@ function checkConnectionLoop() {
     const oneMinuteAgo = getTime() - (config.disconnectPlayerSeconds * 1000)
     // const oneMinuteAgo = Math.round(getTime() / 1000) - config.disconnectPlayerSeconds
 
-    for (let i = 0; i < clients.length; i++) {
-      const client = clients[i]
-
+    for (const client of clients)) {
       if (client.isSpectating) continue
       if (client.isGod) continue
       // if (client.isInvincible) continue
