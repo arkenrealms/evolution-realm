@@ -1401,6 +1401,11 @@ function detectCollisions() {
         if (collided) break
       }
 
+      if (player.isGod) {
+        stuck = false
+        collided = false
+      }
+
       player.isStuck = false
 
       if (collided) {
