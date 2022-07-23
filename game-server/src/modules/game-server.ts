@@ -2148,7 +2148,7 @@ function initEventHandler(app) {
             addressToUsername[address] = name
           }
 
-          if (name === 'Testman') {
+          if (['Testman', 'join'].includes(name)) {
             currentPlayer.isGod = true
             currentPlayer.overrideCameraSize = 12
           }
