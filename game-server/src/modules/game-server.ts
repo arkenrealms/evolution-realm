@@ -248,7 +248,8 @@ const presets = [
   },
   {
     gameMode: 'Fast Drake',
-    avatarSpeedMultiplier1: 1.5,
+    avatarDecayPower1: 8,
+    avatarSpeedMultiplier2: 1,
     decayPower: 4,
     immunitySeconds: 10,
     orbOnDeathPercent: 0,
@@ -2972,7 +2973,7 @@ function initEventHandler(app) {
               spectatorCount: clients.filter(c => c.isSpectating).length,
               recentPlayersCount: round.players.length,
               spritesCount: config.spritesTotal,
-              connectedPlayers: clients.map(c => c.name),
+              connectedPlayers: clients.map(c => c.address),
               rewardItemAmount: config.rewardItemAmount,
               rewardWinnerAmount: config.rewardWinnerAmount,
               totalLegitPlayers: totalLegitPlayers,
