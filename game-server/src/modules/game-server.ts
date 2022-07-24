@@ -1081,9 +1081,9 @@ async function resetLeaderboard(preset = null) {
         setTimeout(() => {
           publishEvent('OnBroadcast', `Problem saving the round. Restarting round.`, 3)
   
-          clearTimeout(roundLoopTimeout)
+          // clearTimeout(roundLoopTimeout)
   
-          resetLeaderboard()
+          // resetLeaderboard()
         }, 30 * 1000)
       }
     }
