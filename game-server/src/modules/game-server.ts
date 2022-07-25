@@ -349,6 +349,9 @@ const presets = [
   },
   {
     gameMode: 'Sprite Juice',
+    // spritesPerPlayerCount: 1,
+    spritesStartCount: 15,
+    spritesTotal: 15,
     guide: [
       'Game Mode - Sprite Juice',
       // 'Sprites have side effects!',
@@ -1558,7 +1561,7 @@ function detectCollisions() {
             value = config.powerupXp0
 
             if (config.gameMode === 'Sprite Juice') {
-              player.invincibleUntil = Math.round(getTime() / 1000) + 2
+              player.invincibleUntil = Math.round(getTime() / 1000) + 2 * 4
               // publishEvent('OnBroadcast', `Speed up ${player.baseSpeed}`, 0)
             }
 
@@ -1570,7 +1573,7 @@ function detectCollisions() {
           if (powerup.type == 1) {
             value = config.powerupXp1
             if (config.gameMode === 'Sprite Juice') {
-              player.baseSpeed += 0.05
+              player.baseSpeed += 0.05 * 4
               // publishEvent('OnBroadcast', `Speed down ${player.baseSpeed}`, 0)
             }
 
@@ -1582,7 +1585,7 @@ function detectCollisions() {
           if (powerup.type == 2) {
             value = config.powerupXp2
             if (config.gameMode === 'Sprite Juice') {
-              player.baseSpeed -= 0.05
+              player.baseSpeed -= 0.05 * 4
               // publishEvent('OnBroadcast', `Decay ${player.decayPower}`, 0)
             }
 
@@ -1594,7 +1597,7 @@ function detectCollisions() {
           if (powerup.type == 3) {
             value = config.powerupXp3
             if (config.gameMode === 'Sprite Juice') {
-              player.decayPower += 0.1
+              player.decayPower += 0.1 * 4
               // publishEvent('OnBroadcast', `Invinc`, 0)
             }
 
@@ -1804,7 +1807,7 @@ function fastGameloop(app) {
 
     if (config.gameMode === 'Hayai') {
       const timeStep = ((5*60)*(config.fastLoopSeconds * 1000)) // +5 base speed total, timestepped
-      const speedMultiplier = 0.5
+      const speedMultiplier = 0.25
 
       config.baseSpeed += (5*speedMultiplier) / timeStep
 
