@@ -954,25 +954,25 @@ function spectate(player) {
     }
 
     if (player.isSpectating) {
-      // if (!player.isMod) {
-        disconnectPlayer(player)
-        return
-      // }
+      // // if (!player.isMod) {
+      //   disconnectPlayer(player)
+      //   return
+      // // }
   
-      player.isSpectating = false
-      player.isInvincible = false
-      player.isJoining = true
-      player.points = 0
-      player.xp = 100
-      player.avatar = config.startAvatar
-      player.speed = config.baseSpeed * config.avatarSpeedMultiplier0
-      player.overrideSpeed = null
-      player.cameraSize = config.cameraSize
-      player.overrideCameraSize = null
+      // player.isSpectating = false
+      // player.isInvincible = false
+      // player.isJoining = true
+      // player.points = 0
+      // player.xp = 100
+      // player.avatar = config.startAvatar
+      // player.speed = config.baseSpeed * config.avatarSpeedMultiplier0
+      // player.overrideSpeed = null
+      // player.cameraSize = config.cameraSize
+      // player.overrideCameraSize = null
   
-      syncSprites()
+      // syncSprites()
   
-      publishEvent('OnUnspectate', player.id, player.speed, player.cameraSize)
+      // publishEvent('OnUnspectate', player.id, player.speed, player.cameraSize)
     } else {
       player.isSpectating = true
       player.isInvincible = true
@@ -1031,6 +1031,8 @@ async function calcRoundRewards() {
   
   sharedConfig.rewardWinnerAmount = calcRewardsRes.data.rewardWinnerAmount
   config.rewardWinnerAmount = calcRewardsRes.data.rewardWinnerAmount
+  sharedConfig.rewardItemAmount = calcRewardsRes.data.rewardItemAmount
+  config.rewardItemAmount = calcRewardsRes.data.rewardItemAmount
 }
 
 let lastFastGameloopTime = getTime()
@@ -1236,6 +1238,7 @@ function checkConnectionLoop() {
     for (const client of clients) {
       if (client.isSpectating) continue
       if (client.isGod) continue
+      if (client.isMod) continue
       // if (client.isInvincible) continue
       // if (client.isDead) continue
 
@@ -1255,7 +1258,7 @@ function getPayload(messages) {
 }
 
 //updates the list of best players every 1000 milliseconds
-function slowGameloop() {
+async function slowGameloop() {
   if (config.dynamicDecayPower) {
     const players = clients.filter(p => !p.isDead && !p.isSpectating)
     const maxEvolvedPlayers = players.filter(p => p.avatar === config.maxEvolves - 1)
@@ -1265,6 +1268,10 @@ function slowGameloop() {
       config.avatarDecayPower1 = roundConfig.avatarDecayPower1 + (3 * maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers)
       config.avatarDecayPower2 = roundConfig.avatarDecayPower1 + (1 * maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers)
     // }
+  }
+
+  if (config.calcRoundRewards && config.rewardWinnerAmount === 0) {
+    await calcRoundRewards()
   }
   
   setTimeout(slowGameloop, config.slowLoopSeconds * 1000)
@@ -1689,7 +1696,7 @@ function fastGameloop(app) {
       if (client.isJoining) continue
 
       const currentTime = Math.round(now / 1000)
-      const isInvincible = config.isGodParty || client.isGod || client.isInvincible || (client.invincibleUntil > currentTime)
+      const isInvincible = config.isGodParty || client.isSpectating || client.isGod || client.isInvincible || (client.invincibleUntil > currentTime)
       const isPhased = client.isPhased ? true : now <= client.phasedUntil
 
       client.speed = client.overrideSpeed || (config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed)
