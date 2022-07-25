@@ -148,13 +148,13 @@ let config = {
 }
 
 const presets = [
-  {
-    gameMode: 'Standard',
-    pointsPerEvolve: 1,
-    pointsPerPowerup: 1,
-    pointsPerKill: 20,
-    pointsPerReward: 5,
-  },
+  // {
+  //   gameMode: 'Standard',
+  //   pointsPerEvolve: 1,
+  //   pointsPerPowerup: 1,
+  //   pointsPerKill: 20,
+  //   pointsPerReward: 5,
+  // },
   {
     gameMode: 'Lets Be Friends',
     pointsPerKill: -200,
@@ -176,12 +176,12 @@ const presets = [
     pointsPerKill: 20,
     pointsPerReward: 100,
   },
-  {
-    gameMode: 'Mix Game 2',
-    pointsPerEvolve: 10,
-    pointsPerKill: 200,
-    pointsPerReward: 20,
-  },
+  // {
+  //   gameMode: 'Mix Game 2',
+  //   pointsPerEvolve: 10,
+  //   pointsPerKill: 200,
+  //   pointsPerReward: 20,
+  // },
   {
     gameMode: 'Deathmatch',
     pointsPerKill: 300,
@@ -242,6 +242,51 @@ const presets = [
       '+3 Sprites Per Player',
       'No Points Per Kill, Evolve, etc.',
       'No Orbs',
+      'Faster Decay',
+      'Longer Immunity'
+    ]
+  },
+  {
+    gameMode: 'Fast Drake',
+    avatarDecayPower1: 8,
+    avatarSpeedMultiplier2: 1,
+    decayPower: 4,
+    immunitySeconds: 10,
+    orbOnDeathPercent: 0,
+    spritesPerPlayerCount: 3,
+    guide: [
+      'Game Mode - Fast Drake',
+      '+50% Speed as Black Drake',
+      'Faster Decay',
+      'Longer Immunity'
+    ]
+  },
+  {
+    gameMode: 'Fast Drake',
+    avatarDecayPower1: 8,
+    avatarSpeedMultiplier2: 1,
+    decayPower: 4,
+    immunitySeconds: 10,
+    orbOnDeathPercent: 0,
+    spritesPerPlayerCount: 3,
+    guide: [
+      'Game Mode - Fast Drake',
+      '+50% Speed as Black Drake',
+      'Faster Decay',
+      'Longer Immunity'
+    ]
+  },
+  {
+    gameMode: 'Fast Drake',
+    avatarDecayPower1: 8,
+    avatarSpeedMultiplier2: 1,
+    decayPower: 4,
+    immunitySeconds: 10,
+    orbOnDeathPercent: 0,
+    spritesPerPlayerCount: 3,
+    guide: [
+      'Game Mode - Fast Drake',
+      '+50% Speed as Black Drake',
       'Faster Decay',
       'Longer Immunity'
     ]
@@ -361,15 +406,15 @@ const presets = [
       'Sprite 4 - Shield',
     ]
   },
-  {
-    gameMode: 'Hayai',
-    level2forced: true,
-    decayPower: 3.6,
-    guide: [
-      'Game Mode - Hayai',
-      'You feel energy growing around you...'
-    ]
-  },
+  // {
+  //   gameMode: 'Hayai',
+  //   level2forced: true,
+  //   decayPower: 3.6,
+  //   guide: [
+  //     'Game Mode - Hayai',
+  //     'You feel energy growing around you...'
+  //   ]
+  // },
   // {
   //   gameMode: 'Storm Cuddle',
   //   fortnight: true
