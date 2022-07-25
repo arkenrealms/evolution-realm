@@ -245,7 +245,8 @@ function connectGameServer(app) {
         data: {
           status: 1,
           data: {
-            rewardWinnerAmount: config.rewardWinnerAmount
+            rewardWinnerAmount: config.rewardWinnerAmount,
+            rewardItemAmount: config.rewardItemAmount
           }
         }
       })
