@@ -314,6 +314,11 @@ function connectGameServer(app) {
       await jetpack.writeAsync(path.resolve('./public/data/unsavedGames.json'), JSON.stringify(app.state.unsavedGames, null, 2))
       await jetpack.writeAsync(path.resolve('./public/data/config.json'), JSON.stringify(config, null, 2))
     } catch(e) {
+      emitDirect(socket, 'GS_SaveRoundResponse', {
+        id: req.id,
+        data: { status: 0 }
+      })
+
       logError(e)
     }
 
@@ -340,12 +345,12 @@ function connectGameServer(app) {
         })
       }
     } catch (e) {
-      logError(e)
-      
       emitDirect(socket, 'GS_ConfirmUserResponse', {
         id: req.id,
         data: { status: 0 }
       })
+
+      logError(e)
     }
   })
 
