@@ -2153,6 +2153,8 @@ function initEventHandler(app) {
       socket.on('RS_SetConfigRequest', async function(req) {
         try {
           if (await isValidAdminRequest(req)) {
+            const originalRewardAmount = config.rewardWinnerAmount
+
             for (const key of Object.keys(req.data.config)) {
               const value = req.data.config[key]
 
@@ -2168,8 +2170,9 @@ function initEventHandler(app) {
               if (!req.data.isReset) publishEvent('OnBroadcast', `${key} = ${val}`, 1)
             }
 
-            if (req.data.isReset) {
-              publishEvent('OnSetRoundInfo', config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'))
+            if (req.data.isReset && originalRewardAmount === 0 && config.rewardWinnerAmount !== 0) {
+              const roundTimer = (round.startedAt + config.roundLoopSeconds) - Math.round(getTime() / 1000)
+              publishEvent('OnSetRoundInfo', roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'))
             }
 
             socket.emit('RS_SetConfigResponse', {
