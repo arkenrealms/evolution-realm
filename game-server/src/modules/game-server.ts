@@ -2108,8 +2108,6 @@ function initEventHandler(app) {
             config.id = initRes.id
             baseConfig.roundId = initRes.data.roundId
             config.roundId = initRes.data.roundId
-      
-            publishEvent('OnBroadcast', `Realm connected`, 0)
           } else {
             log('Error:', 'Could not init')
           }
@@ -2125,23 +2123,23 @@ function initEventHandler(app) {
         }
       })
 
-      // socket.on('RS_Connected', async function(req) {
-      //   if (!await isValidAdminRequest(req)) return
+      socket.on('RS_ApiConnected', async function(req) {
+        if (!await isValidAdminRequest(req)) return
       
-      //   publishEvent('OnBroadcast', `Realm connected`, 0)
+        publishEvent('OnBroadcast', `API connected`, 0)
 
-      //   socket.emit('RS_ConnectedResponse', {
-      //     id: req.id,
-      //     data: { status: 1 }
-      //   })
-      // })
+        socket.emit('RS_ApiConnectedResponse', {
+          id: req.id,
+          data: { status: 1 }
+        })
+      })
 
-      socket.on('RS_Disconnected', async function(req) {
+      socket.on('RS_ApiDisconnected', async function(req) {
         if (!await isValidAdminRequest(req)) return
 
-        publishEvent('OnBroadcast', `Realm disconnected`, 0)
+        publishEvent('OnBroadcast', `API disconnected`, 0)
 
-        socket.emit('RS_DisconnectedResponse', {
+        socket.emit('RS_ApiDisconnectedResponse', {
           id: req.id,
           data: { status: 1 }
         })
@@ -3113,6 +3111,10 @@ function initEventHandler(app) {
           disconnectPlayer(currentPlayer)
           flushEventQueue(app)
         }, 2 * 1000)
+
+        if (currentPlayer.id === realmServer.socket.id) {
+          publishEvent('OnBroadcast', `Realm disconnected`, 0)
+        }
       })
     } catch(e) {
       log('Error:', e)

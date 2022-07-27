@@ -3,6 +3,7 @@ import md5 from 'js-md5'
 import jetpack from 'fs-jetpack'
 import { spawn } from 'child_process'
 import { io as ioClient } from 'socket.io-client'
+import { isValidRequest, getSignedRequest } from '@rune-backend-sdk/util/web3'
 import { log, logError, random, getTime } from '@rune-backend-sdk/util'
 import { emitDirect } from '@rune-backend-sdk/util/websocket'
 import { upgradeGsCodebase, cloneGsCodebase } from '@rune-backend-sdk/util/codebase'
@@ -119,8 +120,10 @@ function connectGameServer(app) {
     // setTimeout(fetchInfo, 10 * 1000)
   }
 
-  socket.on('connect', function() {
+  socket.on('connect', async function() {
     log('Connected: ' + server.key)
+
+    socket.emit('RS_Connected', await getSignedRequest(app.web3, app.secrets, {}), {})
   })
 
   socket.on('disconnect', function() {
