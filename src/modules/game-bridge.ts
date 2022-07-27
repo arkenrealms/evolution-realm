@@ -253,7 +253,7 @@ function connectGameServer(app) {
 
       emitDirect(socket, 'GS_ConfigureResponse', {
         id: req.id,
-        data: { status: 0 }
+        data: { status: 0, data: { rewardWinnerAmount: 0, rewardItemAmount: 0 } }
       })
     }
   })
