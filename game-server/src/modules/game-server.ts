@@ -252,56 +252,8 @@ const presets = [
     avatarDecayPower1: 1,
     avatarDecayPower2: 1,
     avatarSpeedMultiplier2: 1,
-    decayPower: 1,
-    decayPowerPerMaxEvolvedPlayers: 5,
-    immunitySeconds: 10,
-    orbOnDeathPercent: 0,
-    spritesPerPlayerCount: 3,
-    guide: [
-      'Game Mode - Fast Drake',
-      '+50% Speed as Black Drake',
-      'Faster Decay',
-      'Longer Immunity'
-    ]
-  },
-  {
-    gameMode: 'Fast Drake',
-    // avatarDecayPower1: 8,
-    avatarSpeedMultiplier2: 1,
-    decayPower: 3,
-    decayPowerPerMaxEvolvedPlayers: 3,
-    immunitySeconds: 10,
-    orbOnDeathPercent: 0,
-    spritesPerPlayerCount: 3,
-    guide: [
-      'Game Mode - Fast Drake',
-      '+50% Speed as Black Drake',
-      'Faster Decay',
-      'Longer Immunity'
-    ]
-  },
-  {
-    gameMode: 'Fast Drake',
-    // avatarDecayPower1: 8,
-    avatarSpeedMultiplier2: 1,
-    decayPower: 3,
-    decayPowerPerMaxEvolvedPlayers: 3,
-    immunitySeconds: 10,
-    orbOnDeathPercent: 0,
-    spritesPerPlayerCount: 3,
-    guide: [
-      'Game Mode - Fast Drake',
-      '+50% Speed as Black Drake',
-      'Faster Decay',
-      'Longer Immunity'
-    ]
-  },
-  {
-    gameMode: 'Fast Drake',
-    // avatarDecayPower1: 8,
-    avatarSpeedMultiplier2: 1,
-    decayPower: 3,
-    decayPowerPerMaxEvolvedPlayers: 3,
+    decayPower: 0.5,
+    decayPowerPerMaxEvolvedPlayers: 10,
     immunitySeconds: 10,
     orbOnDeathPercent: 0,
     spritesPerPlayerCount: 3,
