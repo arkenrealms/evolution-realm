@@ -130,7 +130,7 @@ function onRealmConnection(app, socket) {
 
         app.gameBridge.state.config = { ...app.gameBridge.state.config, ...req.data.config }
 
-        const data = { isReset: true, ...app.gameBridge.state.config }
+        const data = { isReset: true, config: app.gameBridge.state.config }
 
         app.gameBridge.call('RS_SetConfigRequest', await getSignedRequest(app.web3, app.secrets, data), data)
 
