@@ -1084,6 +1084,11 @@ async function calcRoundRewards() {
     config.rewardWinnerAmount = calcRewardsRes.data.rewardWinnerAmount
     sharedConfig.rewardItemAmount = calcRewardsRes.data.rewardItemAmount
     config.rewardItemAmount = calcRewardsRes.data.rewardItemAmount
+
+    if (config.rewardWinnerAmount === 0 && calcRewardsRes.data.rewardWinnerAmount !== 0) {
+      const roundTimer = (round.startedAt + config.roundLoopSeconds) - Math.round(getTime() / 1000)
+      publishEvent('OnSetRoundInfo', roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'))
+    }
   }
 }
 
@@ -2170,7 +2175,7 @@ function initEventHandler(app) {
               if (!req.data.isReset) publishEvent('OnBroadcast', `${key} = ${val}`, 1)
             }
 
-            if (req.data.isReset && originalRewardAmount === 0 && config.rewardWinnerAmount !== 0) {
+            if (originalRewardAmount === 0 && config.rewardWinnerAmount !== 0) {
               const roundTimer = (round.startedAt + config.roundLoopSeconds) - Math.round(getTime() / 1000)
               publishEvent('OnSetRoundInfo', roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'))
             }
