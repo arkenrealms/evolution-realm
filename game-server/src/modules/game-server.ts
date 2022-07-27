@@ -1246,9 +1246,10 @@ async function resetLeaderboard(preset = null) {
 
     syncSprites()
 
-    publishEvent('OnSetRoundInfo', config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'))
+    const roundTimer = (round.startedAt + config.roundLoopSeconds) - Math.round(getTime() / 1000)
+    publishEvent('OnSetRoundInfo', roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'))
 
-    console.log(config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'), (config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':')).split(':').length)
+    log(roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'), (config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':')).split(':').length)
 
     publishEvent('OnClearLeaderboard')
 
