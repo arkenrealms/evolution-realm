@@ -2077,7 +2077,7 @@ function initEventHandler(app) {
         try {
           log('RS_Connected')
 
-          if (!await isValidAdminRequest(req)) return
+          if (!await isValidAdminRequest(req)) throw new Error('Not admin')
 
           const sameNetworkObservers = observers.filter(r => r.hash === currentPlayer.hash)
 
