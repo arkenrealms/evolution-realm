@@ -818,6 +818,10 @@ export function initGameBridge(app) {
       runeToken: 1633043139000
     }
   }
+
+  // Override because we didnt get response from RS yet
+  app.gameBridge.state.config.rewardItemAmount = 0
+  app.gameBridge.state.config.rewardWinnerAmount = 0
   
   app.gameBridge.state.rewardSpawnPoints = [
     {x: -16.32, y: -15.7774},
