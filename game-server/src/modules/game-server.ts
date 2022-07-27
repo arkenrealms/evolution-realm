@@ -248,9 +248,11 @@ const presets = [
   },
   {
     gameMode: 'Fast Drake',
-    // avatarDecayPower1: 8,
+    avatarDecayPower0: 1,
+    avatarDecayPower1: 1,
+    avatarDecayPower2: 1,
     avatarSpeedMultiplier2: 1,
-    decayPower: 0,
+    decayPower: 1,
     decayPowerPerMaxEvolvedPlayers: 5,
     immunitySeconds: 10,
     orbOnDeathPercent: 0,
@@ -1322,9 +1324,9 @@ async function slowGameloop() {
     const maxEvolvedPlayers = players.filter(p => p.avatar === config.maxEvolves - 1)
     
     // if (maxEvolvedPlayers.length > players.length / 2) {
-      // config.avatarDecayPower0 = roundConfig.avatarDecayPower0 + (maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers)
-      config.avatarDecayPower1 = roundConfig.avatarDecayPower1 + (3 * maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers)
-      config.avatarDecayPower2 = roundConfig.avatarDecayPower1 + (1 * maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers)
+      config.avatarDecayPower0 = roundConfig.avatarDecayPower0 + (maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers) * 0.33
+      config.avatarDecayPower1 = roundConfig.avatarDecayPower1 + (maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers) * 0.66
+      config.avatarDecayPower2 = roundConfig.avatarDecayPower1 + (maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers) * 1
     // }
   }
 
