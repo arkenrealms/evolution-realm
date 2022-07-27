@@ -187,8 +187,9 @@ const presets = [
     pointsPerKill: 300,
     orbOnDeathPercent: 0,
     pointsPerEvolve: 0,
-    pointsPerPowerup: 1,
+    pointsPerPowerup: 0,
     pointsPerReward: 0,
+    pointsPerOrb: 0,
     baseSpeed: 4,
     antifeed1: false,
     // dynamicDecayPower: true,
@@ -202,7 +203,11 @@ const presets = [
   },
   {
     gameMode: 'Evolution',
+    pointsPerKill: 0,
     pointsPerEvolve: 10,
+    pointsPerPowerup: 0,
+    pointsPerReward: 0,
+    pointsPerOrb: 0,
     guide: [
       'Game Mode - Evolution',
       '+10 Points Per Evolution'
@@ -1585,7 +1590,7 @@ function detectCollisions() {
             value = config.powerupXp0
 
             if (config.gameMode === 'Sprite Juice') {
-              player.invincibleUntil = Math.round(getTime() / 1000) + 2 * 4
+              player.invincibleUntil = Math.round(getTime() / 1000) + 2
               // publishEvent('OnBroadcast', `Speed up ${player.baseSpeed}`, 0)
             }
 
@@ -1597,7 +1602,7 @@ function detectCollisions() {
           if (powerup.type == 1) {
             value = config.powerupXp1
             if (config.gameMode === 'Sprite Juice') {
-              player.baseSpeed += 0.05 * 4
+              player.baseSpeed += 0.05 * 3
               // publishEvent('OnBroadcast', `Speed down ${player.baseSpeed}`, 0)
             }
 
@@ -1609,7 +1614,7 @@ function detectCollisions() {
           if (powerup.type == 2) {
             value = config.powerupXp2
             if (config.gameMode === 'Sprite Juice') {
-              player.baseSpeed -= 0.05 * 4
+              player.baseSpeed -= 0.05 * 3
               // publishEvent('OnBroadcast', `Decay ${player.decayPower}`, 0)
             }
 
@@ -1621,7 +1626,7 @@ function detectCollisions() {
           if (powerup.type == 3) {
             value = config.powerupXp3
             if (config.gameMode === 'Sprite Juice') {
-              player.decayPower += 0.1 * 4
+              player.decayPower += 0.1 * 3
               // publishEvent('OnBroadcast', `Invinc`, 0)
             }
 
@@ -1636,6 +1641,14 @@ function detectCollisions() {
 
           if (player.cameraSize > 6) {
             player.cameraSize = 6
+          }
+
+          if (player.baseSpeed < 0.5) {
+            player.baseSpeed = 0.5
+          }
+
+          if (player.baseSpeed > 3) {
+            player.baseSpeed = 3
           }
 
           player.powerups += 1
