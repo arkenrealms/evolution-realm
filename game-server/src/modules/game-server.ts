@@ -1079,10 +1079,12 @@ async function calcRoundRewards() {
     clients
   }) as any
   
-  sharedConfig.rewardWinnerAmount = calcRewardsRes.data.rewardWinnerAmount
-  config.rewardWinnerAmount = calcRewardsRes.data.rewardWinnerAmount
-  sharedConfig.rewardItemAmount = calcRewardsRes.data.rewardItemAmount
-  config.rewardItemAmount = calcRewardsRes.data.rewardItemAmount
+  if (calcRewardsRes) {
+    sharedConfig.rewardWinnerAmount = calcRewardsRes.data.rewardWinnerAmount
+    config.rewardWinnerAmount = calcRewardsRes.data.rewardWinnerAmount
+    sharedConfig.rewardItemAmount = calcRewardsRes.data.rewardItemAmount
+    config.rewardItemAmount = calcRewardsRes.data.rewardItemAmount
+  }
 }
 
 let lastFastGameloopTime = getTime()
