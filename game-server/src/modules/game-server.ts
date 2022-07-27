@@ -1287,9 +1287,9 @@ async function slowGameloop() {
     // }
   }
 
-  if (config.calcRoundRewards && config.rewardWinnerAmount === 0) {
-    await calcRoundRewards()
-  }
+  // if (config.calcRoundRewards && config.rewardWinnerAmount === 0) {
+  //   await calcRoundRewards()
+  // }
   
   setTimeout(slowGameloop, config.slowLoopSeconds * 1000)
 }
