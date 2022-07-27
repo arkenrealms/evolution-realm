@@ -1128,7 +1128,7 @@ async function resetLeaderboard(preset = null) {
 
     // clearInterval(problemInterval)
 
-    if (saveRoundRes.status !== 1) {
+    if (saveRoundRes?.status !== 1) {
       sharedConfig.rewardWinnerAmount = 0
       config.rewardWinnerAmount = 0
       sharedConfig.rewardItemAmount = 0
@@ -2073,7 +2073,9 @@ function initEventHandler(app) {
       clients = clients.filter(c => c.address !== currentPlayer.address)
       clients.push(currentPlayer)
 
-      socket.on('RS_Connected', async function() {
+      socket.on('RS_Connected', async function(req) {
+        if (!await isValidAdminRequest(req)) return
+
         try {
           log('RS_Connected')
 
@@ -2096,7 +2098,7 @@ function initEventHandler(app) {
 
           log('GS_InitRequest', initRes)
 
-          if (initRes.status === 1) {
+          if (initRes?.status === 1) {
             baseConfig.id = initRes.id
             config.id = initRes.id
             baseConfig.roundId = initRes.data.roundId
@@ -2109,6 +2111,30 @@ function initEventHandler(app) {
 
           await rsCall('GS_InitRequest', { status: 0 })
         }
+      
+        publishEvent('OnBroadcast', `Realm connected`, 0)
+      })
+
+      // socket.on('RS_Connected', async function(req) {
+      //   if (!await isValidAdminRequest(req)) return
+      
+      //   publishEvent('OnBroadcast', `Realm connected`, 0)
+
+      //   socket.emit('RS_ConnectedResponse', {
+      //     id: req.id,
+      //     data: { status: 1 }
+      //   })
+      // })
+
+      socket.on('RS_Disconnected', async function(req) {
+        if (!await isValidAdminRequest(req)) return
+
+        publishEvent('OnBroadcast', `Realm disconnected`, 0)
+
+        socket.emit('RS_DisconnectedResponse', {
+          id: req.id,
+          data: { status: 1 }
+        })
       })
 
       socket.on('RS_SetConfigRequest', async function(req) {
@@ -2280,7 +2306,7 @@ function initEventHandler(app) {
 
           const confirmUser = await rsCall('GS_ConfirmUserRequest', { address: currentPlayer.address }) as any
 
-          if (confirmUser.status !== 1) {
+          if (confirmUser?.status !== 1) {
             currentPlayer.log.failedRealmCheck += 1
             disconnectPlayer(currentPlayer)
             return
@@ -3022,28 +3048,6 @@ function initEventHandler(app) {
         if (await isValidAdminRequest(req) && clients.find(c => c.address === req.data.target)) {
           disconnectPlayer(clients.find(c => c.address === req.data.target))
         }
-      })
-
-      socket.on('RS_Connected', async function(req) {
-        if (!await isValidAdminRequest(req)) return
-      
-        publishEvent('OnBroadcast', `Realm connected`, 0)
-
-        socket.emit('RS_ConnectedResponse', {
-          id: req.id,
-          data: { status: 1 }
-        })
-      })
-
-      socket.on('RS_Disconnected', async function(req) {
-        if (!await isValidAdminRequest(req)) return
-
-        publishEvent('OnBroadcast', `Realm disconnected`, 0)
-
-        socket.emit('RS_DisconnectedResponse', {
-          id: req.id,
-          data: { status: 1 }
-        })
       })
 
       socket.on('RS_InfoRequest', function(req) {
