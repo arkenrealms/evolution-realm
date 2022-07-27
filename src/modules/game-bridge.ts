@@ -121,8 +121,6 @@ function connectGameServer(app) {
 
   socket.on('connect', function() {
     log('Connected: ' + server.key)
-
-    socket.emit('RS_Connected')
   })
 
   socket.on('disconnect', function() {

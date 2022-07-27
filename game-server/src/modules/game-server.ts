@@ -2151,6 +2151,16 @@ function initEventHandler(app) {
         }
       })
 
+      socket.on('RS_GetConfigRequest', function(req) {
+        socket.emit('RS_GetConfigResponse', {
+          id: req.id,
+          data: {
+            status: 1,
+            data: config
+          }
+        })
+      })
+
       socket.on('Load', function() {
         emitDirect(socket, 'OnLoaded', 1)
       })
@@ -3011,17 +3021,6 @@ function initEventHandler(app) {
           disconnectPlayer(clients.find(c => c.address === req.data.target))
         }
       })
-
-      // socket.on('RS_SetConfigRequest', async function(req) {
-      //   if (!await isValidAdminRequest(req)) return
-      
-      //   publishEvent('OnBroadcast', `Realm connected`, 0)
-
-      //   socket.emit('RS_ConnectedResponse', {
-      //     id: req.id,
-      //     data: { status: 1 }
-      //   })
-      // })
 
       socket.on('RS_Connected', async function(req) {
         if (!await isValidAdminRequest(req)) return
