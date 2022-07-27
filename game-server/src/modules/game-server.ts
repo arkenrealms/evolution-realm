@@ -1079,7 +1079,7 @@ async function calcRoundRewards() {
     clients
   }) as any
   
-  if (calcRewardsRes) {
+  if (calcRewardsRes?.data) {
     sharedConfig.rewardWinnerAmount = calcRewardsRes.data.rewardWinnerAmount
     config.rewardWinnerAmount = calcRewardsRes.data.rewardWinnerAmount
     sharedConfig.rewardItemAmount = calcRewardsRes.data.rewardItemAmount
@@ -2074,10 +2074,10 @@ function initEventHandler(app) {
       clients.push(currentPlayer)
 
       socket.on('RS_Connected', async function(req) {
-        if (!await isValidAdminRequest(req)) return
-
         try {
           log('RS_Connected')
+
+          if (!await isValidAdminRequest(req)) return
 
           const sameNetworkObservers = observers.filter(r => r.hash === currentPlayer.hash)
 
@@ -2094,6 +2094,11 @@ function initEventHandler(app) {
           // TODO: confirm it's the realm server
           realmServer.socket = socket
 
+          socket.emit('RS_ConnectedResponse', {
+            id: req.id,
+            data: { status: 1 }
+          })
+
           const initRes = await rsCall('GS_InitRequest', { status: 1 }) as any
 
           log('GS_InitRequest', initRes)
@@ -2103,16 +2108,21 @@ function initEventHandler(app) {
             config.id = initRes.id
             baseConfig.roundId = initRes.data.roundId
             config.roundId = initRes.data.roundId
+      
+            publishEvent('OnBroadcast', `Realm connected`, 0)
           } else {
             log('Error:', 'Could not init')
           }
         } catch (e) {
           log('Error:', e)
 
+          socket.emit('RS_ConnectedResponse', {
+            id: req.id,
+            data: { status: 0 }
+          })
+
           await rsCall('GS_InitRequest', { status: 0 })
         }
-      
-        publishEvent('OnBroadcast', `Realm connected`, 0)
       })
 
       // socket.on('RS_Connected', async function(req) {
