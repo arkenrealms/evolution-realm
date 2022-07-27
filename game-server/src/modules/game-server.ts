@@ -251,7 +251,7 @@ const presets = [
     avatarDecayPower0: 1,
     avatarDecayPower1: 1,
     avatarDecayPower2: 1,
-    avatarSpeedMultiplier2: 1.5,
+    avatarSpeedMultiplier2: 1.6,
     decayPower: 0.5,
     decayPowerPerMaxEvolvedPlayers: 10,
     immunitySeconds: 10,
