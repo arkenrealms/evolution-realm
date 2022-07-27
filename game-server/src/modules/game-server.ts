@@ -2124,7 +2124,11 @@ function initEventHandler(app) {
   
               config[key] = val
 
-              publishEvent('OnBroadcast', `${key} = ${val}`, 1)
+              if (!req.data.isReset) publishEvent('OnBroadcast', `${key} = ${val}`, 1)
+            }
+
+            if (req.data.isReset) {
+              publishEvent('OnSetRoundInfo', config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'))
             }
 
             socket.emit('RS_SetConfigResponse', {
@@ -2412,16 +2416,6 @@ function initEventHandler(app) {
         } catch(e) {
           log('Error:', e)
         }
-      })
-
-      socket.on('RS_ConfigRequest', function(req) {
-        socket.emit('RS_ConfigResponse', {
-          id: req.id,
-          data: {
-            status: 1,
-            data: config
-          }
-        })
       })
 
       socket.on('RS_MaintenanceRequest', async function(req) {
@@ -3016,6 +3010,39 @@ function initEventHandler(app) {
         if (await isValidAdminRequest(req) && clients.find(c => c.address === req.data.target)) {
           disconnectPlayer(clients.find(c => c.address === req.data.target))
         }
+      })
+
+      // socket.on('RS_SetConfigRequest', async function(req) {
+      //   if (!await isValidAdminRequest(req)) return
+      
+      //   publishEvent('OnBroadcast', `Realm connected`, 0)
+
+      //   socket.emit('RS_ConnectedResponse', {
+      //     id: req.id,
+      //     data: { status: 1 }
+      //   })
+      // })
+
+      socket.on('RS_Connected', async function(req) {
+        if (!await isValidAdminRequest(req)) return
+      
+        publishEvent('OnBroadcast', `Realm connected`, 0)
+
+        socket.emit('RS_ConnectedResponse', {
+          id: req.id,
+          data: { status: 1 }
+        })
+      })
+
+      socket.on('RS_Disconnected', async function(req) {
+        if (!await isValidAdminRequest(req)) return
+
+        publishEvent('OnBroadcast', `Realm disconnected`, 0)
+
+        socket.emit('RS_DisconnectedResponse', {
+          id: req.id,
+          data: { status: 1 }
+        })
       })
 
       socket.on('RS_InfoRequest', function(req) {

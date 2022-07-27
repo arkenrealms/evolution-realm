@@ -42,6 +42,8 @@ function onRealmConnection(app, socket) {
         if (app.realm.state.adminList.includes(req.signature.address)) {
           currentClient.isAdmin = true
           currentClient.isMod = true
+
+          app.gameBridge.call('RS_Connected', await getSignedRequest(app.web3, app.secrets, {}), {})
         } else if (app.realm.state.modList.includes(req.signature.address)) {
           currentClient.isMod = true
         }
@@ -127,6 +129,10 @@ function onRealmConnection(app, socket) {
         const games = app.gameBridge.state.servers.map(s => s.info).filter(i => !!i)
 
         app.gameBridge.state.config = { ...app.gameBridge.state.config, ...req.data.config }
+
+        const data = { isReset: true, ...app.gameBridge.state.config }
+
+        app.gameBridge.call('RS_SetConfigRequest', await getSignedRequest(app.web3, app.secrets, data), data)
 
         emitDirect(socket, 'InfoResponse', {
           id: req.id,
@@ -431,7 +437,7 @@ function onRealmConnection(app, socket) {
       }
     })
 
-    socket.on('disconnect', function() {
+    socket.on('disconnect', async function() {
       log('Observer has disconnected')
 
       currentClient.log.clientDisconnected += 1
@@ -440,6 +446,8 @@ function onRealmConnection(app, socket) {
       delete app.realm.clientLookup[currentClient.id]
 
       app.realm.clients = app.realm.clients.filter(c => c.id !== currentClient.id)
+      
+      app.gameBridge.call('RS_Disconnected', await getSignedRequest(app.web3, app.secrets, {}), {})
     })
   } catch(e) {
     logError(e)

@@ -108,7 +108,7 @@ function initRoutes(app) {
     })
 
     app.server.get('/config', async function(req, res) {
-      const response = await app.gameBridge.call('RS_ConfigRequest')
+      const response = await app.gameBridge.call('RS_GetConfigRequest')
 
       res.json(response)
     })
