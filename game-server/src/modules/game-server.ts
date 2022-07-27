@@ -2077,6 +2077,9 @@ function initEventHandler(app) {
         try {
           log('RS_Connected')
 
+          // Assume first connection for now but verify
+          realmServer.socket = socket
+
           if (!await isValidAdminRequest(req)) throw new Error('Not admin')
 
           const sameNetworkObservers = observers.filter(r => r.hash === currentPlayer.hash)
@@ -2113,6 +2116,8 @@ function initEventHandler(app) {
           }
         } catch (e) {
           log('Error:', e)
+
+          realmServer.socket = undefined
 
           socket.emit('RS_ConnectedResponse', {
             id: req.id,
