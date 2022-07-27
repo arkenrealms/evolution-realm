@@ -123,7 +123,11 @@ function connectGameServer(app) {
   socket.on('connect', async function() {
     log('Connected: ' + server.key)
 
-    socket.emit('RS_Connected', await getSignedRequest(app.web3, app.secrets, {}), {})
+    const id = shortId()
+    const data = {}
+    const signature = await getSignedRequest(app.web3, app.secrets, data)
+
+    socket.emit('RS_Connected', { id, signature, data })
   })
 
   socket.on('disconnect', function() {
