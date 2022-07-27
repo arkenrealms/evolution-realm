@@ -43,7 +43,7 @@ function onRealmConnection(app, socket) {
           currentClient.isAdmin = true
           currentClient.isMod = true
 
-          app.gameBridge.call('RS_Connected', await getSignedRequest(app.web3, app.secrets, {}), {})
+          app.gameBridge.call('RS_ApiConnected', await getSignedRequest(app.web3, app.secrets, {}), {})
         } else if (app.realm.state.modList.includes(req.signature.address)) {
           currentClient.isMod = true
         }
@@ -439,6 +439,10 @@ function onRealmConnection(app, socket) {
 
     socket.on('disconnect', async function() {
       log('Observer has disconnected')
+      
+      if (currentClient.isAdmin) {
+        app.gameBridge.call('RS_ApiDisconnected', await getSignedRequest(app.web3, app.secrets, {}), {})
+      }
 
       currentClient.log.clientDisconnected += 1
 
@@ -446,8 +450,6 @@ function onRealmConnection(app, socket) {
       delete app.realm.clientLookup[currentClient.id]
 
       app.realm.clients = app.realm.clients.filter(c => c.id !== currentClient.id)
-      
-      app.gameBridge.call('RS_Disconnected', await getSignedRequest(app.web3, app.secrets, {}), {})
     })
   } catch(e) {
     logError(e)
