@@ -3117,7 +3117,7 @@ function initEventHandler(app) {
           flushEventQueue(app)
         }, 2 * 1000)
 
-        if (currentPlayer.id === realmServer.socket.id) {
+        if (currentPlayer.id === realmServer.socket?.id) {
           publishEvent('OnBroadcast', `Realm disconnected`, 0)
         }
       })
