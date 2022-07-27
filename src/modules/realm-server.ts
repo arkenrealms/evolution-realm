@@ -509,6 +509,7 @@ export function initRealmServer(app) {
   app.realm.state.banList = []
 
   app.realm.state.adminList = [
+    '0xDfA8f768d82D719DC68E12B199090bDc3691fFc7', // ourselves
     '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C', // realm server
   ]
 
