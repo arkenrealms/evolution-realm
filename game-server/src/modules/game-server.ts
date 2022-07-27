@@ -204,13 +204,13 @@ const presets = [
   {
     gameMode: 'Evolution',
     pointsPerKill: 0,
-    pointsPerEvolve: 10,
+    pointsPerEvolve: 1,
     pointsPerPowerup: 0,
     pointsPerReward: 0,
     pointsPerOrb: 0,
     guide: [
       'Game Mode - Evolution',
-      '+10 Points Per Evolution'
+      '+1 Points Per Evolution'
     ]
   },
   {
@@ -235,10 +235,11 @@ const presets = [
     // decayPower: 7,
     avatarDecayPower0: 2,
     avatarDecayPower1: 2 * (7 / 1.4),
-    avatarDecayPower2: 3 * (7 / 1.4),
+    avatarDecayPower2: 2 * (7 / 1.4),
     avatarSpeedMultiplier0: 1.2,
     avatarSpeedMultiplier1: 1,
     avatarSpeedMultiplier2: 0.85,
+    // decayPowerPerMaxEvolvedPlayers: 2,
     pointsPerEvolve: 0,
     pointsPerPowerup: 1,
     pointsPerReward: 0,
@@ -370,6 +371,7 @@ const presets = [
     // spritesPerPlayerCount: 1,
     spritesStartCount: 25,
     spritesTotal: 25,
+    decayPowerPerMaxEvolvedPlayers: 2,
     // antifeed1: false,
     guide: [
       'Game Mode - Sprite Juice',
