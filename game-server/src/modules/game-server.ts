@@ -721,9 +721,9 @@ function disconnectPlayer(player, immediate = false) {
 
       const oldSocket = sockets[player.id]
 
-      setTimeout(function() {
+      // setTimeout(function() {
         oldSocket.disconnect()
-      }, immediate ? 0 : 2000)
+      // }, immediate ? 0 : 2000)
 
       delete sockets[player.id]
     }
