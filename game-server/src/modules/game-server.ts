@@ -171,10 +171,11 @@ const presets = [
   },
   {
     gameMode: 'Mix Game 1',
-    pointsPerEvolve: 5,
-    pointsPerPowerup: 5,
-    pointsPerKill: 20,
-    pointsPerReward: 100,
+    pointsPerEvolve: 1,
+    pointsPerPowerup: 1,
+    pointsPerKill: 4,
+    pointsPerReward: 20,
+    pointsPerOrb: 1,
   },
   // {
   //   gameMode: 'Mix Game 2',
@@ -184,11 +185,11 @@ const presets = [
   // },
   {
     gameMode: 'Deathmatch',
-    pointsPerKill: 300,
+    pointsPerKill: 200,
     orbOnDeathPercent: 0,
     pointsPerEvolve: 0,
     pointsPerPowerup: 0,
-    pointsPerReward: 0,
+    pointsPerReward: 1,
     pointsPerOrb: 0,
     baseSpeed: 4,
     antifeed1: false,
@@ -220,6 +221,7 @@ const presets = [
     pointsPerOrb: 200,
     pointsPerEvolve: 0,
     pointsPerReward: 0,
+    pointsPerPowerup: 1,
     pointsPerKill: 0,
     orbCutoffSeconds: 0,
     guide: [
@@ -700,7 +702,7 @@ function syncSprites() {
   }
 }
 
-function disconnectPlayer(player) {
+function disconnectPlayer(player, immediate = false) {
   clients = clients.filter(c => c.id !== player.id)
   
   if (player.isDisconnected) return
@@ -717,7 +719,11 @@ function disconnectPlayer(player) {
     if (sockets[player.id] && sockets[player.id].emit) {
       emitDirect(sockets[player.id], 'OnUserDisconnected', player.id)
 
-      sockets[player.id].disconnect()
+      const oldSocket = sockets[player.id]
+
+      setTimeout(function() {
+        oldSocket.disconnect()
+      }, immediate ? 0 : 2000)
 
       delete sockets[player.id]
     }
@@ -725,7 +731,6 @@ function disconnectPlayer(player) {
     delete clientLookup[player.id]
 
     syncSprites()
-
   } catch(e) {
     log('Error:', e)
   }
@@ -939,7 +944,7 @@ const registerKill = (winner, loser) => {
   publishEvent('OnGameOver', loser.id, winner.id)
 
   setTimeout(() => {
-    disconnectPlayer(loser)
+    disconnectPlayer(loser, true)
   }, 2 * 1000)
 
   const orb = {
@@ -1287,7 +1292,7 @@ function getPayload(messages) {
 }
 
 //updates the list of best players every 1000 milliseconds
-async function slowGameloop() {
+function slowGameloop() {
   if (config.dynamicDecayPower) {
     const players = clients.filter(p => !p.isDead && !p.isSpectating)
     const maxEvolvedPlayers = players.filter(p => p.avatar === config.maxEvolves - 1)
