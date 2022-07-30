@@ -99,7 +99,7 @@ function connectGameServer(app) {
     key: 'local1'
   }
 
-  const socket = app.gameBridge.socket = getSocket((app.isHttps ? 'https://' : 'http://') + server.endpoint)
+  const socket = app.gameBridge.socket = getSocket(app, (app.isHttps ? 'https://' : 'http://') + server.endpoint)
 
   const serverState = {
     id: shortId(), // TODO: fix it so GS uses this
