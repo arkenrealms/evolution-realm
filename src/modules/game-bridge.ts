@@ -729,7 +729,7 @@ export function initGameBridge(app) {
 
   app.gameBridge.state.playerRewards = {} as any
 
-  app.gameBridge.state.spawnPort = process.env.GS_PORT || 8443
+  app.gameBridge.state.spawnPort = app.isHttps ? process.env.GS_SSL_PORT || 8443 : process.env.GS_PORT || 8080
 
   app.gameBridge.state.clients = []
 
