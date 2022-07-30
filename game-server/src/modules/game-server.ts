@@ -721,9 +721,9 @@ function disconnectPlayer(player, immediate = false) {
 
       const oldSocket = sockets[player.id]
 
-      // setTimeout(function() {
+      setTimeout(function() {
         oldSocket.disconnect()
-      // }, immediate ? 0 : 2000)
+      }, immediate ? 0 : 1000)
 
       delete sockets[player.id]
     }
@@ -1167,6 +1167,7 @@ async function resetLeaderboard(preset = null) {
       client.rewards = 0
       client.powerups = 0
       client.baseSpeed = 1
+      client.decayPower = 1
       client.pickups = []
       client.avatar = config.startAvatar
       client.orbs = 0
