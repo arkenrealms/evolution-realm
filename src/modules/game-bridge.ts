@@ -11,12 +11,13 @@ import { upgradeGsCodebase, cloneGsCodebase } from '@rune-backend-sdk/util/codeb
 const path = require('path')
 const shortId = require('shortid')
 
-function getSocket(endpoint) {
+function getSocket(app, endpoint) {
   log('Connecting to', endpoint)
   return ioClient(endpoint, {
     transports: ['websocket'],
     upgrade: false,
     autoConnect: false,
+    port: app.isHttps ? process.env.RS_SSL_PORT || 7443 : process.env.RS_PORT || 7080,
     // pingInterval: 5000,
     // pingTimeout: 20000
     // extraHeaders: {
@@ -94,7 +95,7 @@ function connectGameServer(app) {
   }
 
   const server = {
-    endpoint: 'local.runeevolution.com:' + app.gameBridge.state.spawnPort,
+    endpoint: 'localhost:' + app.gameBridge.state.spawnPort, // local.runeevolution.com
     key: 'local1'
   }
 
