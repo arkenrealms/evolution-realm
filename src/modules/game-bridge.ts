@@ -95,7 +95,7 @@ function connectGameServer(app) {
   }
 
   const server = {
-    endpoint: 'localhost:' + app.gameBridge.state.spawnPort, // local.runeevolution.com
+    endpoint: 'local.runeevolution.com:' + app.gameBridge.state.spawnPort, // local.runeevolution.com
     key: 'local1'
   }
 
