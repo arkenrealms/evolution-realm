@@ -54,6 +54,7 @@ async function init() {
 
     app.io = require('socket.io')(process.env.RUNE_ENV !== 'local' ? app.https : app.http, {
       secure: process.env.RUNE_ENV !== 'local' ? true : false,
+      port: app.isHttps ? process.env.RS_SSL_PORT || 7443 : process.env.RS_PORT || 7080,
       pingInterval: 30 * 1000,
       pingTimeout: 90 * 1000,
       upgradeTimeout: 20 * 1000,

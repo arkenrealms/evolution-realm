@@ -17,7 +17,6 @@ function getSocket(app, endpoint) {
     transports: ['websocket'],
     upgrade: false,
     autoConnect: false,
-    port: app.isHttps ? process.env.RS_SSL_PORT || 7443 : process.env.RS_PORT || 7080,
     // pingInterval: 5000,
     // pingTimeout: 20000
     // extraHeaders: {
