@@ -46,8 +46,8 @@ async function init() {
     const app = {} as any
 
     app.state = {}
-    app.state.port = process.env.GS_PORT || 7080
-    app.state.sslPort = process.env.GS_SSL_PORT || 7443
+    app.state.port = process.env.GS_PORT || 8080
+    app.state.sslPort = process.env.GS_SSL_PORT || 8443
     app.state.spawnPort = undefined
 
     app.server = express()
