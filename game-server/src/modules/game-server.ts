@@ -708,16 +708,10 @@ function disconnectPlayer(app, player, immediate = false) {
   try {
     log("Disconnecting", player.id)
 
-    player.isDisconnected = true
-    player.isDead = true
-    player.joinedAt = 0
-    player.latency = 0
-    publishEvent('OnUserDisconnected', player.id)
-
     if (sockets[player.id] && sockets[player.id].emit) {
-      emitDirect(sockets[player.id], 'OnUserDisconnected', player.id)
-
       const oldSocket = sockets[player.id]
+
+      emitDirect(oldSocket, 'OnUserDisconnected', player.id)
 
       setTimeout(function() {
         oldSocket.disconnect()
@@ -728,6 +722,12 @@ function disconnectPlayer(app, player, immediate = false) {
 
     delete clientLookup[player.id]
 
+    player.isDisconnected = true
+    player.isDead = true
+    player.joinedAt = 0
+    player.latency = 0
+
+    publishEvent('OnUserDisconnected', player.id)
     syncSprites()
     flushEventQueue(app)
   } catch(e) {
@@ -1721,8 +1721,8 @@ function detectCollisions(app) {
   }
 }
 
-function normalizeFloat(f) {
-  return parseFloat(f.toFixed(2))
+function normalizeFloat(f, num = 2) {
+  return parseFloat(f.toFixed(num))
 }
 
 function fastGameloop(app) {
@@ -2455,8 +2455,8 @@ function initEventHandler(app) {
             return
           }
 
-          currentPlayer.clientPosition = { x: positionX, y: positionY }
-          currentPlayer.clientTarget = { x: targetX, y: targetY }
+          currentPlayer.clientPosition = { x: normalizeFloat(positionX, 4), y: normalizeFloat(positionY, 4) }
+          currentPlayer.clientTarget = { x: normalizeFloat(targetX, 4), y: normalizeFloat(targetY, 4) }
           currentPlayer.lastReportedTime = parseFloat(pack.time)
           currentPlayer.lastUpdate = now
         } catch(e) {
@@ -3107,9 +3107,7 @@ function initEventHandler(app) {
 
         currentPlayer.log.clientDisconnected += 1
 
-        setTimeout(() => {
-          disconnectPlayer(app, currentPlayer)
-        }, 2 * 1000)
+        disconnectPlayer(app, currentPlayer)
 
         if (currentPlayer.id === realmServer.socket?.id) {
           publishEvent('OnBroadcast', `Realm disconnected`, 0)
