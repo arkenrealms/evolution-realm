@@ -590,30 +590,28 @@ async function spawnRandomReward() {
   }, 3 * 1000)
 }
 
-function disconnectAllPlayers() {
+function disconnectAllPlayers(app) {
   if (clients.length === 0) return
 
   log('Disconnecting all players')
 
   for (let i = 0; i < clients.length; i++) {
     const client = clients[i]
-    disconnectPlayer(client)
+    disconnectPlayer(app, client)
   }
 }
 
-function monitorObservers() {
+function monitorObservers(app) {
   updateObservers()
 
   if (observers.length === 0) {
     publishEvent('OnBroadcast', `Realm not connected. Contact support.`, 0)
 
-    disconnectAllPlayers()
+    disconnectAllPlayers(app)
   }
 
-  setTimeout(monitorObservers, 5 * 1000)
+  setTimeout(() => monitorObservers(app), 5 * 1000)
 }
-
-setTimeout(monitorObservers, 30 * 1000)
 
 function moveVectorTowards(current, target, maxDistanceDelta) {
   const a = {
@@ -882,7 +880,7 @@ function roundEndingSoon(sec) {
   return roundTimer < sec
 }
 
-const registerKill = (winner, loser) => {
+const registerKill = (app, winner, loser) => {
   const now = getTime()
 
   if (config.isGodParty) return
@@ -1037,10 +1035,10 @@ function sendUpdates(app) {
   setTimeout(() => sendUpdates(app), config.sendUpdateLoopSeconds * 1000)
 }
 
-function spawnRewards() {
+function spawnRewards(app) {
   spawnRandomReward()
 
-  setTimeout(spawnRewards, config.rewardSpawnLoopSeconds * 1000)
+  setTimeout(() => spawnRewards(app), config.rewardSpawnLoopSeconds * 1000)
 }
 
 function getRoundInfo() {
@@ -1177,7 +1175,7 @@ async function resetLeaderboard(preset = null) {
       client.avatar = config.startAvatar
       client.orbs = 0
       client.xp = 50
-      client.speed = (config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed)
+      client.speed = normalizeFloat((config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed))
       client.cameraSize = client.overrideCameraSize || config.cameraSize
       client.log = {
         kills: [],
@@ -1298,7 +1296,7 @@ function getPayload(messages) {
 }
 
 //updates the list of best players every 1000 milliseconds
-function slowGameloop() {
+function slowGameloop(app) {
   if (config.dynamicDecayPower) {
     const players = clients.filter(p => !p.isDead && !p.isSpectating)
     const maxEvolvedPlayers = players.filter(p => p.avatar === config.maxEvolves - 1)
@@ -1314,7 +1312,7 @@ function slowGameloop() {
   //   await calcRoundRewards()
   // }
   
-  setTimeout(slowGameloop, config.slowLoopSeconds * 1000)
+  setTimeout(() => slowGameloop(app), config.slowLoopSeconds * 1000)
 }
 
 // function castVectorTowards(position, target, scalar) {
@@ -1558,7 +1556,7 @@ function detectCollisions(app) {
               // if (player1.xp > 5) {
                 // player1.xp -= 1
               // } else {
-                registerKill(player2, player1)
+                registerKill(app, player2, player1)
               // }
               break
             // }
@@ -1570,7 +1568,7 @@ function detectCollisions(app) {
               // if (player2.xp > 5) {
               //   player2.xp -= 1
               // } else {
-                registerKill(player1, player2)
+                registerKill(app, player1, player2)
               // }
               break
             // }
@@ -1723,6 +1721,10 @@ function detectCollisions(app) {
   }
 }
 
+function normalizeFloat(f) {
+  return parseFloat(f.toFixed(2))
+}
+
 function fastGameloop(app) {
   try {
     const now = getTime()
@@ -1741,7 +1743,7 @@ function fastGameloop(app) {
       const isInvincible = config.isGodParty || client.isSpectating || client.isGod || client.isInvincible || (client.invincibleUntil > currentTime)
       const isPhased = client.isPhased ? true : now <= client.phasedUntil
 
-      client.speed = client.overrideSpeed || (config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed)
+      client.speed = client.overrideSpeed || normalizeFloat((config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed))
 
       if (!config.isRoundPaused) {
         let decay = config.noDecay ? 0 : (client.avatar + 1) / (1 / config.fastLoopSeconds) * ((config['avatarDecayPower' + client.avatar] || 1) * config.decayPower)
@@ -1858,13 +1860,13 @@ function fastGameloop(app) {
       const timeStep = ((5*60)*(config.fastLoopSeconds * 1000)) // +5 base speed total, timestepped
       const speedMultiplier = 0.25
 
-      config.baseSpeed += (5*speedMultiplier) / timeStep
+      config.baseSpeed += normalizeFloat((5*speedMultiplier) / timeStep)
 
       // sharedConfig.checkPositionDistance += Math.round(6 / timeStep)
-      config.checkPositionDistance += (6*speedMultiplier) / timeStep
+      config.checkPositionDistance += normalizeFloat((6*speedMultiplier) / timeStep)
       
       // sharedConfig.checkInterval += Math.round(3 / timeStep)
-      config.checkInterval += (3*speedMultiplier) / timeStep
+      config.checkInterval += normalizeFloat((3*speedMultiplier) / timeStep)
     }
 
 
@@ -2336,7 +2338,7 @@ function initEventHandler(app) {
 
           currentPlayer.isJoining = true
           currentPlayer.avatar = config.startAvatar
-          currentPlayer.speed = (config.baseSpeed * config['avatarSpeedMultiplier' + currentPlayer.avatar] * currentPlayer.baseSpeed)
+          currentPlayer.speed = normalizeFloat((config.baseSpeed * config['avatarSpeedMultiplier' + currentPlayer.avatar] * currentPlayer.baseSpeed))
 
           log("[INFO] player " + currentPlayer.id + ": logged!")
           log("[INFO] Total players: " + Object.keys(clientLookup).length)
@@ -3129,11 +3131,13 @@ export async function initGameServer(app) {
   }
 
   // setTimeout(fastestGameloop, config.fastestLoopSeconds * 1000)
+
+  setTimeout(() => monitorObservers(app), 30 * 1000)
   setTimeout(() => fastGameloop(app), config.fastLoopSeconds * 1000)
-  setTimeout(slowGameloop, config.slowLoopSeconds * 1000)
-  setTimeout(sendUpdates, config.sendUpdateLoopSeconds * 1000)
-  setTimeout(spawnRewards, config.rewardSpawnLoopSeconds * 1000)
-  setTimeout(checkConnectionLoop, config.checkConnectionLoopSeconds * 1000)
+  setTimeout(() => slowGameloop(app), config.slowLoopSeconds * 1000)
+  setTimeout(() => sendUpdates(app), config.sendUpdateLoopSeconds * 1000)
+  setTimeout(() => spawnRewards(app), config.rewardSpawnLoopSeconds * 1000)
+  setTimeout(() => checkConnectionLoop(app), config.checkConnectionLoopSeconds * 1000)
   roundLoopTimeout = setTimeout(resetLeaderboard, config.roundLoopSeconds * 1000)
   // setTimeout(flushEventQueue, config.flushEventQueueSeconds * 1000)
 }
