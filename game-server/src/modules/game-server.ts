@@ -170,13 +170,25 @@ const presets = [
     ]
   },
   {
-    gameMode: 'Mix Game 1',
+    gameMode: 'Indiana Jones',
     pointsPerEvolve: 1,
     pointsPerPowerup: 1,
-    pointsPerKill: 4,
-    pointsPerReward: 20,
+    pointsPerKill: 1,
+    pointsPerReward: 100,
     pointsPerOrb: 1,
+    guide: [
+      'Game Mode - Indiana Jones',
+      '+100 Points Per Treasure Found'
+    ]
   },
+  // {
+  //   gameMode: 'Mix Game 1',
+  //   pointsPerEvolve: 1,
+  //   pointsPerPowerup: 1,
+  //   pointsPerKill: 1,
+  //   pointsPerReward: 50,
+  //   pointsPerOrb: 1,
+  // },
   // {
   //   gameMode: 'Mix Game 2',
   //   pointsPerEvolve: 10,
@@ -218,7 +230,7 @@ const presets = [
     gameMode: 'Orb Master',
     // orbOnDeathPercent: 25,
     orbTimeoutSeconds: 3,
-    pointsPerOrb: 200,
+    pointsPerOrb: 300,
     pointsPerEvolve: 0,
     pointsPerReward: 0,
     pointsPerPowerup: 1,
@@ -281,6 +293,7 @@ const presets = [
     cameraSize: 6,
     baseSpeed: 4,
     decayPower: 2.8,
+    pointsPerKill: 300,
     guide: [
       'Game Mode - Bird Eye',
       'Faster Movement',
@@ -341,6 +354,7 @@ const presets = [
     avatarSpeedMultiplier0: 1,
     avatarSpeedMultiplier1: 1,
     avatarSpeedMultiplier2: 1,
+    pointsPerReward: 20,
     hideMap: true,
     guide: [
       'Game Mode - Marco Polo',
@@ -363,6 +377,8 @@ const presets = [
     gameMode: 'Sticky Mode',
     stickyIslands: true,
     colliderBuffer: 0,
+    pointsPerKill: 50,
+    pointsPerOrb: 100,
     guide: [
       'Game Mode - Sticky Mode',
       'Sticky islands'
