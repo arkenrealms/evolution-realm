@@ -1340,6 +1340,14 @@ function slowGameloop(app) {
 //   }
 // }
 
+function resetPlayerPosition(player) {
+  const spawnPoint = playerSpawnPoints[(Math.floor(Math.random() * playerSpawnPoints.length))]
+  player.position = spawnPoint
+  player.target = spawnPoint
+  player.clientPosition = spawnPoint
+  player.clientTarget = spawnPoint
+}
+
 function detectCollisions(app) {
   try {
     const now = getTime()
@@ -1529,6 +1537,12 @@ function detectCollisions(app) {
           publishEvent('OnBroadcast', `Level 2 closing...`, 0)
 
           setTimeout(() => {
+            for (const player of round.players) {
+              if (player.position.x < -18) {
+                resetPlayerPosition(player)
+              }
+            }
+
             sharedConfig.spritesStartCount = 50
             config.spritesStartCount = 50
             clearSprites()
