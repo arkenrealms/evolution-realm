@@ -1649,8 +1649,8 @@ function detectCollisions(app) {
           if (powerup.type == 1) {
             value = config.powerupXp1
             if (config.gameMode === 'Sprite Juice') {
-              player.baseSpeed += 0.05 * 3
-              player.decayPower -= 0.1 * 3
+              player.baseSpeed += 0.05 * 2
+              player.decayPower -= 0.1 * 2
               // publishEvent('OnBroadcast', `Speed down ${player.baseSpeed}`, 0)
             }
 
@@ -1662,7 +1662,7 @@ function detectCollisions(app) {
           if (powerup.type == 2) {
             value = config.powerupXp2
             if (config.gameMode === 'Sprite Juice') {
-              player.baseSpeed -= 0.05 * 3
+              player.baseSpeed -= 0.05 * 2
               // publishEvent('OnBroadcast', `Decay ${player.decayPower}`, 0)
             }
 
@@ -1674,7 +1674,7 @@ function detectCollisions(app) {
           if (powerup.type == 3) {
             value = config.powerupXp3
             if (config.gameMode === 'Sprite Juice') {
-              player.decayPower += 0.1 * 3
+              player.decayPower += 0.1 * 2
               // publishEvent('OnBroadcast', `Invinc`, 0)
             }
 
@@ -1691,12 +1691,12 @@ function detectCollisions(app) {
             player.cameraSize = 6
           }
 
-          if (player.baseSpeed < 0.5) {
-            player.baseSpeed = 0.5
+          if (player.baseSpeed < 0.25) {
+            player.baseSpeed = 0.25
           }
 
-          if (player.baseSpeed > 3) {
-            player.baseSpeed = 3
+          if (player.baseSpeed > 2.5) {
+            player.baseSpeed = 2.5
           }
 
           player.powerups += 1
