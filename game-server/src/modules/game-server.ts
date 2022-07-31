@@ -50,7 +50,7 @@ let baseConfig = {
   periodicReboots: false,
   startAvatar: 0,
   spriteXpMultiplier: 1,
-  forcedLatency: 0,
+  forcedLatency: 40,
   isRoundPaused: false,
   level2forced: false,
   level2allowed: true,
@@ -106,7 +106,7 @@ const sharedConfig = {
   disconnectPlayerSeconds: testMode ? 999 : 30,
   disconnectPositionJumps: true, // TODO: remove
   fastestLoopSeconds: 0.02,
-  fastLoopSeconds: 0.02,
+  fastLoopSeconds: 0.04,
   gameMode: 'Standard',
   immunitySeconds: 5,
   isMaintenance: false,
@@ -702,7 +702,7 @@ function syncSprites() {
   }
 }
 
-function disconnectPlayer(player, immediate = false) {
+function disconnectPlayer(app, player, immediate = false) {
   clients = clients.filter(c => c.id !== player.id)
   
   if (player.isDisconnected) return
@@ -731,6 +731,7 @@ function disconnectPlayer(player, immediate = false) {
     delete clientLookup[player.id]
 
     syncSprites()
+    flushEventQueue(app)
   } catch(e) {
     log('Error:', e)
   }
@@ -944,7 +945,7 @@ const registerKill = (winner, loser) => {
   publishEvent('OnGameOver', loser.id, winner.id)
 
   setTimeout(() => {
-    disconnectPlayer(loser, true)
+    disconnectPlayer(app, loser, true)
   }, 2 * 1000)
 
   const orb = {
@@ -1023,15 +1024,17 @@ function updateObservers() {
   observers = observers.filter(observer => observer.socket.connected)
 }
 
-function sendUpdates() {
+function sendUpdates(app) {
   publishEvent('OnClearLeaderboard')
 
   const leaderboard = round.players.sort(comparePlayers).slice(0, 10)
   for (let j = 0; j < leaderboard.length; j++) {
     publishEvent('OnUpdateBestKiller', leaderboard[j].name, j, leaderboard[j].points, leaderboard[j].kills, leaderboard[j].deaths, leaderboard[j].powerups, leaderboard[j].evolves, leaderboard[j].rewards, leaderboard[j].isDead ? '-' : Math.round(leaderboard[j].latency), ranks[leaderboard[j].address]?.kills / 5 || 1)
   }
+
+  flushEventQueue(app)
   
-  setTimeout(sendUpdates, config.sendUpdateLoopSeconds * 1000)
+  setTimeout(() => sendUpdates(app), config.sendUpdateLoopSeconds * 1000)
 }
 
 function spawnRewards() {
@@ -1267,7 +1270,7 @@ async function resetLeaderboard(preset = null) {
   roundLoopTimeout = setTimeout(resetLeaderboard, config.roundLoopSeconds * 1000)
 }
 
-function checkConnectionLoop() {
+function checkConnectionLoop(app) {
   if (!config.noBoot && !config.isRoundPaused) {
     const oneMinuteAgo = getTime() - (config.disconnectPlayerSeconds * 1000)
     // const oneMinuteAgo = Math.round(getTime() / 1000) - config.disconnectPlayerSeconds
@@ -1281,12 +1284,12 @@ function checkConnectionLoop() {
 
       if (client.lastUpdate !== 0 && client.lastUpdate <= oneMinuteAgo) {
         client.log.timeoutDisconnect += 1
-        disconnectPlayer(client)
+        disconnectPlayer(app, client)
       }
     }
   }
   
-  setTimeout(checkConnectionLoop, config.checkConnectionLoopSeconds * 1000)
+  setTimeout(() => checkConnectionLoop(app), config.checkConnectionLoopSeconds * 1000)
 }
 
 function getPayload(messages) {
@@ -1323,7 +1326,7 @@ function slowGameloop() {
 //   }
 // }
 
-function detectCollisions() {
+function detectCollisions(app) {
   try {
     const now = getTime()
     const currentTime = Math.round(now / 1000)
@@ -1346,7 +1349,7 @@ function detectCollisions() {
 
       if (!Number.isFinite(player.position.x) || !Number.isFinite(player.speed)) { // Not sure what happened
         player.log.speedProblem += 1
-        disconnectPlayer(player)
+        disconnectPlayer(app, player)
         continue
       }
 
@@ -1720,17 +1723,11 @@ function detectCollisions() {
   }
 }
 
-function fastestGameloop() {
-  // detectCollisions()
-
-  setTimeout(fastestGameloop, config.fastestLoopSeconds * 1000)
-}
-
 function fastGameloop(app) {
   try {
     const now = getTime()
 
-    detectCollisions()
+    detectCollisions(app)
 
     for (let i = 0; i < clients.length; i++) {
       const client = clients[i]
@@ -1802,7 +1799,7 @@ function fastGameloop(app) {
                   
                 if (!config.noBoot && !isInvincible && !isNew && !config.isGodParty) {
                   client.log.ranOutOfHealth += 1
-                  disconnectPlayer(client)
+                  disconnectPlayer(app, client)
                 }
               } else {
                 client.xp = 100
@@ -2052,7 +2049,7 @@ function initEventHandler(app) {
 
         for (const client of sameNetworkClients) {
           client.log.sameNetworkDisconnect += 1
-          disconnectPlayer(client)
+          disconnectPlayer(app, client)
         }
       }
 
@@ -2078,7 +2075,7 @@ function initEventHandler(app) {
           const sameNetworkObservers = observers.filter(r => r.hash === currentPlayer.hash)
 
           for (const observer of sameNetworkObservers) {
-            disconnectPlayer(observer)
+            disconnectPlayer(app, observer)
           }
 
           const observer = {
@@ -2212,13 +2209,13 @@ function initEventHandler(app) {
 
           if (!pack.signature || !pack.network || !pack.device || !pack.address) {
             currentPlayer.log.signinProblem += 1
-            disconnectPlayer(currentPlayer)
+            disconnectPlayer(app, currentPlayer)
             return
           }
 
           if (semver.diff(serverVersion, pack.version) !== 'patch') {
             currentPlayer.log.versionProblem += 1
-            disconnectPlayer(currentPlayer)
+            disconnectPlayer(app, currentPlayer)
             return
           }
 
@@ -2228,20 +2225,20 @@ function initEventHandler(app) {
 
           if (!await isValidSignatureRequest({ signature: { data: 'evolution', hash: pack.signature.trim(), address } })) {
             currentPlayer.log.signatureProblem += 1
-            disconnectPlayer(currentPlayer)
+            disconnectPlayer(app, currentPlayer)
             return
           }
 
           if (currentPlayer.isBanned) {
             emitDirect(socket, 'OnBanned', true)
-            disconnectPlayer(currentPlayer)
+            disconnectPlayer(app, currentPlayer)
             return
           }
 
           if (config.isMaintenance && !currentPlayer.isMod) {
             currentPlayer.log.maintenanceJoin += 1
             emitDirect(socket, 'OnMaintenance', true)
-            disconnectPlayer(currentPlayer)
+            disconnectPlayer(app, currentPlayer)
             return
           }
 
@@ -2252,7 +2249,7 @@ function initEventHandler(app) {
 
             if (!name) {
               currentPlayer.log.usernameProblem += 1
-              disconnectPlayer(currentPlayer)
+              disconnectPlayer(app, currentPlayer)
               return
             }
 
@@ -2277,7 +2274,7 @@ function initEventHandler(app) {
             if (recentPlayer) {
               if ((now - recentPlayer.lastUpdate) < 3000) {
                 currentPlayer.log.recentJoinProblem += 1
-                disconnectPlayer(currentPlayer)
+                disconnectPlayer(app, currentPlayer)
                 return
               }
 
@@ -2317,7 +2314,7 @@ function initEventHandler(app) {
 
           if (confirmUser?.status !== 1) {
             currentPlayer.log.failedRealmCheck += 1
-            disconnectPlayer(currentPlayer)
+            disconnectPlayer(app, currentPlayer)
             return
           }
 
@@ -2327,13 +2324,13 @@ function initEventHandler(app) {
 
           if (recentPlayer && (now - recentPlayer.lastUpdate) < 3000) {
             currentPlayer.log.connectedTooSoon += 1
-            disconnectPlayer(currentPlayer)
+            disconnectPlayer(app, currentPlayer)
             return
           }
 
           if (config.isMaintenance && !currentPlayer.isMod) {
             emitDirect(socket, 'OnMaintenance', true)
-            disconnectPlayer(currentPlayer)
+            disconnectPlayer(app, currentPlayer)
             return
           }
 
@@ -2351,7 +2348,7 @@ function initEventHandler(app) {
 
           if (observers.length === 0) {
             emitDirect(socket, 'OnBroadcast', `Realm not connected. Contact support.`, 0)
-            disconnectPlayer(currentPlayer)
+            disconnectPlayer(app, currentPlayer)
             return
           }
 
@@ -2395,7 +2392,7 @@ function initEventHandler(app) {
           currentPlayer.lastUpdate = getTime()
         } catch (e) {
           log('Error:', e)
-          disconnectPlayer(currentPlayer)
+          disconnectPlayer(app, currentPlayer)
         }
       })
 
@@ -2406,7 +2403,7 @@ function initEventHandler(app) {
 
           if (config.isMaintenance && !currentPlayer.isMod) {
             emitDirect(socket, 'OnMaintenance', true)
-            disconnectPlayer(currentPlayer)
+            disconnectPlayer(app, currentPlayer)
             return
           }
 
@@ -2452,7 +2449,7 @@ function initEventHandler(app) {
         
           if (config.anticheat.disconnectPositionJumps && distanceBetweenPoints(currentPlayer.position, { x: positionY, y: positionY }) > 5) {
             currentPlayer.log.positionJump += 1
-            disconnectPlayer(currentPlayer)
+            disconnectPlayer(app, currentPlayer)
             return
           }
 
@@ -3055,7 +3052,7 @@ function initEventHandler(app) {
 
       socket.on('RS_KickUser', async function(req) {
         if (await isValidAdminRequest(req) && clients.find(c => c.address === req.data.target)) {
-          disconnectPlayer(clients.find(c => c.address === req.data.target))
+          disconnectPlayer(app, clients.find(c => c.address === req.data.target))
         }
       })
 
@@ -3109,8 +3106,7 @@ function initEventHandler(app) {
         currentPlayer.log.clientDisconnected += 1
 
         setTimeout(() => {
-          disconnectPlayer(currentPlayer)
-          flushEventQueue(app)
+          disconnectPlayer(app, currentPlayer)
         }, 2 * 1000)
 
         if (currentPlayer.id === realmServer.socket?.id) {
@@ -3132,7 +3128,7 @@ export async function initGameServer(app) {
     spawnSprites(config.spritesStartCount)
   }
 
-  setTimeout(fastestGameloop, config.fastestLoopSeconds * 1000)
+  // setTimeout(fastestGameloop, config.fastestLoopSeconds * 1000)
   setTimeout(() => fastGameloop(app), config.fastLoopSeconds * 1000)
   setTimeout(slowGameloop, config.slowLoopSeconds * 1000)
   setTimeout(sendUpdates, config.sendUpdateLoopSeconds * 1000)
