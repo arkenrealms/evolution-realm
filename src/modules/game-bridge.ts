@@ -238,7 +238,7 @@ function connectGameServer(app) {
             config.totalLegitPlayers += 1
           }
         } catch (e) {
-          console.log(e)
+          log(e)
         }
       }
 

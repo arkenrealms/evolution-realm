@@ -43,7 +43,7 @@ function onRealmConnection(app, socket) {
           currentClient.isAdmin = true
           currentClient.isMod = true
 
-          app.gameBridge.call('RS_ApiConnected', await getSignedRequest(app.web3, app.secrets, {}), {})
+          await app.gameBridge.call('RS_ApiConnected', await getSignedRequest(app.web3, app.secrets, {}), {})
         } else if (app.realm.state.modList.includes(req.signature.address)) {
           currentClient.isMod = true
         }
@@ -81,7 +81,7 @@ function onRealmConnection(app, socket) {
 
         const data = { config: app.gameBridge.state.config }
 
-        app.gameBridge.call('RS_SetConfigRequest', await getSignedRequest(app.web3, app.secrets, data), data)
+        await app.gameBridge.call('RS_SetConfigRequest', await getSignedRequest(app.web3, app.secrets, data), data)
 
         emitDirect(socket, 'SetConfigResponse', {
           id: req.id,
@@ -132,7 +132,7 @@ function onRealmConnection(app, socket) {
 
         const data = { isReset: true, config: app.gameBridge.state.config }
 
-        app.gameBridge.call('RS_SetConfigRequest', await getSignedRequest(app.web3, app.secrets, data), data)
+        await app.gameBridge.call('RS_SetConfigRequest', await getSignedRequest(app.web3, app.secrets, data), data)
 
         emitDirect(socket, 'InfoResponse', {
           id: req.id,
@@ -264,7 +264,7 @@ function onRealmConnection(app, socket) {
 
         app.gameBridge.userCache[req.data.target] = (await (await fetch(`https://cache.rune.game/users/${req.data.target}/overview.json`)).json()) as any
 
-        app.gameBridge.call('KickUser', await getSignedRequest(app.web3, app.secrets, req.data), req.data)
+        await app.gameBridge.call('RS_KickUser', await getSignedRequest(app.web3, app.secrets, req.data), req.data)
 
         emitDirect(socket, 'BanUserResponse', {
           id: req.id,
@@ -441,7 +441,7 @@ function onRealmConnection(app, socket) {
       log('Observer has disconnected')
       
       if (currentClient.isAdmin) {
-        app.gameBridge.call('RS_ApiDisconnected', await getSignedRequest(app.web3, app.secrets, {}), {})
+        await app.gameBridge.call('RS_ApiDisconnected', await getSignedRequest(app.web3, app.secrets, {}), {})
       }
 
       currentClient.log.clientDisconnected += 1
