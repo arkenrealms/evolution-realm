@@ -2502,7 +2502,7 @@ function initEventHandler(app) {
 
           currentPlayer.clientPosition = { x: normalizeFloat(positionX, 4), y: normalizeFloat(positionY, 4) }
           currentPlayer.clientTarget = { x: normalizeFloat(targetX, 4), y: normalizeFloat(targetY, 4) }
-          currentPlayer.lastReportedTime = parseFloat(pack.time)
+          currentPlayer.lastReportedTime = currentPlayer.name === 'Testman' ? parseFloat(pack.time) - 300 : parseFloat(pack.time)
           currentPlayer.lastUpdate = now
         } catch(e) {
           log('Error:', e)
