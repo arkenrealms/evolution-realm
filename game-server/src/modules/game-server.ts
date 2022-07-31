@@ -1683,8 +1683,8 @@ function detectCollisions(app) {
             }
           }
 
-          if (player.cameraSize < 1) {
-            player.cameraSize = 1
+          if (player.cameraSize < 1.5) {
+            player.cameraSize = 1.5
           }
 
           if (player.cameraSize > 6) {
