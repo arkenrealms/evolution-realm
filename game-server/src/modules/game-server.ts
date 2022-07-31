@@ -1635,6 +1635,7 @@ function detectCollisions(app) {
             value = config.powerupXp1
             if (config.gameMode === 'Sprite Juice') {
               player.baseSpeed += 0.05 * 3
+              player.decayPower -= 0.1 * 3
               // publishEvent('OnBroadcast', `Speed down ${player.baseSpeed}`, 0)
             }
 
