@@ -281,6 +281,7 @@ const presets = [
     immunitySeconds: 10,
     orbOnDeathPercent: 0,
     spritesPerPlayerCount: 20,
+    level2forced: true,
     guide: [
       'Game Mode - Fast Drake',
       '+50% Speed as Black Drake',
@@ -294,6 +295,7 @@ const presets = [
     baseSpeed: 4,
     decayPower: 2.8,
     pointsPerKill: 300,
+    level2forced: true,
     guide: [
       'Game Mode - Bird Eye',
       'Faster Movement',
