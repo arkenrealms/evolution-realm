@@ -228,7 +228,7 @@ function connectGameServer(app) {
 
       app.gameBridge.state.clients = req.data.clients
 
-      config.totalLegitPlayers = 1
+      config.totalLegitPlayers = 0
 
       for (const client of req.data.clients) {
         if (client.name.indexOf('Guest') !== -1 || client.name.indexOf('Unknown') !== -1) continue
