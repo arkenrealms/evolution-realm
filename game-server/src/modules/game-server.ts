@@ -356,6 +356,7 @@ const presets = [
     avatarSpeedMultiplier2: 1,
     pointsPerReward: 20,
     hideMap: true,
+    level2forced: true,
     guide: [
       'Game Mode - Marco Polo',
       'Zoomed in + no map',
