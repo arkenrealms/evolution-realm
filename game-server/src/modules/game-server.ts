@@ -2121,7 +2121,13 @@ function initEventHandler(app) {
       })
 
       socket.on('RS_ApiConnected', async function(req) {
-        if (!await isValidAdminRequest(req)) return
+        if (!await isValidAdminRequest(req)) {
+          socket.emit('RS_ApiConnectedResponse', {
+            id: req.id,
+            data: { status: 0 }
+          }) 
+          return
+        }
       
         publishEvent('OnBroadcast', `API connected`, 0)
 
@@ -2132,7 +2138,13 @@ function initEventHandler(app) {
       })
 
       socket.on('RS_ApiDisconnected', async function(req) {
-        if (!await isValidAdminRequest(req)) return
+        if (!await isValidAdminRequest(req)) {
+          socket.emit('RS_ApiDisconnectedResponse', {
+            id: req.id,
+            data: { status: 0 }
+          }) 
+          return
+        }
 
         publishEvent('OnBroadcast', `API disconnected`, 0)
 
