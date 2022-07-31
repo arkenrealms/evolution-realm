@@ -1100,7 +1100,7 @@ async function resetLeaderboard(preset = null) {
       }
     }
 
-    const saveRoundRes = await rsCall('GS_SaveRoundRequest', {
+    const saveRoundReq = rsCall('GS_SaveRoundRequest', {
       startedAt: round.startedAt,
       endedAt: round.endedAt,
       players: round.players,
@@ -1109,22 +1109,24 @@ async function resetLeaderboard(preset = null) {
 
     // clearInterval(problemInterval)
 
-    if (saveRoundRes?.status !== 1) {
-      sharedConfig.rewardWinnerAmount = 0
-      config.rewardWinnerAmount = 0
-      sharedConfig.rewardItemAmount = 0
-      config.rewardItemAmount = 0
-
-      if (!preset) {
-        setTimeout(() => {
-          publishEvent('OnBroadcast', `Problem saving the round. Restarting round.`, 3)
+    saveRoundReq.then(function(saveRoundRes) {
+      if (saveRoundRes?.status !== 1) {
+        sharedConfig.rewardWinnerAmount = 0
+        config.rewardWinnerAmount = 0
+        sharedConfig.rewardItemAmount = 0
+        config.rewardItemAmount = 0
   
-          // clearTimeout(roundLoopTimeout)
-  
-          // resetLeaderboard()
-        }, 30 * 1000)
+        if (!preset) {
+          setTimeout(() => {
+            publishEvent('OnBroadcast', `Problem saving the round. Restarting round.`, 3)
+    
+            // clearTimeout(roundLoopTimeout)
+    
+            // resetLeaderboard()
+          }, 30 * 1000)
+        }
       }
-    }
+    })
 
     if (config.calcRoundRewards) {
       await calcRoundRewards()
