@@ -2274,6 +2274,8 @@ function initEventHandler(app) {
         try {
           const pack = decodePayload(msg)
 
+          log('SetInfo', msg)
+
           if (!pack.signature || !pack.network || !pack.device || !pack.address) {
             currentPlayer.log.signinProblem += 1
             disconnectPlayer(app, currentPlayer)

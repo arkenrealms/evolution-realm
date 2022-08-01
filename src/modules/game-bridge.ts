@@ -389,12 +389,11 @@ function connectGameServer(app) {
 
   socket.on('GS_VerifySignatureRequest', function(req) {
     try {
-      const hashedData = md5(JSON.stringify(req.data))
       emitDirect(socket, 'GS_VerifySignatureResponse', {
         id: req.id,
         data: {
           status: 1,
-          verified: app.web3.eth.accounts.recover(req.data.signature.data, req.data.signature.hash).toLowerCase() === req.data.signature.address.toLowerCase() && hashedData === req.data.signature.data
+          verified: app.web3.eth.accounts.recover(req.data.signature.data, req.data.signature.hash).toLowerCase() === req.data.signature.address.toLowerCase() && req.data.signature.data === 'evolution'
         }
       })
     } catch(e) {
