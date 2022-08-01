@@ -1316,7 +1316,7 @@ function checkConnectionLoop(app) {
       // if (client.isInvincible) continue
       // if (client.isDead) continue
 
-      if (client.lastUpdate !== 0 && client.lastUpdate <= oneMinuteAgo) {
+      if (client.lastReportedTime <= oneMinuteAgo) {
         client.log.timeoutDisconnect += 1
         disconnectPlayer(app, client)
       }
