@@ -393,7 +393,7 @@ function connectGameServer(app) {
         id: req.id,
         data: {
           status: 1,
-          verified: app.web3.eth.accounts.recover(req.data.signature.data, req.data.signature.hash).toLowerCase() === req.data.signature.address.toLowerCase() && req.data.signature.data === 'evolution'
+          verified: req.data.signature.data === 'evolution' && req.data.signature.hash.startsWith('0x') && req.data.signature.hash.length === 132 && app.web3.eth.accounts.recover(req.data.signature.data, req.data.signature.hash).toLowerCase() === req.data.signature.address.toLowerCase()
         }
       })
     } catch(e) {
