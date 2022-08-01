@@ -1539,16 +1539,17 @@ function detectCollisions(app) {
           baseConfig.level2open = true
           config.level2open = true
 
-          publishEvent('OnBroadcast', `Level 2 opening...`, 0)
+          publishEvent('OnBroadcast', `Wall going down...`, 0)
 
           setTimeout(() => {
             sharedConfig.spritesStartCount = 200
             config.spritesStartCount = 200
             clearSprites()
             spawnSprites(config.spritesStartCount)
-            publishEvent('OnOpenLevel2')
           }, 2 * 1000)
         }
+
+        publishEvent('OnOpenLevel2')
       }
 
       if (!config.level2forced && clients.filter(c => !c.isSpectating && !c.isDead).length < config.playersRequiredForLevel2 - 7) {
@@ -1556,13 +1557,12 @@ function detectCollisions(app) {
           baseConfig.level2open = false
           config.level2open = false
 
-          publishEvent('OnBroadcast', `Level 2 closing...`, 0)
+          publishEvent('OnBroadcast', `Wall going up...`, 0)
 
           sharedConfig.spritesStartCount = 50
           config.spritesStartCount = 50
           clearSprites()
           spawnSprites(config.spritesStartCount)
-          publishEvent('OnCloseLevel2')
 
           setTimeout(() => {
             for (const player of round.players) {
@@ -1572,6 +1572,8 @@ function detectCollisions(app) {
             }
           }, 2 * 1000)
         }
+
+        publishEvent('OnCloseLevel2')
       }
     }
 
