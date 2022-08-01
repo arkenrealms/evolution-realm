@@ -16,7 +16,7 @@ const addressToUsername = {}
 let announceReboot = false
 let rebootAfterRound = false
 let totalLegitPlayers = 0
-const debugQueue = false
+const debugQueue = true
 const killSameNetworkClients = false
 const sockets = {} // to storage sockets
 const clientLookup = {}
@@ -50,7 +50,7 @@ let baseConfig = {
   periodicReboots: false,
   startAvatar: 0,
   spriteXpMultiplier: 1,
-  forcedLatency: 40,
+  forcedLatency: 20,
   isRoundPaused: false,
   level2forced: false,
   level2allowed: true,
@@ -221,6 +221,7 @@ const presets = [
     pointsPerPowerup: 0,
     pointsPerReward: 0,
     pointsPerOrb: 0,
+    orbOnDeathPercent: 0,
     guide: [
       'Game Mode - Evolution',
       '+1 Points Per Evolution'
@@ -349,6 +350,23 @@ const presets = [
     ]
   },
   {
+    gameMode: 'Classic Marco Polo',
+    cameraSize: 2,
+    baseSpeed: 3,
+    decayPower: 1.4,
+    avatarSpeedMultiplier0: 1,
+    avatarSpeedMultiplier1: 1,
+    avatarSpeedMultiplier2: 1,
+    // pointsPerReward: 20,
+    hideMap: true,
+    // level2forced: true,
+    guide: [
+      'Game Mode - Classic Marco Polo',
+      'Zoomed in + no map',
+      'Faster Decay'
+    ]
+  },
+  {
     gameMode: 'Marco Polo',
     cameraSize: 2,
     baseSpeed: 3,
@@ -362,8 +380,7 @@ const presets = [
     guide: [
       'Game Mode - Marco Polo',
       'Zoomed in + no map',
-      'Faster Movement',
-      'Faster Decay'
+      'Sprites Change Camera',
     ]
   },
   {
@@ -961,9 +978,9 @@ const registerKill = (app, winner, loser) => {
 
   publishEvent('OnGameOver', loser.id, winner.id)
 
-  setTimeout(() => {
-    disconnectPlayer(app, loser, true)
-  }, 2 * 1000)
+  // setTimeout(() => {
+  disconnectPlayer(app, loser, true)
+  // }, 2 * 1000)
 
   const orb = {
     id: shortId.generate(),
@@ -1697,8 +1714,8 @@ function detectCollisions(app) {
             player.baseSpeed = 0.25
           }
 
-          if (player.baseSpeed > 2.5) {
-            player.baseSpeed = 2.5
+          if (player.baseSpeed > 2) {
+            player.baseSpeed = 2
           }
 
           player.powerups += 1
@@ -2322,7 +2339,7 @@ function initEventHandler(app) {
             if (recentPlayer) {
               if ((now - recentPlayer.lastUpdate) < 3000) {
                 currentPlayer.log.recentJoinProblem += 1
-                disconnectPlayer(app, currentPlayer)
+                disconnectPlayer(app, currentPlayer, true)
                 return
               }
 
