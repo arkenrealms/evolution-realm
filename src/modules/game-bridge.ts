@@ -242,6 +242,8 @@ function connectGameServer(app) {
         }
       }
 
+      if (config.totalLegitPlayers === 0) config.totalLegitPlayers = 1
+
       config.rewardItemAmount = parseFloat((Math.round(Math.min(config.totalLegitPlayers * config.rewardItemAmountPerLegitPlayer, config.rewardItemAmountMax) * 1000) / 1000).toFixed(3))
       config.rewardWinnerAmount = parseFloat((Math.round(Math.min(config.totalLegitPlayers * config.rewardWinnerAmountPerLegitPlayer, config.rewardWinnerAmountMax) * 1000) / 1000).toFixed(3))
 
