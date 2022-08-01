@@ -15,8 +15,7 @@ let roundLoopTimeout
 const addressToUsername = {}
 let announceReboot = false
 let rebootAfterRound = false
-let totalLegitPlayers = 0
-const debugQueue = true
+const debugQueue = false
 const killSameNetworkClients = false
 const sockets = {} // to storage sockets
 const clientLookup = {}
@@ -29,7 +28,6 @@ let eventQueue = []
 let clients = [] // to storage clients
 let lastReward
 let lastLeaderName
-let problemInterval
 let round = {
   startedAt: Math.round(getTime() / 1000),
   endedAt: null,
@@ -576,7 +574,6 @@ async function normalizeAddress(address) {
 
 async function isValidSignatureRequest(req) {
   log('Verifying', req)
-  return true
   if (!req.signature.address) return false
   if (req.signature.address.length !== 42 || req.signature.address.slice(0, 2) !== '0x') return false
   try {
@@ -744,14 +741,16 @@ function disconnectPlayer(app, player, immediate = false) {
   try {
     log("Disconnecting", player.id)
 
-    if (sockets[player.id] && sockets[player.id].emit) {
-      const oldSocket = sockets[player.id]
+    const oldSocket = sockets[player.id]
 
-      emitDirect(oldSocket, 'OnUserDisconnected', player.id)
-
-      setTimeout(function() {
-        oldSocket.disconnect()
-      }, immediate ? 0 : 1000)
+    if (oldSocket) {
+      if (oldSocket.emit) {
+        emitDirect(oldSocket, 'OnUserDisconnected', player.id)
+  
+        setTimeout(function() {
+          oldSocket.disconnect()
+        }, immediate ? 0 : 1000)
+      }
 
       delete sockets[player.id]
     }
@@ -1204,13 +1203,14 @@ async function resetLeaderboard(preset = null) {
       client.deaths = 0
       client.evolves = 0
       client.rewards = 0
+      client.orbs = 0
       client.powerups = 0
       client.baseSpeed = 1
       client.decayPower = 1
       client.pickups = []
-      client.avatar = config.startAvatar
-      client.orbs = 0
+      client.avatar = 0
       client.xp = 50
+      client.avatar = config.startAvatar
       client.speed = normalizeFloat((config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed))
       client.cameraSize = client.overrideCameraSize || config.cameraSize
       client.log = {
@@ -1360,12 +1360,14 @@ function slowGameloop(app) {
 //   }
 // }
 
-function resetPlayerPosition(player) {
+function resetPlayer(player) {
   const spawnPoint = playerSpawnPoints[(Math.floor(Math.random() * playerSpawnPoints.length))]
   player.position = spawnPoint
   player.target = spawnPoint
   player.clientPosition = spawnPoint
   player.clientTarget = spawnPoint
+  player.avatar = 0
+  player.xp = 50
 }
 
 function detectCollisions(app) {
@@ -1556,18 +1558,18 @@ function detectCollisions(app) {
 
           publishEvent('OnBroadcast', `Level 2 closing...`, 0)
 
+          sharedConfig.spritesStartCount = 50
+          config.spritesStartCount = 50
+          clearSprites()
+          spawnSprites(config.spritesStartCount)
+          publishEvent('OnCloseLevel2')
+
           setTimeout(() => {
             for (const player of round.players) {
               if (player.position.x < -18) {
-                resetPlayerPosition(player)
+                resetPlayer(player)
               }
             }
-
-            sharedConfig.spritesStartCount = 50
-            config.spritesStartCount = 50
-            clearSprites()
-            spawnSprites(config.spritesStartCount)
-            publishEvent('OnCloseLevel2')
           }, 2 * 1000)
         }
       }
@@ -3140,7 +3142,6 @@ function initEventHandler(app) {
               connectedPlayers: clients.map(c => c.address),
               rewardItemAmount: config.rewardItemAmount,
               rewardWinnerAmount: config.rewardWinnerAmount,
-              totalLegitPlayers: totalLegitPlayers,
               gameMode: config.gameMode,
               orbs: orbs,
               currentReward
