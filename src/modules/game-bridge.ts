@@ -276,7 +276,7 @@ function connectGameServer(app) {
       log('GS_SaveRoundRequest', req)
 
       // Update player stat DB
-      const res = await app.realm.call('SaveRoundRequest', { gsid: serverState.id, roundId: config.roundId, round: req.data, rewardWinnerAmount: config.rewardWinnerAmount })
+      const res = await app.realm.call('SaveRoundRequest', { gsid: serverState.id, roundId: config.roundId, round: req.data, rewardWinnerAmount: config.rewardWinnerAmount, lastClients: app.gameBridge.state.clients })
 
       if (res.status === 1) {
         emitDirect(socket, 'GS_SaveRoundResponse', {
