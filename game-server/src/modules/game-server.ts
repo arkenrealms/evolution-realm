@@ -1566,9 +1566,9 @@ function detectCollisions(app) {
 
           setTimeout(() => {
             for (const player of round.players) {
-              if (player.position.x < -18) {
+              // if (player.position.x < -18) {
                 resetPlayer(player)
-              }
+              // }
             }
           }, 2 * 1000)
         }
