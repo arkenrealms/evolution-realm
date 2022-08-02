@@ -60,7 +60,7 @@ async function init() {
       upgradeTimeout: 20 * 1000,
       allowUpgrades: true,
       cookie: false,
-      serveClient: true,
+      serveClient: false,
       allowEIO3: true,
       cors: {
         origin: "*"

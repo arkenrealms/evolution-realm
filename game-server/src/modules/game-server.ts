@@ -978,7 +978,7 @@ const registerKill = (app, winner, loser) => {
   publishEvent('OnGameOver', loser.id, winner.id)
 
   // setTimeout(() => {
-  disconnectPlayer(app, loser, true)
+  disconnectPlayer(app, loser)
   // }, 2 * 1000)
 
   const orb = {
@@ -1548,9 +1548,9 @@ function detectCollisions(app) {
             clearSprites()
             spawnSprites(config.spritesStartCount)
           }, 2 * 1000)
-        }
 
-        publishEvent('OnOpenLevel2')
+          publishEvent('OnOpenLevel2')
+        }
       }
 
       if (!config.level2forced && clients.filter(c => !c.isSpectating && !c.isDead).length < config.playersRequiredForLevel2 - 7) {
@@ -1572,9 +1572,9 @@ function detectCollisions(app) {
               // }
             }
           }, 2 * 1000)
-        }
 
-        publishEvent('OnCloseLevel2')
+          publishEvent('OnCloseLevel2')
+        }
       }
     }
 
@@ -2438,7 +2438,9 @@ function initEventHandler(app) {
 
           if (config.level2open) {
             emitDirect(socket, 'OnOpenLevel2')
-            emitDirect(socket, 'OnBroadcast', `Level 2 open!`, 0)
+            emitDirect(socket, 'OnBroadcast', `Wall going down!`, 0)
+          } else {
+            emitDirect(socket, 'OnCloseLevel2')
           }
 
           // spawn all connected clients for currentUser client 
