@@ -1724,6 +1724,14 @@ function detectCollisions(app) {
             player.baseSpeed = 2
           }
 
+          if (player.decayPower < 0.5) {
+            player.decayPower = 0.5
+          }
+
+          if (player.decayPower > 2) {
+            player.decayPower = 8
+          }
+
           player.powerups += 1
           player.points += config.pointsPerPowerup
           player.xp += (value * config.spriteXpMultiplier)
