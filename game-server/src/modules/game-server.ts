@@ -1120,9 +1120,9 @@ async function resetLeaderboard(preset = null) {
     round.endedAt =  Math.round(getTime() / 1000)
 
     const fiveSecondsAgo = getTime() - 7000
-    const thirtySecondsAgo = Math.round(getTime() / 1000) - 30
+    const thirtySecondsAgo = getTime() - 30 * 1000
 
-    const winners = round.players.filter(p => p.lastUpdate >= fiveSecondsAgo && p.joinedAt < thirtySecondsAgo).sort((a, b) => b.points - a.points).slice(0, 10)
+    const winners = round.players.filter(p => p.lastUpdate >= fiveSecondsAgo && p.joinedRoundAt < thirtySecondsAgo).sort((a, b) => b.points - a.points).slice(0, 10)
 
     if (winners.length) {
       lastLeaderName = winners[0].name
@@ -1199,6 +1199,7 @@ async function resetLeaderboard(preset = null) {
 
       ranks[client.address].kills += client.kills
 
+      client.joinedRoundAt = getTime()
       client.points = 0
       client.kills = 0
       client.deaths = 0
@@ -2064,6 +2065,7 @@ function initEventHandler(app) {
         lastUpdate: 0,
         gameMode: config.gameMode,
         phasedUntil: getTime(),
+        joinedRoundAt: getTime(),
         baseSpeed: 1,
         log: {
           kills: [],
@@ -2359,6 +2361,7 @@ function initEventHandler(app) {
               currentPlayer.rewards = recentPlayer.rewards
               currentPlayer.lastUpdate = recentPlayer.lastUpdate
               currentPlayer.log = recentPlayer.log
+              currentPlayer.joinedRoundAt = recentPlayer.joinedRoundAt
 
               currentPlayer.log.connects += 1
             }
