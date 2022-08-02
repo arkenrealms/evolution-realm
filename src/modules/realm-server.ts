@@ -515,7 +515,8 @@ export function initRealmServer(app) {
 
   app.realm.state.modList = [
     '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C', // realm server
-    '0xa987f487639920A3c2eFe58C8FBDedB96253ed9B', // me
+    '0xa987f487639920A3c2eFe58C8FBDedB96253ed9B', // botter
+    '0x1a367CA7bD311F279F1dfAfF1e60c4d797Faa6eb', // testman
     '0x545612032BeaDED7E9f5F5Ab611aF6428026E53E', // kevin
     '0x37470038C615Def104e1bee33c710bD16a09FdEf', // maiev
     '0x150F24A67d5541ee1F8aBce2b69046e25d64619c', // maiev
@@ -524,7 +525,6 @@ export function initRealmServer(app) {
     '0xe563983d6f46266Ad939c16bD59E5535Ab6E774D', // disco
     // '0x2DF94b980FC880100D93072011675E6659C0ca21', // zavox
     // '0x9b229c01eEf692A780d8Fee2558AaEa9873C032f', // me
-    // '0x1a367CA7bD311F279F1dfAfF1e60c4d797Faa6eb' // me?
   ]
 
   app.io.on('connection', onRealmConnection.bind(null, app))

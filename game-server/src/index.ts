@@ -74,12 +74,12 @@ async function init() {
 
     app.io = require('socket.io')(app.isHttps ? app.https : app.http, {
       secure: app.isHttps ? true : false,
-      pingInterval: 30005,
-      pingTimeout: 5000,
-      upgradeTimeout: 3000,
+      pingInterval: 30 * 1000,
+      pingTimeout: 90 * 1000,
+      upgradeTimeout: 20 * 1000,
       allowUpgrades: true,
       cookie: false,
-      serveClient: true,
+      serveClient: false,
       allowEIO3: true,
       cors: {
         origin: "*"
