@@ -1122,7 +1122,7 @@ async function resetLeaderboard(preset = null) {
     const fiveSecondsAgo = getTime() - 7000
     const thirtySecondsAgo = Math.round(getTime() / 1000) - 30
 
-    const winners = round.players.filter(p => p.lastUpdate >= fiveSecondsAgo && p.joinedAt > thirtySecondsAgo).sort((a, b) => b.points - a.points).slice(0, 10)
+    const winners = round.players.filter(p => p.lastUpdate >= fiveSecondsAgo && p.joinedAt < thirtySecondsAgo).sort((a, b) => b.points - a.points).slice(0, 10)
 
     if (winners.length) {
       lastLeaderName = winners[0].name
