@@ -80,7 +80,7 @@ async function init() {
       allowUpgrades: true,
       cookie: false,
       serveClient: true,
-      allowEIO3: false,
+      allowEIO3: true,
       cors: {
         origin: "*"
       }

@@ -293,7 +293,7 @@ const presets = [
     cameraSize: 6,
     baseSpeed: 4,
     decayPower: 2.8,
-    pointsPerKill: 300,
+    pointsPerKill: 500,
     level2forced: true,
     guide: [
       'Game Mode - Bird Eye',
