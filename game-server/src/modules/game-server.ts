@@ -174,6 +174,7 @@ const presets = [
     pointsPerKill: 1,
     pointsPerReward: 100,
     pointsPerOrb: 1,
+    baseSpeed: 4.5,
     guide: [
       'Game Mode - Indiana Jones',
       '+100 Points Per Treasure Found'
@@ -1122,7 +1123,7 @@ async function resetLeaderboard(preset = null) {
     const fiveSecondsAgo = getTime() - 7000
     const thirtySecondsAgo = getTime() - 30 * 1000
 
-    const winners = round.players.filter(p => p.lastUpdate >= fiveSecondsAgo && p.joinedRoundAt < thirtySecondsAgo).sort((a, b) => b.points - a.points).slice(0, 10)
+    const winners = round.players.filter(p => p.lastUpdate >= fiveSecondsAgo).sort((a, b) => b.points - a.points).slice(0, 10) //  && p.joinedRoundAt < thirtySecondsAgo
 
     if (winners.length) {
       lastLeaderName = winners[0].name
