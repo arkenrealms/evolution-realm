@@ -552,6 +552,7 @@ async function rsCall(name, data = {}) {
 
     if (!realmServer.socket) {
       log('Error:', `Not connected to realm server. Call: ${name}`)
+      resolve({ status: 0, message: 'Not connected to realm' })
       return
     }
 
@@ -735,6 +736,8 @@ function syncSprites() {
 }
 
 function disconnectPlayer(app, player, immediate = false) {
+  if (player.isRealm) return
+
   clients = clients.filter(c => c.id !== player.id)
   
   if (player.isDisconnected) return
@@ -1316,6 +1319,7 @@ function checkConnectionLoop(app) {
       if (client.isSpectating) continue
       if (client.isGod) continue
       if (client.isMod) continue
+      if (client.isRealm) continue
       // if (client.isInvincible) continue
       // if (client.isDead) continue
 
@@ -2060,6 +2064,7 @@ function initEventHandler(app) {
         isSpectating: false,
         isStuck: false,
         isGod: false,
+        isRealm: false,
         isInvincible: config.isGodParty ? true : false,
         isPhased: false,
         overrideSpeed: null,
@@ -2155,6 +2160,7 @@ function initEventHandler(app) {
 
           // TODO: confirm it's the realm server
           realmServer.socket = socket
+          currentPlayer.isRealm = true
 
           socket.emit('RS_ConnectedResponse', {
             id: req.id,
