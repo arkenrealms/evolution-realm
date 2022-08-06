@@ -335,13 +335,13 @@ const presets = [
     antifeed2: false,
     dynamicDecayPower: false,
     decayPowerPerMaxEvolvedPlayers: 2,
-    // avatarDecayPower0: 4,
-    // avatarDecayPower1: 3,
-    // avatarDecayPower2: 2,
+    avatarDecayPower0: 4,
+    avatarDecayPower1: 3,
+    avatarDecayPower2: 2,
     // avatarDecayPower0: 1.5,
     // avatarDecayPower1: 2.5,
     // avatarDecayPower2: 3,
-    spriteXpMultiplier: -3,
+    spriteXpMultiplier: -2,
     // avatarDirection: -1,
     guide: [
       'Game Mode - Reverse Evolve',
@@ -743,7 +743,7 @@ function disconnectPlayer(app, player, immediate = false) {
   if (player.isDisconnected) return
 
   try {
-    log("Disconnecting", player.id)
+    log("Disconnecting", player.id, player.name)
 
     const oldSocket = sockets[player.id]
 
@@ -766,9 +766,11 @@ function disconnectPlayer(app, player, immediate = false) {
     player.joinedAt = 0
     player.latency = 0
 
-    publishEvent('OnUserDisconnected', player.id)
-    syncSprites()
-    flushEventQueue(app)
+    setTimeout(function() {
+      publishEvent('OnUserDisconnected', player.id)
+      syncSprites()
+      flushEventQueue(app)
+    }, immediate ? 0 : 1000)
   } catch(e) {
     log('Error:', e)
   }
@@ -1713,28 +1715,32 @@ function detectCollisions(app) {
             }
           }
 
-          if (player.cameraSize < 1.5) {
-            player.cameraSize = 1.5
+          if (config.gameMode === 'Sprite Juice') {
+            if (player.baseSpeed < 0.25) {
+              player.baseSpeed = 0.25
+            }
+
+            if (player.baseSpeed > 2) {
+              player.baseSpeed = 2
+            }
+
+            if (player.decayPower < 0.5) {
+              player.decayPower = 0.5
+            }
+
+            if (player.decayPower > 2) {
+              player.decayPower = 8
+            }
           }
 
-          if (player.cameraSize > 6) {
-            player.cameraSize = 6
-          }
+          if (config.gameMode === 'Marco Polo') {
+            if (player.cameraSize < 1.5) {
+              player.cameraSize = 1.5
+            }
 
-          if (player.baseSpeed < 0.25) {
-            player.baseSpeed = 0.25
-          }
-
-          if (player.baseSpeed > 2) {
-            player.baseSpeed = 2
-          }
-
-          if (player.decayPower < 0.5) {
-            player.decayPower = 0.5
-          }
-
-          if (player.decayPower > 2) {
-            player.decayPower = 8
+            if (player.cameraSize > 6) {
+              player.cameraSize = 6
+            }
           }
 
           player.powerups += 1
