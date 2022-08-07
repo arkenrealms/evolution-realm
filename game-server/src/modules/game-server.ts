@@ -1267,9 +1267,10 @@ async function resetLeaderboard(preset = null) {
 
       if (config.gameMode === 'Pandamonium' && pandas.includes(client.address)) {
         client.avatar = 2
+        publishEvent('OnUpdateEvolution', client.id, client.avatar, client.speed)
+      } else {
+        publishEvent('OnUpdateRegression', client.id, client.avatar, client.speed)
       }
-
-      publishEvent('OnUpdateRegression', client.id, client.avatar, client.speed)
 
       if (client.isDead || client.isSpectating) continue
 
@@ -1933,6 +1934,10 @@ function fastGameloop(app) {
         client.latency = 0
       }
   
+      if (config.gameMode === 'Pandamonium' && pandas.includes(client.address)) {
+        client.avatar = 2
+      }
+
       publishEvent('OnUpdatePlayer',
         client.id, 
         client.overrideSpeed || client.speed, 
