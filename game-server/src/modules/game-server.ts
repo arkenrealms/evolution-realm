@@ -41,6 +41,12 @@ const realmServer = {
 }
 const ioCallbacks = {}
 
+const pandas = [
+  '0x150F24A67d5541ee1F8aBce2b69046e25d64619c',
+  '0x3551691499D740790C4511CDBD1D64b2f146f6Bd',
+  '0x191727d22f2693100acef8e48F8FeaEaa06d30b1'
+]
+
 let baseConfig = {
   id: undefined,
   roundId: 1,
@@ -417,6 +423,13 @@ const presets = [
       'Pink - Decrease Speed',
       'Yellow - Increase Speed',
       'Blue - Shield',
+    ]
+  },
+  {
+    gameMode: 'Pandamonium',
+    guide: [
+      'Game Mode - Pandamonium',
+      'Beware the Panda'
     ]
   },
   // {
@@ -951,6 +964,10 @@ const registerKill = (app, winner, loser) => {
     return
   }
 
+  if (config.gameMode === 'Pandamonium' && !pandas.includes(winner.address)) {
+    return
+  }
+
   // LV3 vs LV1 = 0.5 * 3 + 0.5 * 2 * 2 = 3.5
   // LV3 vs LV2 = 0.5 * 3 + 0.5 * 1 * 2 = 2.5
   // LV2 vs LV1 = 0.5 * 2 + 0.5 * 1 * 2 = 2
@@ -1216,7 +1233,6 @@ async function resetLeaderboard(preset = null) {
       client.baseSpeed = 1
       client.decayPower = 1
       client.pickups = []
-      client.avatar = 0
       client.xp = 50
       client.avatar = config.startAvatar
       client.speed = normalizeFloat((config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed))
@@ -1248,6 +1264,10 @@ async function resetLeaderboard(preset = null) {
         replay: []
       }
       client.gameMode = config.gameMode
+
+      if (config.gameMode === 'Pandamonium' && pandas.includes(client.address)) {
+        client.avatar = 2
+      }
 
       publishEvent('OnUpdateRegression', client.id, client.avatar, client.speed)
 
@@ -1814,6 +1834,7 @@ function fastGameloop(app) {
       if (client.isDead) continue
       if (client.isSpectating) continue
       if (client.isJoining) continue
+      if (config.gameMode === 'Pandamonium') continue
 
       const currentTime = Math.round(now / 1000)
       const isInvincible = config.isGodParty || client.isSpectating || client.isGod || client.isInvincible || (client.invincibleUntil > currentTime)
@@ -2434,6 +2455,10 @@ function initEventHandler(app) {
           currentPlayer.avatar = config.startAvatar
           currentPlayer.speed = normalizeFloat((config.baseSpeed * config['avatarSpeedMultiplier' + currentPlayer.avatar] * currentPlayer.baseSpeed))
 
+          if (config.gameMode === 'Pandamonium' && pandas.includes(currentPlayer.address)) {
+            currentPlayer.avatar = 2
+          }
+          
           log("[INFO] player " + currentPlayer.id + ": logged!")
           log("[INFO] Total players: " + Object.keys(clientLookup).length)
 
