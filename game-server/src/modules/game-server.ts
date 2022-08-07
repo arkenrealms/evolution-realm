@@ -937,31 +937,33 @@ function roundEndingSoon(sec) {
 const registerKill = (app, winner, loser) => {
   const now = getTime()
 
-  if (config.isGodParty) return
-  if (winner.isInvincible || loser.isInvincible) return
-  if (winner.isGod || loser.isGod) return
-  if (config.preventBadKills && (winner.isPhased || now < winner.phasedUntil)) return
+  if (config.gameMode !== 'Pandamonium' || !pandas.includes(winner.address)) {
+    if (config.isGodParty) return
+    if (winner.isInvincible || loser.isInvincible) return
+    if (winner.isGod || loser.isGod) return
+    if (config.preventBadKills && (winner.isPhased || now < winner.phasedUntil)) return
 
-  const totalKills = winner.log.kills.filter(h => h === loser.hash).length
-  const notReallyTrying = config.antifeed1 ? (totalKills >= 2 && loser.kills < 2 && loser.rewards <= 1) || (totalKills >= 2 && loser.kills < 2 && loser.powerups <= 100) : false
-  const tooManyKills = config.antifeed2 ? clients.length > 2 && totalKills >= 5 && totalKills > winner.log.kills.length / clients.filter(c => !c.isDead).length : false
-  const killingThemselves = config.antifeed3 ? winner.hash === loser.hash : false
-  const allowKill = !notReallyTrying && !tooManyKills && !pandas.includes(winner.address)// && !killingThemselves
-  console.log(winner.address, pandas, config.gameMode)
-  if (notReallyTrying) {
-    loser.log.notReallyTrying += 1
-  }
-  if (tooManyKills) {
-    loser.log.tooManyKills += 1
-  }
-  if (killingThemselves) {
-    loser.log.killingThemselves += 1
-  }
+    const totalKills = winner.log.kills.filter(h => h === loser.hash).length
+    const notReallyTrying = config.antifeed1 ? (totalKills >= 2 && loser.kills < 2 && loser.rewards <= 1) || (totalKills >= 2 && loser.kills < 2 && loser.powerups <= 100) : false
+    const tooManyKills = config.antifeed2 ? clients.length > 2 && totalKills >= 5 && totalKills > winner.log.kills.length / clients.filter(c => !c.isDead).length : false
+    const killingThemselves = config.antifeed3 ? winner.hash === loser.hash : false
+    const allowKill = !notReallyTrying && !tooManyKills// && !killingThemselves
 
-  if (config.preventBadKills && !allowKill) {
-    loser.phasedUntil = getTime() + 2000
+    if (notReallyTrying) {
+      loser.log.notReallyTrying += 1
+    }
+    if (tooManyKills) {
+      loser.log.tooManyKills += 1
+    }
+    if (killingThemselves) {
+      loser.log.killingThemselves += 1
+    }
 
-    return
+    if (config.preventBadKills && !allowKill) {
+      loser.phasedUntil = getTime() + 2000
+
+      return
+    }
   }
 
   if (config.gameMode === 'Pandamonium' && !pandas.includes(winner.address)) {
