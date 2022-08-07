@@ -963,7 +963,7 @@ const registerKill = (app, winner, loser) => {
 
     return
   }
-
+console.log(winner.address, pandas, config.gameMode)
   if (config.gameMode === 'Pandamonium' && !pandas.includes(winner.address)) {
     return
   }
