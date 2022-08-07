@@ -1159,15 +1159,15 @@ async function resetLeaderboard(preset = null) {
         sharedConfig.rewardItemAmount = 0
         config.rewardItemAmount = 0
   
-        if (!preset) {
+        // if (!preset) {
           setTimeout(() => {
-            publishEvent('OnBroadcast', `Problem saving the round. Restarting round.`, 3)
+            publishEvent('OnBroadcast', `Maintanence`, 3)
     
             // clearTimeout(roundLoopTimeout)
     
             // resetLeaderboard()
           }, 30 * 1000)
-        }
+        // }
       }
     })
 
