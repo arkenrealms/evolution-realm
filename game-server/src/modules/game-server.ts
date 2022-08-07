@@ -44,7 +44,7 @@ const ioCallbacks = {}
 const pandas = [
   '0x150F24A67d5541ee1F8aBce2b69046e25d64619c',
   '0x3551691499D740790C4511CDBD1D64b2f146f6Bd',
-  '0x191727d22f2693100acef8e48F8FeaEaa06d30b1'
+  '0x1a367CA7bD311F279F1dfAfF1e60c4d797Faa6eb'
 ]
 
 let baseConfig = {
