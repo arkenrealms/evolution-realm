@@ -1834,7 +1834,6 @@ function fastGameloop(app) {
       if (client.isDead) continue
       if (client.isSpectating) continue
       if (client.isJoining) continue
-      if (config.gameMode === 'Pandamonium') continue
 
       const currentTime = Math.round(now / 1000)
       const isInvincible = config.isGodParty || client.isSpectating || client.isGod || client.isInvincible || (client.invincibleUntil > currentTime)
@@ -1842,7 +1841,7 @@ function fastGameloop(app) {
 
       client.speed = client.overrideSpeed || normalizeFloat((config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed))
 
-      if (!config.isRoundPaused) {
+      if (!config.isRoundPaused && config.gameMode !== 'Pandamonium') {
         let decay = config.noDecay ? 0 : (client.avatar + 1) / (1 / config.fastLoopSeconds) * ((config['avatarDecayPower' + client.avatar] || 1) * config.decayPower)
   
         if (client.xp > 100) {
