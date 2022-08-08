@@ -426,13 +426,13 @@ const presets = [
       'Blue - Shield',
     ]
   },
-  {
-    gameMode: 'Pandamonium',
-    guide: [
-      'Game Mode - Pandamonium',
-      'Beware the Panda'
-    ]
-  },
+  // {
+  //   gameMode: 'Pandamonium',
+  //   guide: [
+  //     'Game Mode - Pandamonium',
+  //     'Beware the Panda'
+  //   ]
+  // },
   // {
   //   gameMode: 'Hayai',
   //   level2forced: true,
