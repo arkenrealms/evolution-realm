@@ -523,6 +523,7 @@ export function initRealmServer(app) {
     '0xfE27380E57e5336eB8FFc017371F2147A3268fbE', // lazy?
     '0x3551691499D740790C4511CDBD1D64b2f146f6Bd', // panda
     '0xe563983d6f46266Ad939c16bD59E5535Ab6E774D', // disco
+    "0x62c79c01c33a3761fe2d2aD6f8df324225b8073b", // binzy
     // '0x2DF94b980FC880100D93072011675E6659C0ca21', // zavox
     // '0x9b229c01eEf692A780d8Fee2558AaEa9873C032f', // me
   ]
