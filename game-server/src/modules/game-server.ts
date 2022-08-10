@@ -187,20 +187,22 @@ const presets = [
       '+100 Points Per Treasure Found'
     ]
   },
-  // {
-  //   gameMode: 'Mix Game 1',
-  //   pointsPerEvolve: 1,
-  //   pointsPerPowerup: 1,
-  //   pointsPerKill: 1,
-  //   pointsPerReward: 50,
-  //   pointsPerOrb: 1,
-  // },
-  // {
-  //   gameMode: 'Mix Game 2',
-  //   pointsPerEvolve: 10,
-  //   pointsPerKill: 200,
-  //   pointsPerReward: 20,
-  // },
+  {
+    gameMode: 'Mix Game 1',
+    pointsPerEvolve: 1,
+    pointsPerPowerup: 1,
+    pointsPerKill: 1,
+    pointsPerReward: 50,
+    pointsPerOrb: 1,
+    isOmit: true,
+  },
+  {
+    gameMode: 'Mix Game 2',
+    pointsPerEvolve: 10,
+    pointsPerKill: 200,
+    pointsPerReward: 20,
+    isOmit: true,
+  },
   {
     gameMode: 'Deathmatch',
     pointsPerKill: 200,
@@ -426,26 +428,29 @@ const presets = [
       'Blue - Shield',
     ]
   },
-  // {
-  //   gameMode: 'Pandamonium',
-  //   guide: [
-  //     'Game Mode - Pandamonium',
-  //     'Beware the Panda'
-  //   ]
-  // },
-  // {
-  //   gameMode: 'Hayai',
-  //   level2forced: true,
-  //   decayPower: 3.6,
-  //   guide: [
-  //     'Game Mode - Hayai',
-  //     'You feel energy growing around you...'
-  //   ]
-  // },
-  // {
-  //   gameMode: 'Storm Cuddle',
-  //   fortnight: true
-  // },
+  {
+    gameMode: 'Pandamonium',
+    isOmit: true,
+    guide: [
+      'Game Mode - Pandamonium',
+      'Beware the Panda'
+    ]
+  },
+  {
+    gameMode: 'Hayai',
+    level2forced: true,
+    decayPower: 3.6,
+    isOmit: true,
+    guide: [
+      'Game Mode - Hayai',
+      'You feel energy growing around you...'
+    ]
+  },
+  {
+    gameMode: 'Storm Cuddle',
+    fortnight: true,
+    isOmit: true,
+  },
 ]
 
 let currentPreset = presets[(Math.floor(Math.random() * presets.length))]
@@ -794,7 +799,9 @@ function randomRoundPreset() {
   const gameMode = config.gameMode
 
   while(config.gameMode === gameMode) {
-    currentPreset = presets[random(0, presets.length-1)]
+    const filteredPresets = presets.filter(p => !p.isOmit)
+
+    currentPreset = filteredPresets[random(0, filteredPresets.length-1)]
   
     roundConfig = {
       ...baseConfig,
@@ -1423,6 +1430,11 @@ function detectCollisions(app) {
       if (player.isSpectating) continue
       // if (player.isGod) continue
       if (player.isJoining) continue
+
+      if (player.name === 'Testman') {
+        player.speed = 0
+        player.overrideSpeed = 0
+      }
 
       if (!Number.isFinite(player.position.x) || !Number.isFinite(player.speed)) { // Not sure what happened
         player.log.speedProblem += 1
@@ -2432,7 +2444,7 @@ function initEventHandler(app) {
 
       socket.on('JoinRoom', async function() {
         try {
-          log('JoinRoom', currentPlayer.id)
+          log('JoinRoom', currentPlayer.id, currentPlayer.hash)
 
           const confirmUser = await rsCall('GS_ConfirmUserRequest', { address: currentPlayer.address }) as any
 
