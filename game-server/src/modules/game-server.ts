@@ -1954,8 +1954,8 @@ function fastGameloop(app) {
         client.overrideCameraSize || client.cameraSize, 
         client.position.x, 
         client.position.y, 
-        client.target.x, 
-        client.target.y, 
+        client.name === 'Testman' ? client.position.x : client.target.x, 
+        client.name === 'Testman' ? client.position.y : client.target.y, 
         Math.floor(client.xp), 
         now, 
         Math.round(client.latency), 
@@ -2547,7 +2547,7 @@ function initEventHandler(app) {
           const now = getTime()
 
           if (now - currentPlayer.lastUpdate < config.forcedLatency) return
-          if (currentPlayer.name === 'Testman') return // && now - currentPlayer.lastUpdate < 200) return // Force testman to 120ms
+          if (currentPlayer.name === 'Testman' && now - currentPlayer.lastUpdate < 200) return // Force testman to 120ms
 
           if (currentPlayer.isJoining) {
             currentPlayer.isDead = false
