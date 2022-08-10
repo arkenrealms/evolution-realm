@@ -1946,8 +1946,8 @@ function fastGameloop(app) {
         client.overrideCameraSize || client.cameraSize, 
         client.position.x, 
         client.position.y, 
-        client.target.x, 
-        client.target.y, 
+        client.position.x, // target
+        client.position.y, // target
         Math.floor(client.xp), 
         now, 
         Math.round(client.latency), 
