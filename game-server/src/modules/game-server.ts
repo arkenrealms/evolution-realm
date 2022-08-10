@@ -764,20 +764,6 @@ function disconnectPlayer(app, player, immediate = false) {
   try {
     log("Disconnecting", player.id, player.name)
 
-    const oldSocket = sockets[player.id]
-
-    if (oldSocket) {
-      if (oldSocket.emit) {
-        emitDirect(oldSocket, 'OnUserDisconnected', player.id)
-  
-        setTimeout(function() {
-          oldSocket.disconnect()
-        }, immediate ? 0 : 1000)
-      }
-
-      delete sockets[player.id]
-    }
-
     delete clientLookup[player.id]
 
     player.isDisconnected = true
@@ -785,10 +771,16 @@ function disconnectPlayer(app, player, immediate = false) {
     player.joinedAt = 0
     player.latency = 0
 
+    const oldSocket = sockets[player.id]
+
     setTimeout(function() {
       publishEvent('OnUserDisconnected', player.id)
       syncSprites()
       flushEventQueue(app)
+
+      if (oldSocket.emit && oldSocket.connected)
+        oldSocket.disconnect()
+        delete sockets[player.id]
     }, immediate ? 0 : 1000)
   } catch(e) {
     log('Error:', e)
