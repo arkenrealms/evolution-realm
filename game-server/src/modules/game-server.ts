@@ -1431,8 +1431,6 @@ function detectCollisions(app) {
       // if (player.isGod) continue
       if (player.isJoining) continue
 
-      if (player.name === 'Testman') continue
-
       if (!Number.isFinite(player.position.x) || !Number.isFinite(player.speed)) { // Not sure what happened
         player.log.speedProblem += 1
         disconnectPlayer(app, player)
@@ -2549,7 +2547,7 @@ function initEventHandler(app) {
           const now = getTime()
 
           if (now - currentPlayer.lastUpdate < config.forcedLatency) return
-          if (currentPlayer.name === 'Testman' && now - currentPlayer.lastUpdate < 200) return // Force testman to 120ms
+          if (currentPlayer.name === 'Testman') // && now - currentPlayer.lastUpdate < 200) return // Force testman to 120ms
 
           if (currentPlayer.isJoining) {
             currentPlayer.isDead = false
