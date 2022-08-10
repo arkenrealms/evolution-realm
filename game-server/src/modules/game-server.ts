@@ -1960,7 +1960,7 @@ function fastGameloop(app) {
         now, 
         Math.round(client.latency), 
         isInvincible ? '1' : '0', 
-        client.isStuck || client.name === 'Testman' ? '1' : '0', 
+        client.isStuck ? '1' : '0', 
         isPhased && !isInvincible ? '1' : '0'
        )
     }
