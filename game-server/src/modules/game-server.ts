@@ -1431,10 +1431,7 @@ function detectCollisions(app) {
       // if (player.isGod) continue
       if (player.isJoining) continue
 
-      if (player.name === 'Testman') {
-        player.speed = 0
-        player.overrideSpeed = 0
-      }
+      if (player.name === 'Testman') continue
 
       if (!Number.isFinite(player.position.x) || !Number.isFinite(player.speed)) { // Not sure what happened
         player.log.speedProblem += 1
