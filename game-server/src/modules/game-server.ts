@@ -1954,13 +1954,13 @@ function fastGameloop(app) {
         client.overrideCameraSize || client.cameraSize, 
         client.position.x, 
         client.position.y, 
-        client.name === 'Testman' ? 0 : client.target.x, 
-        client.name === 'Testman' ? 0 : client.target.y, 
+        client.target.x, 
+        client.target.y, 
         Math.floor(client.xp), 
         now, 
         Math.round(client.latency), 
         isInvincible ? '1' : '0', 
-        client.isStuck ? '1' : '0', 
+        client.isStuck || client.name === 'Testman' ? '1' : '0', 
         isPhased && !isInvincible ? '1' : '0'
        )
     }
