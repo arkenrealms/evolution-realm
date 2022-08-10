@@ -2547,7 +2547,7 @@ function initEventHandler(app) {
           const now = getTime()
 
           if (now - currentPlayer.lastUpdate < config.forcedLatency) return
-          if (currentPlayer.name === 'Testman') // && now - currentPlayer.lastUpdate < 200) return // Force testman to 120ms
+          if (currentPlayer.name === 'Testman') return // && now - currentPlayer.lastUpdate < 200) return // Force testman to 120ms
 
           if (currentPlayer.isJoining) {
             currentPlayer.isDead = false
