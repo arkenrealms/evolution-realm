@@ -153,15 +153,17 @@ let config = {
 }
 
 const presets = [
-  // {
-  //   gameMode: 'Standard',
-  //   pointsPerEvolve: 1,
-  //   pointsPerPowerup: 1,
-  //   pointsPerKill: 20,
-  //   pointsPerReward: 5,
-  // },
+  {
+    weight: 200,
+    gameMode: 'Standard',
+    pointsPerEvolve: 1,
+    pointsPerPowerup: 1,
+    pointsPerKill: 20,
+    pointsPerReward: 5,
+  },
   {
     gameMode: 'Lets Be Friends',
+    weight: 20,
     pointsPerKill: -200,
     orbOnDeathPercent: 0,
     antifeed1: false,
@@ -176,6 +178,7 @@ const presets = [
   },
   {
     gameMode: 'Indiana Jones',
+    weight: 100,
     pointsPerEvolve: 1,
     pointsPerPowerup: 1,
     pointsPerKill: 1,
@@ -189,6 +192,7 @@ const presets = [
   },
   {
     gameMode: 'Mix Game 1',
+    weight: 10,
     pointsPerEvolve: 1,
     pointsPerPowerup: 1,
     pointsPerKill: 1,
@@ -198,6 +202,7 @@ const presets = [
   },
   {
     gameMode: 'Mix Game 2',
+    weight: 10,
     pointsPerEvolve: 10,
     pointsPerKill: 200,
     pointsPerReward: 20,
@@ -205,6 +210,7 @@ const presets = [
   },
   {
     gameMode: 'Deathmatch',
+    weight: 1000,
     pointsPerKill: 200,
     orbOnDeathPercent: 0,
     pointsPerEvolve: 0,
@@ -224,6 +230,21 @@ const presets = [
   },
   {
     gameMode: 'Evolution',
+    weight: 20,
+    pointsPerKill: 0,
+    pointsPerEvolve: 1,
+    pointsPerPowerup: 0,
+    pointsPerReward: 0,
+    pointsPerOrb: 0,
+    orbOnDeathPercent: 0,
+    guide: [
+      'Game Mode - Evolution',
+      '+1 Points Per Evolution'
+    ]
+  },
+  {
+    gameMode: 'Classic Evolution',
+    weight: 100,
     pointsPerKill: 0,
     pointsPerEvolve: 1,
     pointsPerPowerup: 0,
@@ -237,6 +258,7 @@ const presets = [
   },
   {
     gameMode: 'Orb Master',
+    weight: 100,
     // orbOnDeathPercent: 25,
     orbTimeoutSeconds: 3,
     pointsPerOrb: 300,
@@ -254,6 +276,7 @@ const presets = [
   },
   {
     gameMode: 'Sprite Leader',
+    weight: 100,
     spritesPerPlayerCount: 40,
     // decayPower: 7,
     avatarDecayPower0: 2,
@@ -281,6 +304,7 @@ const presets = [
   },
   {
     gameMode: 'Fast Drake',
+    weight: 500,
     avatarDecayPower0: 1,
     avatarDecayPower1: 1,
     avatarDecayPower2: 1,
@@ -300,6 +324,7 @@ const presets = [
   },
   {
     gameMode: 'Bird Eye',
+    weight: 100,
     cameraSize: 6,
     baseSpeed: 4,
     decayPower: 2.8,
@@ -313,6 +338,7 @@ const presets = [
   },
   {
     gameMode: 'Friendly Reverse',
+    weight: 100,
     pointsPerKill: -200,
     orbOnDeathPercent: 0,
     antifeed1: false,
@@ -338,6 +364,7 @@ const presets = [
   },
   {
     gameMode: 'Reverse Evolve',
+    weight: 20,
     startAvatar: 2,
     decayPower: -1,
     antifeed1: false,
@@ -359,6 +386,7 @@ const presets = [
   },
   {
     gameMode: 'Classic Marco Polo',
+    weight: 100,
     cameraSize: 2,
     baseSpeed: 3,
     decayPower: 1.4,
@@ -376,6 +404,7 @@ const presets = [
   },
   {
     gameMode: 'Marco Polo',
+    weight: 100,
     cameraSize: 2,
     baseSpeed: 3,
     decayPower: 1.4,
@@ -391,22 +420,24 @@ const presets = [
       'Sprites Change Camera',
     ]
   },
-  {
-    gameMode: 'Leadercap',
-    leadercap: true,
-    guide: [
-      'Game Mode - Leadercap',
-      'Kill the last round leader',
-      'Leader -20% Speed',
-      'Leader 75% Death Orb'
-    ]
-  },
+  // {
+  //   gameMode: 'Leadercap',
+  //   leadercap: true,
+  //   guide: [
+  //     'Game Mode - Leadercap',
+  //     'Kill the last round leader',
+  //     'Leader -20% Speed',
+  //     'Leader 75% Death Orb'
+  //   ]
+  // },
   {
     gameMode: 'Sticky Mode',
+    weight: 20,
     stickyIslands: true,
     colliderBuffer: 0,
     pointsPerKill: 50,
     pointsPerOrb: 100,
+    isOmit: true,
     guide: [
       'Game Mode - Sticky Mode',
       'Sticky islands'
@@ -414,11 +445,13 @@ const presets = [
   },
   {
     gameMode: 'Sprite Juice',
+    weight: 20,
     // spritesPerPlayerCount: 1,
     spritesStartCount: 25,
     spritesTotal: 25,
     decayPowerPerMaxEvolvedPlayers: 2,
     // antifeed1: false,
+    isOmit: true,
     guide: [
       'Game Mode - Sprite Juice',
       // 'Sprites have side effects!',
@@ -438,6 +471,7 @@ const presets = [
   },
   {
     gameMode: 'Hayai',
+    weight: 20,
     level2forced: true,
     decayPower: 3.6,
     isOmit: true,
@@ -448,6 +482,7 @@ const presets = [
   },
   {
     gameMode: 'Storm Cuddle',
+    weight: 100,
     fortnight: true,
     isOmit: true,
   },
@@ -787,13 +822,28 @@ function disconnectPlayer(app, player, immediate = false) {
   }
 }
 
+function weightedRandom(items, weights) {
+  let i
+
+  for (i = 0; i < weights.length; i++)
+      weights[i] += weights[i - 1] || 0
+  
+  let random = Math.random() * weights[weights.length - 1]
+  
+  for (i = 0; i < weights.length; i++)
+      if (weights[i] > random)
+          break
+  
+  return items[i]
+}
+
 function randomRoundPreset() {
   const gameMode = config.gameMode
 
   while(config.gameMode === gameMode) {
     const filteredPresets = presets.filter(p => !p.isOmit)
 
-    currentPreset = filteredPresets[random(0, filteredPresets.length-1)]
+    currentPreset = weightedRandom(filteredPresets, filteredPresets.map(f => f.weight))
   
     roundConfig = {
       ...baseConfig,
@@ -984,7 +1034,7 @@ const registerKill = (app, winner, loser) => {
   winner.points += config.pointsPerKill * (loser.avatar + 1)
   winner.log.kills.push(loser.hash)
 
-  const orbOnDeathPercent = config.leadercap && loser.name === lastLeaderName ? 75 : config.orbOnDeathPercent
+  const orbOnDeathPercent = loser.name === lastLeaderName ? 50 : config.orbOnDeathPercent // config.leadercap && 
   const orbPoints = Math.floor(loser.points * (orbOnDeathPercent / 100))
 
   loser.deaths += 1
@@ -1539,6 +1589,8 @@ function detectCollisions(app) {
         player.position = position
         player.target = player.clientTarget
         player.phasedUntil = getTime() + 2000
+        if (!player.phasedPosition)
+          player.phasedPosition = position
         player.log.phases += 1
         player.log.collided += 1
         player.overrideSpeed = 0.5
@@ -1632,7 +1684,10 @@ function detectCollisions(app) {
 
           const distance = distanceMap[player1.avatar] + distanceMap[player2.avatar] //Math.max(distanceMap[player1.avatar], distanceMap[player2.avatar]) + Math.min(distanceMap[player1.avatar], distanceMap[player2.avatar])
 
-          if (distanceBetweenPoints(player1.position, player2.position) > distance) continue
+          const position1 = player1.isPhased ? player1.phasedPosition : player1.position
+          const position2 = player2.isPhased ? player2.phasedPosition : player2.position
+
+          if (distanceBetweenPoints(position1, position2) > distance) continue
 
           if (player2.avatar > player1.avatar) {
             // if (distanceBetweenPoints(player2.position, player2.clientPosition) > config.pickupCheckPositionDistance) continue
@@ -1842,6 +1897,13 @@ function fastGameloop(app) {
       const isInvincible = config.isGodParty || client.isSpectating || client.isGod || client.isInvincible || (client.invincibleUntil > currentTime)
       const isPhased = client.isPhased ? true : now <= client.phasedUntil
 
+      if (client.isPhased) {
+        if (now > client.phasedUntil) {
+          client.phasedUntil = 0
+          client.isPhased = false
+        }
+      }
+
       client.speed = client.overrideSpeed || normalizeFloat((config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed))
 
       if (!config.isRoundPaused && config.gameMode !== 'Pandamonium') {
@@ -1855,7 +1917,7 @@ function fastGameloop(app) {
               client.evolves += 1
               client.points += config.pointsPerEvolve
       
-              if (config.leadercap && client.name === lastLeaderName) {
+              if (client.name === lastLeaderName) { // config.leadercap && 
                 client.speed = client.speed * 0.8
               }
       
