@@ -245,15 +245,13 @@ const presets = [
   {
     gameMode: 'Classic Evolution',
     weight: 100,
-    pointsPerKill: 0,
-    pointsPerEvolve: 1,
+    pointsPerEvolve: 10,
     pointsPerPowerup: 0,
     pointsPerReward: 0,
     pointsPerOrb: 0,
-    orbOnDeathPercent: 0,
     guide: [
       'Game Mode - Evolution',
-      '+1 Points Per Evolution'
+      '+10 Points Per Evolution'
     ]
   },
   {
