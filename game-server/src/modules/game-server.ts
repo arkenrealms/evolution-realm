@@ -154,8 +154,8 @@ let config = {
 
 const presets = [
   {
-    weight: 200,
     gameMode: 'Standard',
+    weight: 200,
     pointsPerEvolve: 1,
     pointsPerPowerup: 1,
     pointsPerKill: 20,
@@ -463,6 +463,7 @@ const presets = [
   },
   {
     gameMode: 'Pandamonium',
+    weight: 20,
     isOmit: true,
     guide: [
       'Game Mode - Pandamonium',
