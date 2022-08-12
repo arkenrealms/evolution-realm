@@ -155,6 +155,7 @@ let config = {
 const presets = [
   {
     gameMode: 'Standard',
+    leadercap: true,
     weight: 200,
     pointsPerEvolve: 1,
     pointsPerPowerup: 1,
@@ -163,6 +164,7 @@ const presets = [
   },
   {
     gameMode: 'Lets Be Friends',
+    leadercap: true,
     weight: 20,
     pointsPerKill: -200,
     orbOnDeathPercent: 0,
@@ -178,6 +180,7 @@ const presets = [
   },
   {
     gameMode: 'Indiana Jones',
+    leadercap: true,
     weight: 100,
     pointsPerEvolve: 1,
     pointsPerPowerup: 1,
@@ -192,6 +195,7 @@ const presets = [
   },
   {
     gameMode: 'Mix Game 1',
+    leadercap: true,
     weight: 10,
     pointsPerEvolve: 1,
     pointsPerPowerup: 1,
@@ -202,6 +206,7 @@ const presets = [
   },
   {
     gameMode: 'Mix Game 2',
+    leadercap: true,
     weight: 10,
     pointsPerEvolve: 10,
     pointsPerKill: 200,
@@ -210,6 +215,7 @@ const presets = [
   },
   {
     gameMode: 'Deathmatch',
+    leadercap: true,
     weight: 1000,
     pointsPerKill: 200,
     orbOnDeathPercent: 0,
@@ -230,6 +236,7 @@ const presets = [
   },
   {
     gameMode: 'Evolution',
+    leadercap: true,
     weight: 20,
     pointsPerKill: 0,
     pointsPerEvolve: 1,
@@ -244,6 +251,7 @@ const presets = [
   },
   {
     gameMode: 'Classic Evolution',
+    leadercap: true,
     weight: 100,
     pointsPerEvolve: 10,
     pointsPerPowerup: 0,
@@ -256,6 +264,7 @@ const presets = [
   },
   {
     gameMode: 'Orb Master',
+    leadercap: true,
     weight: 100,
     // orbOnDeathPercent: 25,
     orbTimeoutSeconds: 3,
@@ -274,6 +283,7 @@ const presets = [
   },
   {
     gameMode: 'Sprite Leader',
+    leadercap: true,
     weight: 100,
     spritesPerPlayerCount: 40,
     // decayPower: 7,
@@ -302,6 +312,7 @@ const presets = [
   },
   {
     gameMode: 'Fast Drake',
+    leadercap: true,
     weight: 500,
     avatarDecayPower0: 1,
     avatarDecayPower1: 1,
@@ -322,6 +333,7 @@ const presets = [
   },
   {
     gameMode: 'Bird Eye',
+    leadercap: true,
     weight: 100,
     cameraSize: 6,
     baseSpeed: 4,
@@ -336,6 +348,7 @@ const presets = [
   },
   {
     gameMode: 'Friendly Reverse',
+    leadercap: true,
     weight: 100,
     pointsPerKill: -200,
     orbOnDeathPercent: 0,
@@ -362,6 +375,7 @@ const presets = [
   },
   {
     gameMode: 'Reverse Evolve',
+    leadercap: true,
     weight: 20,
     startAvatar: 2,
     decayPower: -1,
@@ -384,6 +398,7 @@ const presets = [
   },
   {
     gameMode: 'Classic Marco Polo',
+    leadercap: true,
     weight: 100,
     cameraSize: 2,
     baseSpeed: 3,
@@ -402,6 +417,7 @@ const presets = [
   },
   {
     gameMode: 'Marco Polo',
+    leadercap: true,
     weight: 100,
     cameraSize: 2,
     baseSpeed: 3,
@@ -430,6 +446,7 @@ const presets = [
   // },
   {
     gameMode: 'Sticky Mode',
+    leadercap: true,
     weight: 20,
     stickyIslands: true,
     colliderBuffer: 0,
@@ -443,6 +460,7 @@ const presets = [
   },
   {
     gameMode: 'Sprite Juice',
+    leadercap: true,
     weight: 20,
     // spritesPerPlayerCount: 1,
     spritesStartCount: 25,
@@ -470,6 +488,7 @@ const presets = [
   },
   {
     gameMode: 'Hayai',
+    leadercap: true,
     weight: 20,
     level2forced: true,
     decayPower: 3.6,
@@ -481,6 +500,7 @@ const presets = [
   },
   {
     gameMode: 'Storm Cuddle',
+    leadercap: true,
     weight: 100,
     fortnight: true,
     isOmit: true,
@@ -1033,7 +1053,7 @@ const registerKill = (app, winner, loser) => {
   winner.points += config.pointsPerKill * (loser.avatar + 1)
   winner.log.kills.push(loser.hash)
 
-  const orbOnDeathPercent = loser.name === lastLeaderName ? 50 : config.orbOnDeathPercent // config.leadercap && 
+  const orbOnDeathPercent = config.orbOnDeathPercent > 0 ? (config.leadercap && loser.name === lastLeaderName ? 50 : config.orbOnDeathPercent) : 0
   const orbPoints = Math.floor(loser.points * (orbOnDeathPercent / 100))
 
   loser.deaths += 1
@@ -1916,7 +1936,7 @@ function fastGameloop(app) {
               client.evolves += 1
               client.points += config.pointsPerEvolve
       
-              if (client.name === lastLeaderName) { // config.leadercap && 
+              if (config.leadercap && client.name === lastLeaderName) {
                 client.speed = client.speed * 0.8
               }
       
