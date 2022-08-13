@@ -237,7 +237,7 @@ const presets = [
   {
     gameMode: 'Evolution',
     leadercap: true,
-    weight: 2,
+    weight: 1,
     pointsPerKill: 0,
     pointsPerEvolve: 1,
     pointsPerPowerup: 0,
@@ -377,7 +377,7 @@ const presets = [
   {
     gameMode: 'Reverse Evolve',
     leadercap: true,
-    weight: 2,
+    weight: 1,
     startAvatar: 2,
     decayPower: -1,
     antifeed1: false,
@@ -448,7 +448,7 @@ const presets = [
   {
     gameMode: 'Sticky Mode',
     leadercap: true,
-    weight: 2,
+    weight: 1,
     stickyIslands: true,
     colliderBuffer: 0,
     pointsPerKill: 50,
@@ -462,13 +462,13 @@ const presets = [
   {
     gameMode: 'Sprite Juice',
     leadercap: true,
-    weight: 2,
+    weight: 1,
     // spritesPerPlayerCount: 1,
     spritesStartCount: 25,
     spritesTotal: 25,
     decayPowerPerMaxEvolvedPlayers: 2,
     // antifeed1: false,
-    isOmit: true,
+    // isOmit: true,
     guide: [
       'Game Mode - Sprite Juice',
       // 'Sprites have side effects!',
