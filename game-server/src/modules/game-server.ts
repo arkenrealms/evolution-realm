@@ -1104,9 +1104,8 @@ const registerKill = (app, winner, loser) => {
 
 function spectate(player) {
   try {
-    if (config.isMaintenance && !player.isMod) {
-      return
-    }
+    if (!player.isMod) return
+    if (config.isMaintenance && !player.isMod) return
 
     if (player.isSpectating) {
       // // if (!player.isMod) {
@@ -1138,6 +1137,7 @@ function spectate(player) {
       player.overrideSpeed = 7
       player.cameraSize = 8
       player.overrideCameraSize = 8
+      player.log.spectating += 1
   
       syncSprites()
   
@@ -1333,6 +1333,7 @@ async function resetLeaderboard(preset = null) {
         connects: 0,
         path: '',
         positions: 0,
+        spectating: 0,
         replay: []
       }
       client.gameMode = config.gameMode
