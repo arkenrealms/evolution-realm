@@ -478,6 +478,15 @@ const presets = [
       'Blue - Shield',
     ]
   },
+  // {
+  //   gameMode: 'Friendly Pandamonium',
+  //   weight: 1,
+  //   isOmit: true,
+  //   guide: [
+  //     'Game Mode - Friendly Pandamonium',
+  //     'Beware the Panda'
+  //   ]
+  // },
   {
     gameMode: 'Pandamonium',
     weight: 2,
