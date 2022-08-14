@@ -1113,7 +1113,7 @@ const registerKill = (app, winner, loser) => {
 
 function spectate(player) {
   try {
-    if (!player.isMod || !player.isGod) return
+    if (!player.isMod && !player.isGod) return
     if (config.isMaintenance && !player.isMod) return
 
     if (player.isSpectating) {
