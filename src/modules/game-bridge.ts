@@ -340,7 +340,7 @@ function connectGameServer(app) {
 
       app.gameBridge.userCache[req.data.address] = overview
 
-      const now = (new Date()).getTime()
+      const now = (new Date()).getTime() / 1000
 
       if (overview.isBanned && overview.bannedUntil > now) {
         emitDirect(socket, 'GS_ConfirmUserResponse', {
