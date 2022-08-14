@@ -128,6 +128,7 @@ function onRealmConnection(app, socket) {
 
         const games = app.gameBridge.state.servers.map(s => s.info).filter(i => !!i)
 
+        app.realm.state.banList = req.data.banList
         app.gameBridge.state.config = { ...app.gameBridge.state.config, ...req.data.config }
 
         const data = { isReset: true, config: app.gameBridge.state.config }
@@ -374,7 +375,7 @@ function onRealmConnection(app, socket) {
         log('Unban', req)
 
         if (await isValidRequest(app.web3, req) && app.realm.state.modList.includes(req.data.address)) {
-          app.realm.state.banList.splice(app.realm.state.banList.indexOf(req.data.target), 1)
+          app.realm.state.banList = app.realm.state.banList.filter(u => u.address !== req.data.address) //.splice(app.realm.state.banList.indexOf(req.data.target), 1)
 
           emitDirect(socket, 'UnbanUserResponse', {
             id: req.id,

@@ -340,17 +340,18 @@ function connectGameServer(app) {
 
       app.gameBridge.userCache[req.data.address] = overview
 
-      if (!overview?.isBanned) {
-        emitDirect(socket, 'GS_ConfirmUserResponse', {
-          id: req.id,
-          data: { status: 1 }
-        })
-      } else {
+      const now = (new Date()).getTime()
+
+      if (overview.isBanned && overview.bannedUntil > now) {
         emitDirect(socket, 'GS_ConfirmUserResponse', {
           id: req.id,
           data: { status: 0 }
         })
       }
+      emitDirect(socket, 'GS_ConfirmUserResponse', {
+        id: req.id,
+        data: { status: 1 }
+      })
     } catch (e) {
       emitDirect(socket, 'GS_ConfirmUserResponse', {
         id: req.id,
@@ -887,7 +888,9 @@ export function initGameBridge(app) {
   app.gameBridge.upgrade = upgradeGsCodebase
 
   setTimeout(() => {
-    app.gameBridge.start()
+    if (process.env.RUNE_ENV !== 'local') {
+      app.gameBridge.start()
+    }
 
     setTimeout(() => {
       app.gameBridge.connect()
