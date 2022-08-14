@@ -128,7 +128,7 @@ function onRealmConnection(app, socket) {
 
         const games = app.gameBridge.state.servers.map(s => s.info).filter(i => !!i)
 
-        app.realm.state.banList = req.data.banList
+        // app.realm.state.banList = req.data.banList
         app.gameBridge.state.config = { ...app.gameBridge.state.config, ...req.data.config }
 
         const data = { isReset: true, config: app.gameBridge.state.config }
@@ -263,7 +263,12 @@ function onRealmConnection(app, socket) {
           return
         }
 
-        app.gameBridge.userCache[req.data.target] = (await (await fetch(`https://cache.rune.game/users/${req.data.target}/overview.json`)).json()) as any
+        app.gameBridge.userCache[req.data.target] = {
+          ...((await (await fetch(`https://cache.rune.game/users/${req.data.target}/overview.json`)).json()) as any),
+          isBanned: true,
+          bannedReason: req.data.bannedReason,
+          bannedUntil: req.data.bannedUntil
+        }
 
         await app.gameBridge.call('RS_KickUser', await getSignedRequest(app.web3, app.secrets, req.data), req.data)
 
@@ -281,34 +286,34 @@ function onRealmConnection(app, socket) {
       }
     })
 
-    socket.on('BanListRequest', async function(req) {
-      try {
-        log('BanListRequest', req)
+    // socket.on('BanListRequest', async function(req) {
+    //   try {
+    //     log('BanListRequest', req)
 
-        if (!currentClient.isMod) {
-          logError('Invalid permissions')
+    //     if (!currentClient.isMod) {
+    //       logError('Invalid permissions')
 
-          emitDirect(socket, 'BanListResponse', {
-            id: req.id,
-            data: { status: 2 }
-          })
+    //       emitDirect(socket, 'BanListResponse', {
+    //         id: req.id,
+    //         data: { status: 2 }
+    //       })
 
-          return
-        }
+    //       return
+    //     }
 
-        emitDirect(socket, 'BanListResponse', {
-          id: req.id,
-          data: { status: 1, list: app.realm.state.banList }
-        })
-      } catch (e) {
-        logError(e)
+    //     emitDirect(socket, 'BanListResponse', {
+    //       id: req.id,
+    //       data: { status: 1, list: app.realm.state.banList }
+    //     })
+    //   } catch (e) {
+    //     logError(e)
         
-        emitDirect(socket, 'BanListResponse', {
-          id: req.id,
-          data: { status: 0 }
-        })
-      }
-    })
+    //     emitDirect(socket, 'BanListResponse', {
+    //       id: req.id,
+    //       data: { status: 0 }
+    //     })
+    //   }
+    // })
 
     socket.on('BridgeStateRequest', async function(req) {
       try {
@@ -370,34 +375,34 @@ function onRealmConnection(app, socket) {
       }
     })
 
-    socket.on('UnbanUserRequest', async function(req) {
-      try {
-        log('Unban', req)
+    // socket.on('UnbanUserRequest', async function(req) {
+    //   try {
+    //     log('Unban', req)
 
-        if (await isValidRequest(app.web3, req) && app.realm.state.modList.includes(req.data.address)) {
-          app.realm.state.banList = app.realm.state.banList.filter(u => u.address !== req.data.address) //.splice(app.realm.state.banList.indexOf(req.data.target), 1)
+    //     if (await isValidRequest(app.web3, req) && app.realm.state.modList.includes(req.data.address)) {
+    //       // app.realm.state.banList = app.realm.state.banList.filter(u => u.address !== req.data.address) //.splice(app.realm.state.banList.indexOf(req.data.target), 1)
 
-          emitDirect(socket, 'UnbanUserResponse', {
-            id: req.id,
-            data: { status: 1 }
-          })
-        } else {
-          logError('Invalid request')
+    //       emitDirect(socket, 'UnbanUserResponse', {
+    //         id: req.id,
+    //         data: { status: 1 }
+    //       })
+    //     } else {
+    //       logError('Invalid request')
 
-          emitDirect(socket, 'UnbanUserResponse', {
-            id: req.id,
-            data: { status: 2 }
-          })
-        }
-      } catch (e) {
-        logError(e)
+    //       emitDirect(socket, 'UnbanUserResponse', {
+    //         id: req.id,
+    //         data: { status: 2 }
+    //       })
+    //     }
+    //   } catch (e) {
+    //     logError(e)
         
-        emitDirect(socket, 'UnbanUserResponse', {
-          id: req.id,
-          data: { status: 0 }
-        })
-      }
-    })
+    //     emitDirect(socket, 'UnbanUserResponse', {
+    //       id: req.id,
+    //       data: { status: 0 }
+    //     })
+    //   }
+    // })
 
     socket.on('FindGameServer', function() {
       emitDirect(socket, 'OnFoundGameServer', app.realm.endpoint, 7777)
@@ -507,7 +512,7 @@ export function initRealmServer(app) {
   app.realm.state = {
   }
 
-  app.realm.state.banList = []
+  // app.realm.state.banList = []
 
   app.realm.state.adminList = [
     '0xDfA8f768d82D719DC68E12B199090bDc3691fFc7', // ourselves
