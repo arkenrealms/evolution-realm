@@ -45,7 +45,8 @@ const pandas = [
   '0x150F24A67d5541ee1F8aBce2b69046e25d64619c',
   '0x3551691499D740790C4511CDBD1D64b2f146f6Bd',
   '0x1a367CA7bD311F279F1dfAfF1e60c4d797Faa6eb',
-  '0x82b644E1B2164F5B81B3e7F7518DdE8E515A419d'
+  '0x82b644E1B2164F5B81B3e7F7518DdE8E515A419d',
+  '0xeb3fCb993dDe8a2Cd081FbE36238E4d64C286AC0'
 ]
 
 let baseConfig = {
@@ -1113,7 +1114,7 @@ const registerKill = (app, winner, loser) => {
 
 function spectate(player) {
   try {
-    if (!player.isMod && !player.isGod) return
+    // if (!player.isMod && !player.isGod) return
     if (config.isMaintenance && !player.isMod) return
 
     if (player.isSpectating) {
