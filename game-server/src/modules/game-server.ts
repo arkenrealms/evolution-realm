@@ -189,6 +189,9 @@ const presets = [
     pointsPerReward: 100,
     pointsPerOrb: 1,
     baseSpeed: 4.5,
+    cameraSize: 2.5,
+    hideMap: true,
+    orbOnDeathPercent: 0,
     guide: [
       'Game Mode - Indiana Jones',
       '+100 Points Per Treasure Found'
@@ -492,6 +495,7 @@ const presets = [
     gameMode: 'Pandamonium',
     weight: 2,
     isOmit: true,
+    isBattleRoyale: true,
     guide: [
       'Game Mode - Pandamonium',
       'Beware the Panda'
@@ -823,6 +827,10 @@ function disconnectPlayer(app, player, immediate = false) {
   if (player.isRealm) return
 
   clients = clients.filter(c => c.id !== player.id)
+  
+  if (config.gameMode === 'Pandamonium') {
+    publishEvent('OnBroadcast', `${clients.filter(c => !c.isDead && !c.isDisconnected && !c.isSpectating && !pandas.includes(c.address))} alive`, 0)
+  }
   
   if (player.isDisconnected) return
 
@@ -1214,6 +1222,11 @@ let lastFastestGameloopTime = getTime()
 
 async function resetLeaderboard(preset = null) {
   try {
+    if (config.gameMode === 'Pandamonium') {
+      roundLoopTimeout = setTimeout(resetLeaderboard, config.roundLoopSeconds * 1000)
+      return
+    }
+
     updateObservers()
 
     if (observers.length === 0) {
@@ -2428,11 +2441,11 @@ function initEventHandler(app) {
             return
           }
 
-          if (semver.diff(serverVersion, pack.version) !== 'patch') {
-            currentPlayer.log.versionProblem += 1
-            disconnectPlayer(app, currentPlayer)
-            return
-          }
+          // if (semver.diff(serverVersion, pack.version) !== 'patch') {
+          //   currentPlayer.log.versionProblem += 1
+          //   disconnectPlayer(app, currentPlayer)
+          //   return
+          // }
 
           const address = await normalizeAddress(pack.address)
 
@@ -2556,6 +2569,7 @@ function initEventHandler(app) {
 
           if (config.gameMode === 'Pandamonium' && pandas.includes(currentPlayer.address)) {
             currentPlayer.avatar = 2
+            emitDirect(socket, 'OnUpdateEvolution', currentPlayer.id, currentPlayer.avatar, currentPlayer.speed)
           }
           
           log("[INFO] player " + currentPlayer.id + ": logged!")
@@ -2641,6 +2655,7 @@ function initEventHandler(app) {
             currentPlayer.invincibleUntil = currentPlayer.joinedAt + config.immunitySeconds
 
             if (config.isBattleRoyale) {
+              emitDirect(socket, 'OnBroadcast', 'Spectate until the round is over', 0)
               spectate(currentPlayer)
               return
             }
