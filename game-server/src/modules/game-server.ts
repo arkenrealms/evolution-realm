@@ -220,7 +220,7 @@ const presets = [
   {
     gameMode: 'Deathmatch',
     leadercap: true,
-    weight: 100,
+    weight: 50,
     pointsPerKill: 200,
     orbOnDeathPercent: 0,
     pointsPerEvolve: 0,
@@ -317,7 +317,7 @@ const presets = [
   {
     gameMode: 'Fast Drake',
     leadercap: true,
-    weight: 50,
+    weight: 40,
     avatarDecayPower0: 1,
     avatarDecayPower1: 1,
     avatarDecayPower2: 1,
@@ -829,7 +829,7 @@ function disconnectPlayer(app, player, immediate = false) {
   clients = clients.filter(c => c.id !== player.id)
   
   if (config.gameMode === 'Pandamonium') {
-    publishEvent('OnBroadcast', `${clients.filter(c => !c.isDead && !c.isDisconnected && !c.isSpectating && !pandas.includes(c.address))} alive`, 0)
+    publishEvent('OnBroadcast', `${clients.filter(c => !c.isDead && !c.isDisconnected && !c.isSpectating && !pandas.includes(c.address)).length} alive`, 0)
   }
   
   if (player.isDisconnected) return
