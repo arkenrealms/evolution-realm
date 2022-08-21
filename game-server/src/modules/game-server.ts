@@ -496,6 +496,9 @@ const presets = [
     weight: 2,
     isOmit: true,
     isBattleRoyale: true,
+    avatarSpeedMultiplier0: 1,
+    avatarSpeedMultiplier1: 1,
+    avatarSpeedMultiplier2: 1,
     guide: [
       'Game Mode - Pandamonium',
       'Beware the Panda'
