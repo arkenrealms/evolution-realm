@@ -1028,10 +1028,11 @@ function roundEndingSoon(sec) {
 const registerKill = (app, winner, loser) => {
   const now = getTime()
 
+  if (config.isGodParty) return
+  if (winner.isInvincible || loser.isInvincible) return
+  if (winner.isGod || loser.isGod) return
+
   if (config.gameMode !== 'Pandamonium' || !pandas.includes(winner.address)) {
-    if (config.isGodParty) return
-    if (winner.isInvincible || loser.isInvincible) return
-    if (winner.isGod || loser.isGod) return
     if (config.preventBadKills && (winner.isPhased || now < winner.phasedUntil)) return
 
     const totalKills = winner.log.kills.filter(h => h === loser.hash).length
