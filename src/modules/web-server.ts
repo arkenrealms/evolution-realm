@@ -116,6 +116,13 @@ function initRoutes(app) {
     app.server.post('/call/:method', async function(req, res) {
       const response = await app.gameBridge.call(req.params.method, req.body.signature, req.body.data)
 
+      if (response.status === 1) {
+        await app.realm.call('ModRequest', {
+          params: req.params,
+          body: req.body
+        })
+      }
+
       res.json(response)
     })
 

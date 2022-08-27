@@ -75,6 +75,7 @@ let baseConfig = {
   antifeed4: true,
   isBattleRoyale: false,
   isGodParty: false,
+  isRuneRoyale: false,
   avatarDirection: 1,
   calcRoundRewards: true,
   flushEventQueueSeconds: 0.02,
@@ -3024,6 +3025,120 @@ function initEventHandler(app) {
           log('Error:', e)
           
           socket.emit('RS_StopGodPartyResponse', {
+            id: req.id,
+            data: { status: 0 }
+          })
+        }
+      })
+
+      socket.on('RS_StartRuneRoyaleRequest', async function(req) {
+        try {
+          log('RS_StartRuneRoyaleRequest', req)
+
+          if (await isValidAdminRequest(req)) {
+            baseConfig.isRuneRoyale = true
+            config.isRuneRoyale = true
+
+            publishEvent('OnBroadcast', `Rune Royale Started`, 0)
+            
+            socket.emit('RS_StartRuneRoyaleResponse', {
+              id: req.id,
+              data: { status: 1 }
+            })
+          } else {
+            socket.emit('RS_StartRuneRoyaleResponse', {
+              id: req.id,
+              data: { status: 0 }
+            })
+          }
+        } catch (e) {
+          log('Error:', e)
+          
+          socket.emit('RS_StartRuneRoyaleResponse', {
+            id: req.id,
+            data: { status: 0 }
+          })
+        }
+      })
+
+      socket.on('RS_PauseRuneRoyaleRequest', async function(req) {
+        try {
+          log('RS_PauseRuneRoyaleRequest', req)
+
+          if (await isValidAdminRequest(req)) {
+            publishEvent('OnBroadcast', `Rune Royale Paused`, 2)
+            
+            socket.emit('RS_PauseRuneRoyaleResponse', {
+              id: req.id,
+              data: { status: 1 }
+            })
+          } else {
+            socket.emit('RS_PauseRuneRoyaleResponse', {
+              id: req.id,
+              data: { status: 0 }
+            })
+          }
+        } catch (e) {
+          log('Error:', e)
+          
+          socket.emit('RS_PauseRuneRoyaleResponse', {
+            id: req.id,
+            data: { status: 0 }
+          })
+        }
+      })
+
+      socket.on('RS_UnpauseRuneRoyaleRequest', async function(req) {
+        try {
+          log('RS_UnpauseRuneRoyaleRequest', req)
+
+          if (await isValidAdminRequest(req)) {
+            publishEvent('OnBroadcast', `Rune Royale Unpaused`, 2)
+            
+            socket.emit('RS_UnpauseRuneRoyaleResponse', {
+              id: req.id,
+              data: { status: 1 }
+            })
+          } else {
+            socket.emit('RS_UnpauseRuneRoyaleResponse', {
+              id: req.id,
+              data: { status: 0 }
+            })
+          }
+        } catch (e) {
+          log('Error:', e)
+          
+          socket.emit('RS_UnpauseRuneRoyaleResponse', {
+            id: req.id,
+            data: { status: 0 }
+          })
+        }
+      })
+
+      socket.on('RS_StopRuneRoyaleRequest', async function(req) {
+        try {
+          log('RS_StopRuneRoyaleRequest', req)
+
+          if (await isValidAdminRequest(req)) {
+            baseConfig.isRuneRoyale = false
+            config.isRuneRoyale = false
+
+            publishEvent('OnBroadcast', `Rune Royale Stopped`, 2)
+            
+            socket.emit('RS_StopRuneRoyaleResponse', {
+              id: req.id,
+              data: { status: 1 }
+            })
+          } else {
+            socket.emit('RS_StopRuneRoyaleResponse', {
+              id: req.id,
+              data: { status: 0 }
+            })
+          }
+        } catch (e) {
+          log('Error:', e)
+          
+          socket.emit('RS_StopRuneRoyaleResponse', {
             id: req.id,
             data: { status: 0 }
           })
