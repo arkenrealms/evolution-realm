@@ -680,6 +680,10 @@ async function isValidSignatureRequest(req) {
   }
 }
 
+function getClientSpeed(client, _config) {
+  return client.overrideSpeed || normalizeFloat((_config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed) * (1 + client.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id]/100))
+}
+
 async function spawnRandomReward() {
   // return
   if (currentReward) {
@@ -1336,7 +1340,7 @@ async function resetLeaderboard(preset = null) {
       client.pickups = []
       client.xp = 50
       client.avatar = config.startAvatar
-      client.speed = normalizeFloat((config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed))
+      client.speed = getClientSpeed(client, config)
       client.cameraSize = client.overrideCameraSize || config.cameraSize
       client.log = {
         kills: [],
@@ -1954,7 +1958,7 @@ function fastGameloop(app) {
         }
       }
 
-      client.speed = client.overrideSpeed || normalizeFloat((config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed))
+      client.speed = getClientSpeed(client, config)
 
       if (!config.isRoundPaused && config.gameMode !== 'Pandamonium') {
         let decay = config.noDecay ? 0 : ((client.avatar + 1) / (1 / config.fastLoopSeconds) * ((config['avatarDecayPower' + client.avatar] || 1) * config.decayPower)) * (1 + (client.character.meta[1105] - client.character.meta[1104])/100)
@@ -2642,7 +2646,7 @@ function initEventHandler(app) {
 
           currentPlayer.isJoining = true
           currentPlayer.avatar = config.startAvatar
-          currentPlayer.speed = normalizeFloat((config.baseSpeed * config['avatarSpeedMultiplier' + currentPlayer.avatar] * currentPlayer.baseSpeed) * (1 + currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id]/100))
+          currentPlayer.speed = getClientSpeed(currentPlayer, config)
 
           if (config.gameMode === 'Pandamonium' && pandas.includes(currentPlayer.address)) {
             currentPlayer.avatar = 2
