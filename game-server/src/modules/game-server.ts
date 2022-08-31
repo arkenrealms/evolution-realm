@@ -17,7 +17,7 @@ const addressToUsername = {}
 let announceReboot = false
 let rebootAfterRound = false
 const debugQueue = false
-const killSameNetworkClients = false
+const killSameNetworkClients = true
 const sockets = {} // to storage sockets
 const clientLookup = {}
 const powerups = []
@@ -2297,7 +2297,7 @@ function initEventHandler(app) {
         currentPlayer.isMasterClient = true // first client to join the game
       }
 
-      clients = clients.filter(c => c.address !== currentPlayer.address)
+      clients = clients.filter(c => c.hash !== currentPlayer.hash) // if we allow same network, this needs to be fixed
       clients.push(currentPlayer)
 
       socket.on('RS_Connected', async function(req) {
@@ -2399,10 +2399,15 @@ function initEventHandler(app) {
 
         try {
           if (currentPlayer.isRealm) {
-            const recentPlayer = round.players.find(r => r.address === req.data.address)
+            const client = clients.find(c => c.address === req.data.address)
 
-            if (recentPlayer) {
-              recentPlayer.character = req.data.character
+            if (client) {
+              client.character = req.data.character
+
+              socket.emit('RS_SetPlayerCharacterResponse', {
+                id: req.id,
+                data: { status: 1 }
+              })
 
               return
             }
@@ -2477,7 +2482,7 @@ function initEventHandler(app) {
       })
 
       socket.on('Load', function() {
-        log('Load', currentPlayer.address)
+        log('Load', currentPlayer.hash)
 
         emitDirect(socket, 'OnLoaded', 1)
       })
@@ -2489,10 +2494,10 @@ function initEventHandler(app) {
       })
       
       socket.on('SetInfo', async function(msg) {
+        log('SetInfo', msg)
+
         try {
           const pack = decodePayload(msg)
-
-          log('SetInfo', msg)
 
           if (!pack.signature || !pack.network || !pack.device || !pack.address) {
             currentPlayer.log.signinProblem += 1
@@ -2548,7 +2553,7 @@ function initEventHandler(app) {
             currentPlayer.overrideCameraSize = 12
           }
 
-          log('User ' + name + ' with hash ' + hash)
+          log('User ' + name + ' with address ' + address + ' with hash ' + hash)
 
           const now = getTime()
           if (currentPlayer.name !== name || currentPlayer.address !== address) {
@@ -2576,6 +2581,7 @@ function initEventHandler(app) {
               currentPlayer.lastUpdate = recentPlayer.lastUpdate
               currentPlayer.log = recentPlayer.log
               currentPlayer.joinedRoundAt = recentPlayer.joinedRoundAt
+              currentPlayer.character = recentPlayer.character
 
               currentPlayer.log.connects += 1
             }
@@ -2596,9 +2602,9 @@ function initEventHandler(app) {
       })
 
       socket.on('JoinRoom', async function() {
-        try {
-          log('JoinRoom', currentPlayer.id, currentPlayer.hash)
+        log('JoinRoom', currentPlayer.id, currentPlayer.hash)
 
+        try {
           const confirmUser = await rsCall('GS_ConfirmUserRequest', { address: currentPlayer.address }) as any
 
           if (confirmUser?.status !== 1) {
@@ -3483,7 +3489,7 @@ function initEventHandler(app) {
               spectatorCount: clients.filter(c => c.isSpectating).length,
               recentPlayersCount: round.players.length,
               spritesCount: config.spritesTotal,
-              connectedPlayers: clients.map(c => c.address),
+              connectedPlayers: clients.filter(c => !!c.address).map(c => c.address),
               rewardItemAmount: config.rewardItemAmount,
               rewardWinnerAmount: config.rewardWinnerAmount,
               gameMode: config.gameMode,
@@ -3498,7 +3504,9 @@ function initEventHandler(app) {
         if (!res || !res.id) return
         // log('onAny', eventName, res)
 
-        log(`Callback ${ioCallbacks[res.id] ? 'Exists' : 'Doesnt Exist'}`, eventName)
+        if (!ioCallbacks[res.id]) {
+          log(`Callback ${ioCallbacks[res.id] ? 'Exists' : 'Doesnt Exist'}`, eventName, res)
+        }
 
         if (ioCallbacks[res.id]) {
           log('Callback', eventName, res)
