@@ -2410,7 +2410,7 @@ function initEventHandler(app) {
               client.character = {
                 ...req.data.character,
                 meta: {
-                  ...client.charactter.meta,
+                  ...client.character.meta,
                   ...req.data.character.meta
                 }
               }
