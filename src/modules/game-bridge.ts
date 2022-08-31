@@ -722,7 +722,9 @@ function connectGameServer(app) {
 
       const { id, data } = res
 
-      log(`Callback ${app.gameBridge.ioCallbacks[id] ? 'Exists' : 'Doesnt Exist'}`, eventName)
+      if (!app.gameBridge.ioCallbacks[id]) {
+        log(`Callback ${app.gameBridge.ioCallbacks[id] ? 'Exists' : 'Doesnt Exist'}`, eventName, id, data)
+      }
 
       if (app.gameBridge.ioCallbacks[id]) {
         clearTimeout(app.gameBridge.ioCallbacks[id].timeout)
