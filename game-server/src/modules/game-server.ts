@@ -2,6 +2,7 @@ import jetpack from 'fs-jetpack'
 import axios from 'axios'
 import semver from 'semver/preload.js'
 import { log, logError, getTime, shuffleArray, random, randomPosition, sha256, decodePayload, isNumeric } from '@rune-backend-sdk/util'
+import { ItemAttributes } from '@rune-backend-sdk/data/items'
 
 const path = require('path')
 const shortId = require('shortid')
@@ -1956,7 +1957,7 @@ function fastGameloop(app) {
       client.speed = client.overrideSpeed || normalizeFloat((config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed))
 
       if (!config.isRoundPaused && config.gameMode !== 'Pandamonium') {
-        let decay = config.noDecay ? 0 : (client.avatar + 1) / (1 / config.fastLoopSeconds) * ((config['avatarDecayPower' + client.avatar] || 1) * config.decayPower) * (1 + client.bonuses.EnergyDecayIncrease/100) * (1 - client.bonuses.EnergyDecayDecrease/100)
+        let decay = config.noDecay ? 0 : (client.avatar + 1) / (1 / config.fastLoopSeconds) * ((config['avatarDecayPower' + client.avatar] || 1) * config.decayPower) * (1 + client.character.meta[1105]/100) * (1 - client.character.meta[1104]/100)
   
         if (client.xp > 100) {
           if (decay > 0) {
@@ -2226,18 +2227,22 @@ function initEventHandler(app) {
         phasedUntil: getTime(),
         joinedRoundAt: getTime(),
         baseSpeed: 1,
-        bonuses: {
-          MovementSpeedIncrease: 0,
-          MaximumHealthIncrease: 0,
-          DeathPenaltyDecrease: 0,
-          DeathPenaltyAvoid: 0,
-          EnergyDecayDecrease: 0,
-          EnergyDecayIncrease: 0,
-          OrbTimeReduce: 0,
-          WinRewardsDecrease: 0,
-          DoublePickupChance: 0,
-          LeaderMovementSpeedDecrease: 0,
-          IncreaseMovementSpeedOnKill: 0
+        character: {
+          meta: {
+            [ItemAttributes.EvolutionMovementSpeedIncrease]: 0,
+            1104: 0,
+            1105: 0,
+            // MaximumHealthIncrease: 0,
+            // DeathPenaltyDecrease: 0,
+            // DeathPenaltyAvoid: 0,
+            // EnergyDecayDecrease: 0,
+            // EnergyDecayIncrease: 0,
+            // OrbTimeReduce: 0,
+            // WinRewardsDecrease: 0,
+            // DoublePickupChance: 0,
+            // LeaderMovementSpeedDecrease: 0,
+            // IncreaseMovementSpeedOnKill: 0
+          }
         },
         log: {
           kills: [],
@@ -2389,18 +2394,15 @@ function initEventHandler(app) {
         })
       })
 
-      socket.on('RS_SetPlayerBonusesRequest', async function(req) {
-        log('RS_SetPlayerBonusesRequest', req)
+      socket.on('RS_SetPlayerCharacterRequest', async function(req) {
+        log('RS_SetPlayerCharacterRequest', req)
 
         try {
           if (currentPlayer.isRealm) {
             const recentPlayer = round.players.find(r => r.address === req.data.address)
 
             if (recentPlayer) {
-              recentPlayer.bonuses = {
-                ...recentPlayer.bonuses,
-                ...req.data.bonuses
-              }
+              recentPlayer.character = req.data.character
 
               return
             }
@@ -2409,7 +2411,7 @@ function initEventHandler(app) {
           log('Error:', e)
         }
 
-        socket.emit('RS_SetPlayerBonusesResponse', {
+        socket.emit('RS_SetPlayerCharacterResponse', {
           id: req.id,
           data: { status: 0 }
         })
@@ -2623,7 +2625,7 @@ function initEventHandler(app) {
 
           currentPlayer.isJoining = true
           currentPlayer.avatar = config.startAvatar
-          currentPlayer.speed = normalizeFloat(config.baseSpeed * config['avatarSpeedMultiplier' + currentPlayer.avatar] * currentPlayer.baseSpeed * (1 + currentPlayer.bonuses.MovementSpeedIncrease/100))
+          currentPlayer.speed = normalizeFloat(config.baseSpeed * config['avatarSpeedMultiplier' + currentPlayer.avatar] * currentPlayer.baseSpeed * (1 + currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease]/100))
 
           if (config.gameMode === 'Pandamonium' && pandas.includes(currentPlayer.address)) {
             currentPlayer.avatar = 2
