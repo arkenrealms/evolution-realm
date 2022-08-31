@@ -2105,9 +2105,14 @@ function fastGameloop(app) {
     lastFastGameloopTime = now
   } catch(e) {
     log('Error:', e)
+
+    disconnectAllPlayers(app)
+
     setTimeout(function() {
       process.exit(1)
     }, 2 * 1000)
+
+    return
   }
 
   setTimeout(() => fastGameloop(app), config.fastLoopSeconds * 1000)
@@ -2402,7 +2407,13 @@ function initEventHandler(app) {
             const client = clients.find(c => c.address === req.data.address)
 
             if (client) {
-              // client.character = req.data.character
+              client.character = {
+                ...req.data.character,
+                meta: {
+                  ...client.charactter.meta,
+                  ...req.data.character.meta
+                }
+              }
 
               socket.emit('RS_SetPlayerCharacterResponse', {
                 id: req.id,
