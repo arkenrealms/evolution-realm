@@ -1957,7 +1957,7 @@ function fastGameloop(app) {
       client.speed = client.overrideSpeed || normalizeFloat((config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed))
 
       if (!config.isRoundPaused && config.gameMode !== 'Pandamonium') {
-        let decay = config.noDecay ? 0 : (client.avatar + 1) / (1 / config.fastLoopSeconds) * ((config['avatarDecayPower' + client.avatar] || 1) * config.decayPower) * (1 + client.character.meta[1105]/100) * (1 - client.character.meta[1104]/100)
+        let decay = config.noDecay ? 0 : ((client.avatar + 1) / (1 / config.fastLoopSeconds) * ((config['avatarDecayPower' + client.avatar] || 1) * config.decayPower)) * (1 + (client.character.meta[1105] - client.character.meta[1104])/100)
   
         if (client.xp > 100) {
           if (decay > 0) {
@@ -2642,7 +2642,7 @@ function initEventHandler(app) {
 
           currentPlayer.isJoining = true
           currentPlayer.avatar = config.startAvatar
-          currentPlayer.speed = normalizeFloat(config.baseSpeed * config['avatarSpeedMultiplier' + currentPlayer.avatar] * currentPlayer.baseSpeed * (1 + currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id]/100))
+          currentPlayer.speed = normalizeFloat((config.baseSpeed * config['avatarSpeedMultiplier' + currentPlayer.avatar] * currentPlayer.baseSpeed) * (1 + currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id]/100))
 
           if (config.gameMode === 'Pandamonium' && pandas.includes(currentPlayer.address)) {
             currentPlayer.avatar = 2
