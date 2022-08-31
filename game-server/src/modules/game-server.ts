@@ -2393,22 +2393,24 @@ function initEventHandler(app) {
         log('RS_SetPlayerBonusesRequest', req)
 
         try {
-          if (await isValidAdminRequest(req)) {
+          if (currentPlayer.isRealm) {
             const recentPlayer = round.players.find(r => r.address === req.data.address)
 
             recentPlayer.bonuses = {
               ...recentPlayer.bonuses,
               ...req.data.bonuses
             }
+
+            return
           }
         } catch (e) {
           log('Error:', e)
-
-          socket.emit('RS_SetPlayerBonusesResponse', {
-            id: req.id,
-            data: { status: 0 }
-          })
         }
+
+        socket.emit('RS_SetPlayerBonusesResponse', {
+          id: req.id,
+          data: { status: 0 }
+        })
       })
 
       socket.on('RS_SetConfigRequest', async function(req) {
