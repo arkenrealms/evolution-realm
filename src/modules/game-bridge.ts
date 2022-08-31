@@ -359,12 +359,16 @@ function connectGameServer(app) {
       if (!character) {
         const res = await app.realm.call('GetCharacterRequest', { address: req.data.address })
 
+        log('GetCharacterResponse', res)
+
         if (res.status === 1) {
           character = res.character
 
           app.gameBridge.characterCache[req.data.address] = character
         }
       }
+
+      log('Player character', character)
 
       if (character) {
         emitDirect(socket, 'RS_SetPlayerCharacterRequest', {
