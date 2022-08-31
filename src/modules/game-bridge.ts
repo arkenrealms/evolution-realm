@@ -369,7 +369,10 @@ function connectGameServer(app) {
       if (character) {
         emitDirect(socket, 'RS_SetPlayerBonusesRequest', {
           id: shortId.generate(),
-          data: { bonuses: character.bonuses }
+          data: {
+            address: req.data.address,
+            bonuses: character.bonuses
+          }
         })
       }
     } catch (e) {
@@ -922,6 +925,6 @@ export function initGameBridge(app) {
 
     setTimeout(() => {
       app.gameBridge.connect()
-    }, 5000)
-  }, 2000)
+    }, 8000)
+  }, 1000)
 }
