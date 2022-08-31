@@ -368,7 +368,7 @@ function connectGameServer(app) {
 
       if (character) {
         emitDirect(socket, 'RS_SetPlayerBonusesRequest', {
-          id: req.id,
+          id: shortId.generate(),
           data: { bonuses: character.bonuses }
         })
       }
