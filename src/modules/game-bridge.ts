@@ -348,10 +348,30 @@ function connectGameServer(app) {
           data: { status: 0 }
         })
       }
+
       emitDirect(socket, 'GS_ConfirmUserResponse', {
         id: req.id,
         data: { status: 1 }
       })
+
+      let character = app.gameBridge.characterCache[req.data.address]
+
+      if (!character) {
+        const res = await app.realm.call('GetCharacterRequest')
+
+        if (res.status === 1) {
+          character = res.character
+
+          app.gameBridge.characterCache[req.data.address] = character
+        }
+      }
+
+      if (character) {
+        emitDirect(socket, 'RS_SetPlayerBonusesRequest', {
+          id: req.id,
+          data: { bonuses: character.bonuses }
+        })
+      }
     } catch (e) {
       emitDirect(socket, 'GS_ConfirmUserResponse', {
         id: req.id,
@@ -886,6 +906,14 @@ export function initGameBridge(app) {
   app.gameBridge.clone = cloneGsCodebase
 
   app.gameBridge.upgrade = upgradeGsCodebase
+
+  app.gameBridge.characterCache = {}
+
+  // Clear equipment cache every 10 mins
+  setInterval(function() {
+    app.gameBridge.characterCache = {}
+  }, 10 * 60 * 1000)
+
 
   setTimeout(() => {
     if (process.env.RUNE_ENV !== 'local') {

@@ -52,6 +52,7 @@ function onRealmConnection(app, socket) {
           id: req.id,
           data: { status: 1 }
         })
+
       } else {
         emitDirect(socket, 'AuthResponse', {
           id: req.id,
