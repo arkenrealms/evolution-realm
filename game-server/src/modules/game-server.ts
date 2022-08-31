@@ -2396,12 +2396,14 @@ function initEventHandler(app) {
           if (currentPlayer.isRealm) {
             const recentPlayer = round.players.find(r => r.address === req.data.address)
 
-            recentPlayer.bonuses = {
-              ...recentPlayer.bonuses,
-              ...req.data.bonuses
-            }
+            if (recentPlayer) {
+              recentPlayer.bonuses = {
+                ...recentPlayer.bonuses,
+                ...req.data.bonuses
+              }
 
-            return
+              return
+            }
           }
         } catch (e) {
           log('Error:', e)
