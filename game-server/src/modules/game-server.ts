@@ -184,8 +184,8 @@ const presets = [
     gameMode: 'Indiana Jones',
     leadercap: true,
     weight: 30,
-    pointsPerEvolve: 1,
-    pointsPerPowerup: 1,
+    pointsPerEvolve: 0,
+    pointsPerPowerup: 0,
     pointsPerKill: 1,
     pointsPerReward: 100,
     pointsPerOrb: 1,
@@ -1956,7 +1956,7 @@ function fastGameloop(app) {
       client.speed = client.overrideSpeed || normalizeFloat((config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed))
 
       if (!config.isRoundPaused && config.gameMode !== 'Pandamonium') {
-        let decay = config.noDecay ? 0 : (client.avatar + 1) / (1 / config.fastLoopSeconds) * ((config['avatarDecayPower' + client.avatar] || 1) * config.decayPower)
+        let decay = config.noDecay ? 0 : (client.avatar + 1) / (1 / config.fastLoopSeconds) * ((config['avatarDecayPower' + client.avatar] || 1) * config.decayPower) * (1 + client.bonuses.EnergyDecayIncrease/100) * (1 - client.bonuses.EnergyDecayDecrease/100)
   
         if (client.xp > 100) {
           if (decay > 0) {
@@ -2173,7 +2173,8 @@ function initEventHandler(app) {
       // socket.request.connection.remoteAddress ::ffff:127.0.0.1
       // socket.conn.remoteAddress ::ffff:127.0.0.1
       // socket.conn.transport.socket._socket.remoteAddress ::ffff:127.0.0.1
-      const hash = ip ? sha256(ip.slice(ip.length/2)) : ''
+      let hash = ip ? sha256(ip.slice(ip.length/2)) : ''
+      hash = ip ? hash.slice(hash.length - 10, hash.length - 1) : ''
 
       const spawnPoint = playerSpawnPoints[(Math.floor(Math.random() * playerSpawnPoints.length))]
 
@@ -2218,13 +2219,26 @@ function initEventHandler(app) {
         joinedAt: 0,
         invincibleUntil: 0,
         decayPower: 1,
-        hash: hash.slice(hash.length - 10, hash.length - 1),
+        hash,
         lastReportedTime: getTime(),
         lastUpdate: 0,
         gameMode: config.gameMode,
         phasedUntil: getTime(),
         joinedRoundAt: getTime(),
         baseSpeed: 1,
+        bonuses: {
+          MovementSpeedIncrease: 0,
+          MaximumHealthIncrease: 0,
+          DeathPenaltyDecrease: 0,
+          DeathPenaltyAvoid: 0,
+          EnergyDecayDecrease: 0,
+          EnergyDecayIncrease: 0,
+          OrbTimeReduce: 0,
+          WinRewardsDecrease: 0,
+          DoublePickupChance: 0,
+          LeaderMovementSpeedDecrease: 0,
+          IncreaseMovementSpeedOnKill: 0
+        },
         log: {
           kills: [],
           deaths: [],
@@ -2371,6 +2385,26 @@ function initEventHandler(app) {
         })
       })
 
+      socket.on('RS_SetPlayerBonusesRequest', async function(req) {
+        try {
+          if (await isValidAdminRequest(req)) {
+            const recentPlayer = round.players.find(r => r.address === req.data.address)
+
+            recentPlayer.bonuses = {
+              ...recentPlayer.bonuses,
+              ...req.data.bonuses
+            }
+          }
+        } catch (e) {
+          log('Error:', e)
+
+          socket.emit('RS_SetPlayerBonusesResponse', {
+            id: req.id,
+            data: { status: 0 }
+          })
+        }
+      })
+
       socket.on('RS_SetConfigRequest', async function(req) {
         try {
           if (await isValidAdminRequest(req)) {
@@ -2486,7 +2520,6 @@ function initEventHandler(app) {
               return
             }
 
-            log('Username: ' + name)
             addressToUsername[address] = name
           }
 
@@ -2494,6 +2527,8 @@ function initEventHandler(app) {
             currentPlayer.isGod = true
             currentPlayer.overrideCameraSize = 12
           }
+
+          log('User ' + name + ' with hash ' + hash)
 
           const now = getTime()
           if (currentPlayer.name !== name || currentPlayer.address !== address) {
@@ -2570,7 +2605,7 @@ function initEventHandler(app) {
 
           currentPlayer.isJoining = true
           currentPlayer.avatar = config.startAvatar
-          currentPlayer.speed = normalizeFloat((config.baseSpeed * config['avatarSpeedMultiplier' + currentPlayer.avatar] * currentPlayer.baseSpeed))
+          currentPlayer.speed = normalizeFloat(config.baseSpeed * config['avatarSpeedMultiplier' + currentPlayer.avatar] * currentPlayer.baseSpeed * (1 + currentPlayer.bonuses.MovementSpeedIncrease/100))
 
           if (config.gameMode === 'Pandamonium' && pandas.includes(currentPlayer.address)) {
             currentPlayer.avatar = 2
