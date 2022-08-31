@@ -2296,9 +2296,9 @@ function initEventHandler(app) {
       clients.push(currentPlayer)
 
       socket.on('RS_Connected', async function(req) {
-        try {
-          log('RS_Connected')
+        log('RS_Connected', req)
 
+        try {
           // Assume first connection for now but verify
           realmServer.socket = socket
 
@@ -2352,6 +2352,8 @@ function initEventHandler(app) {
       })
 
       socket.on('RS_ApiConnected', async function(req) {
+        log('RS_ApiConnected', req)
+
         if (!await isValidAdminRequest(req)) {
           socket.emit('RS_ApiConnectedResponse', {
             id: req.id,
@@ -2369,6 +2371,8 @@ function initEventHandler(app) {
       })
 
       socket.on('RS_ApiDisconnected', async function(req) {
+        log('RS_ApiDisconnected', req)
+
         if (!await isValidAdminRequest(req)) {
           socket.emit('RS_ApiDisconnectedResponse', {
             id: req.id,
@@ -2386,6 +2390,8 @@ function initEventHandler(app) {
       })
 
       socket.on('RS_SetPlayerBonusesRequest', async function(req) {
+        log('RS_SetPlayerBonusesRequest', req)
+
         try {
           if (await isValidAdminRequest(req)) {
             const recentPlayer = round.players.find(r => r.address === req.data.address)
@@ -2406,6 +2412,8 @@ function initEventHandler(app) {
       })
 
       socket.on('RS_SetConfigRequest', async function(req) {
+        log('RS_SetConfigRequest', req)
+
         try {
           if (await isValidAdminRequest(req)) {
             const originalRewardAmount = config.rewardWinnerAmount
@@ -2451,6 +2459,8 @@ function initEventHandler(app) {
       })
 
       socket.on('RS_GetConfigRequest', function(req) {
+        log('RS_GetConfigRequest', req)
+
         socket.emit('RS_GetConfigResponse', {
           id: req.id,
           data: {
@@ -2461,10 +2471,14 @@ function initEventHandler(app) {
       })
 
       socket.on('Load', function() {
+        log('Load', currentPlayer.address)
+
         emitDirect(socket, 'OnLoaded', 1)
       })
 
       socket.on('Spectate', function() {
+        log('Spectate', currentPlayer.address)
+
         spectate(currentPlayer)
       })
       
