@@ -2402,7 +2402,7 @@ function initEventHandler(app) {
             const client = clients.find(c => c.address === req.data.address)
 
             if (client) {
-              client.character = req.data.character
+              // client.character = req.data.character
 
               socket.emit('RS_SetPlayerCharacterResponse', {
                 id: req.id,
