@@ -2395,7 +2395,7 @@ function initEventHandler(app) {
       })
 
       socket.on('RS_SetPlayerCharacterRequest', async function(req) {
-        log('RS_SetPlayerCharacterRequest', req)
+        log('RS_SetPlayerCharacterRequest', req, req.data.character.meta)
 
         try {
           if (currentPlayer.isRealm) {
