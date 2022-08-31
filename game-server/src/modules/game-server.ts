@@ -2229,7 +2229,7 @@ function initEventHandler(app) {
         baseSpeed: 1,
         character: {
           meta: {
-            [ItemAttributes.EvolutionMovementSpeedIncrease]: 0,
+            [ItemAttributes.EvolutionMovementSpeedIncrease.id]: 0,
             1104: 0,
             1105: 0,
             // MaximumHealthIncrease: 0,
@@ -2625,7 +2625,7 @@ function initEventHandler(app) {
 
           currentPlayer.isJoining = true
           currentPlayer.avatar = config.startAvatar
-          currentPlayer.speed = normalizeFloat(config.baseSpeed * config['avatarSpeedMultiplier' + currentPlayer.avatar] * currentPlayer.baseSpeed * (1 + currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease]/100))
+          currentPlayer.speed = normalizeFloat(config.baseSpeed * config['avatarSpeedMultiplier' + currentPlayer.avatar] * currentPlayer.baseSpeed * (1 + currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id]/100))
 
           if (config.gameMode === 'Pandamonium' && pandas.includes(currentPlayer.address)) {
             currentPlayer.avatar = 2
