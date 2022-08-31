@@ -925,6 +925,6 @@ export function initGameBridge(app) {
 
     setTimeout(() => {
       app.gameBridge.connect()
-    }, 8000)
+    }, 10 * 1000)
   }, 1000)
 }
