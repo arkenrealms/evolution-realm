@@ -725,7 +725,7 @@ function disconnectAllPlayers(app) {
 
   for (let i = 0; i < clients.length; i++) {
     const client = clients[i]
-    disconnectPlayer(app, client)
+    disconnectPlayer(app, client, 'disconnect all players')
   }
 }
 
@@ -828,7 +828,7 @@ function syncSprites() {
   }
 }
 
-function disconnectPlayer(app, player, immediate = false) {
+function disconnectPlayer(app, player, reason = 'Unknown', immediate = false) {
   if (player.isRealm) return
 
   clients = clients.filter(c => c.id !== player.id)
@@ -840,7 +840,7 @@ function disconnectPlayer(app, player, immediate = false) {
   if (player.isDisconnected) return
 
   try {
-    log("Disconnecting", player.id, player.name)
+    log(`Disconnecting (${reason})`, player.id, player.name)
 
     delete clientLookup[player.id]
 
@@ -1097,7 +1097,7 @@ const registerKill = (app, winner, loser) => {
   publishEvent('OnGameOver', loser.id, winner.id)
 
   // setTimeout(() => {
-  disconnectPlayer(app, loser)
+  disconnectPlayer(app, loser, 'got killed')
   // }, 2 * 1000)
 
   const orb = {
@@ -1450,7 +1450,7 @@ function checkConnectionLoop(app) {
 
       if (client.lastReportedTime <= oneMinuteAgo) {
         client.log.timeoutDisconnect += 1
-        disconnectPlayer(app, client)
+        disconnectPlayer(app, client, 'timed out')
       }
     }
   }
@@ -1525,7 +1525,7 @@ function detectCollisions(app) {
 
       if (!Number.isFinite(player.position.x) || !Number.isFinite(player.speed)) { // Not sure what happened
         player.log.speedProblem += 1
-        disconnectPlayer(app, player)
+        disconnectPlayer(app, player, 'speed problem')
         continue
       }
 
@@ -2012,7 +2012,7 @@ function fastGameloop(app) {
                   
                 if (!config.noBoot && !isInvincible && !isNew && !config.isGodParty) {
                   client.log.ranOutOfHealth += 1
-                  disconnectPlayer(app, client)
+                  disconnectPlayer(app, client, 'starved')
                 }
               } else {
                 client.xp = 100
@@ -2286,7 +2286,7 @@ function initEventHandler(app) {
 
         for (const client of sameNetworkClients) {
           client.log.sameNetworkDisconnect += 1
-          disconnectPlayer(app, client)
+          disconnectPlayer(app, client, 'same network')
         }
       }
 
@@ -2312,7 +2312,7 @@ function initEventHandler(app) {
           const sameNetworkObservers = observers.filter(r => r.hash === currentPlayer.hash)
 
           for (const observer of sameNetworkObservers) {
-            disconnectPlayer(app, observer)
+            disconnectPlayer(app, observer, 'same network observer')
           }
 
           const observer = {
@@ -2496,7 +2496,7 @@ function initEventHandler(app) {
 
           if (!pack.signature || !pack.network || !pack.device || !pack.address) {
             currentPlayer.log.signinProblem += 1
-            disconnectPlayer(app, currentPlayer)
+            disconnectPlayer(app, currentPlayer, 'signin problem')
             return
           }
 
@@ -2512,20 +2512,20 @@ function initEventHandler(app) {
 
           if (!await isValidSignatureRequest({ signature: { data: 'evolution', hash: pack.signature.trim(), address } })) {
             currentPlayer.log.signatureProblem += 1
-            disconnectPlayer(app, currentPlayer)
+            disconnectPlayer(app, currentPlayer, 'signature problem')
             return
           }
 
           if (currentPlayer.isBanned) {
             emitDirect(socket, 'OnBanned', true)
-            disconnectPlayer(app, currentPlayer)
+            disconnectPlayer(app, currentPlayer, 'banned')
             return
           }
 
           if (config.isMaintenance && !currentPlayer.isMod) {
             currentPlayer.log.maintenanceJoin += 1
             emitDirect(socket, 'OnMaintenance', true)
-            disconnectPlayer(app, currentPlayer)
+            disconnectPlayer(app, currentPlayer, 'maintenance')
             return
           }
 
@@ -2536,7 +2536,7 @@ function initEventHandler(app) {
 
             if (!name) {
               currentPlayer.log.usernameProblem += 1
-              disconnectPlayer(app, currentPlayer)
+              disconnectPlayer(app, currentPlayer, 'no name')
               return
             }
 
@@ -2562,7 +2562,7 @@ function initEventHandler(app) {
             if (recentPlayer) {
               if ((now - recentPlayer.lastUpdate) < 3000) {
                 currentPlayer.log.recentJoinProblem += 1
-                disconnectPlayer(app, currentPlayer, true)
+                disconnectPlayer(app, currentPlayer, 'joined too soon', true)
                 return
               }
 
@@ -2603,7 +2603,7 @@ function initEventHandler(app) {
 
           if (confirmUser?.status !== 1) {
             currentPlayer.log.failedRealmCheck += 1
-            disconnectPlayer(app, currentPlayer)
+            disconnectPlayer(app, currentPlayer, 'failed realm check')
             return
           }
 
@@ -2613,13 +2613,13 @@ function initEventHandler(app) {
 
           if (recentPlayer && (now - recentPlayer.lastUpdate) < 3000) {
             currentPlayer.log.connectedTooSoon += 1
-            disconnectPlayer(app, currentPlayer)
+            disconnectPlayer(app, currentPlayer, 'connected too soon')
             return
           }
 
           if (config.isMaintenance && !currentPlayer.isMod) {
             emitDirect(socket, 'OnMaintenance', true)
-            disconnectPlayer(app, currentPlayer)
+            disconnectPlayer(app, currentPlayer, 'maintenance')
             return
           }
 
@@ -2642,7 +2642,7 @@ function initEventHandler(app) {
 
           if (observers.length === 0) {
             emitDirect(socket, 'OnBroadcast', `Realm not connected. Contact support.`, 0)
-            disconnectPlayer(app, currentPlayer)
+            disconnectPlayer(app, currentPlayer, 'realm not connected')
             return
           }
 
@@ -2688,7 +2688,7 @@ function initEventHandler(app) {
           currentPlayer.lastUpdate = getTime()
         } catch (e) {
           log('Error:', e)
-          disconnectPlayer(app, currentPlayer)
+          disconnectPlayer(app, currentPlayer, 'not sure: ' + e)
         }
       })
 
@@ -2699,7 +2699,7 @@ function initEventHandler(app) {
 
           if (config.isMaintenance && !currentPlayer.isMod) {
             emitDirect(socket, 'OnMaintenance', true)
-            disconnectPlayer(app, currentPlayer)
+            disconnectPlayer(app, currentPlayer, 'maintenance')
             return
           }
 
@@ -2747,7 +2747,7 @@ function initEventHandler(app) {
         
           if (config.anticheat.disconnectPositionJumps && distanceBetweenPoints(currentPlayer.position, { x: positionY, y: positionY }) > 5) {
             currentPlayer.log.positionJump += 1
-            disconnectPlayer(app, currentPlayer)
+            disconnectPlayer(app, currentPlayer, 'position jumped')
             return
           }
 
@@ -3464,7 +3464,7 @@ function initEventHandler(app) {
 
       socket.on('RS_KickUser', async function(req) {
         if (await isValidAdminRequest(req) && clients.find(c => c.address === req.data.target)) {
-          disconnectPlayer(app, clients.find(c => c.address === req.data.target))
+          disconnectPlayer(app, clients.find(c => c.address === req.data.target), 'kicked')
         }
       })
 
@@ -3516,7 +3516,7 @@ function initEventHandler(app) {
 
         currentPlayer.log.clientDisconnected += 1
 
-        disconnectPlayer(app, currentPlayer)
+        disconnectPlayer(app, currentPlayer, 'client disconnected')
 
         if (currentPlayer.id === realmServer.socket?.id) {
           publishEvent('OnBroadcast', `Realm disconnected`, 0)
