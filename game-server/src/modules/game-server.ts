@@ -2290,7 +2290,7 @@ function initEventHandler(app) {
         }
       }
 
-      log('User connected from ' + ip + ' with hash ' + hash)
+      log('User connected from hash ' + hash)
 
       if (!testMode && killSameNetworkClients) {
         const sameNetworkClients = clients.filter(r => r.hash === currentPlayer.hash && r.id !== currentPlayer.id)
@@ -2607,7 +2607,7 @@ function initEventHandler(app) {
 
             if (config.log.connections) {
               log('Connected', {
-                ip,
+                hash,
                 address: currentPlayer.address,
                 name: currentPlayer.name
               })
