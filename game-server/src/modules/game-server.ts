@@ -2293,11 +2293,18 @@ function initEventHandler(app) {
       log('User connected from hash ' + hash)
 
       if (!testMode && killSameNetworkClients) {
-        const sameNetworkClients = clients.filter(r => r.hash === currentPlayer.hash && r.id !== currentPlayer.id)
+        // const sameNetworkClients = clients.filter(r => r.hash === currentPlayer.hash && r.id !== currentPlayer.id)
 
-        for (const client of sameNetworkClients) {
-          client.log.sameNetworkDisconnect += 1
-          disconnectPlayer(app, client, 'same network')
+        // for (const client of sameNetworkClients) {
+        //   client.log.sameNetworkDisconnect += 1
+        //   disconnectPlayer(app, client, 'same network')
+        // }
+        const sameNetworkClient = clients.find(r => r.hash === currentPlayer.hash && r.id !== currentPlayer.id)
+
+        if (sameNetworkClient) {
+          currentPlayer.log.sameNetworkDisconnect += 1
+          disconnectPlayer(app, currentPlayer, 'same network')
+          return
         }
       }
 
@@ -2420,6 +2427,8 @@ function initEventHandler(app) {
                   ...req.data.character.meta
                 }
               }
+
+              emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${client.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id]}% Increased Speed`, 0)
 
               socket.emit('RS_SetPlayerCharacterResponse', {
                 id: req.id,
