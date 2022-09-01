@@ -2428,7 +2428,8 @@ function initEventHandler(app) {
                 }
               }
 
-              emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${client.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id]}% Increased Speed`, 0)
+              if (sockets[client.id])
+                emitDirect(sockets[client.id], 'OnBroadcast', `${client.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id]}% Increased Speed`, 0)
 
               socket.emit('RS_SetPlayerCharacterResponse', {
                 id: req.id,
