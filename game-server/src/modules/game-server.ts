@@ -2697,6 +2697,10 @@ function initEventHandler(app) {
             emitDirect(socket, 'OnCloseLevel2')
           }
 
+
+          if (currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id] > 0)
+            emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id]}% Increased Speed`, 0)
+
           // spawn all connected clients for currentUser client 
           for (const client of clients) {
             if (client.id === currentPlayer.id) continue
