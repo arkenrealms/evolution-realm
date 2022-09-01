@@ -1960,6 +1960,8 @@ function fastGameloop(app) {
 
       client.speed = getClientSpeed(client, config)
 
+      console.log('speed', client.name, client.speed)
+
       if (!config.isRoundPaused && config.gameMode !== 'Pandamonium') {
         let decay = config.noDecay ? 0 : ((client.avatar + 1) / (1 / config.fastLoopSeconds) * ((config['avatarDecayPower' + client.avatar] || 1) * config.decayPower)) * (1 + (client.character.meta[1105] - client.character.meta[1104])/100)
   
