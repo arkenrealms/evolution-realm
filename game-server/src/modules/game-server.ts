@@ -409,7 +409,7 @@ const presets = [
     weight: 30,
     cameraSize: 2,
     baseSpeed: 2.5,
-    decayPower: 1.4,
+    decayPower: 2,
     avatarSpeedMultiplier0: 1,
     avatarSpeedMultiplier1: 1,
     avatarSpeedMultiplier2: 1,
@@ -428,7 +428,7 @@ const presets = [
     weight: 20,
     cameraSize: 2,
     baseSpeed: 2.5,
-    decayPower: 1.4,
+    decayPower: 2,
     avatarSpeedMultiplier0: 1,
     avatarSpeedMultiplier1: 1,
     avatarSpeedMultiplier2: 1,
@@ -575,6 +575,10 @@ function comparePlayers(a, b) {
   return 0
 }
 
+function random(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
 function emitAll(app, ...args) {
   // log('Emit All', ...args)
   app.io.emit(...args)
@@ -680,6 +684,10 @@ async function isValidSignatureRequest(req) {
   }
 }
 
+function formatNumber(num) {
+  return (num >= 0 ? '+' + num : '-' + num)
+}
+
 function getClientSpeed(client, _config) {
   return client.overrideSpeed || normalizeFloat((_config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed) * (1 + client.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id]/100))
 }
@@ -780,6 +788,14 @@ async function claimReward(player, reward) {
   player.rewards += 1
   player.points += config.pointsPerReward
   player.pickups.push(reward)
+
+  if (player.isMod && player.character.meta[1164] > 0) {
+    const r = random(1, 100)
+
+    if (r <= player.character.meta[1164]) {
+      player.pickups.push(reward)
+    }
+  }
 
   lastReward = reward
 
@@ -1052,6 +1068,8 @@ const registerKill = (app, winner, loser) => {
     }
     if (tooManyKills) {
       loser.log.tooManyKills += 1
+
+      return
     }
     if (killingThemselves) {
       loser.log.killingThemselves += 1
@@ -1079,6 +1097,7 @@ const registerKill = (app, winner, loser) => {
   // }
 
   winner.kills += 1
+  winner.killStreak += 1
   winner.points += config.pointsPerKill * (loser.avatar + 1)
   winner.log.kills.push(loser.hash)
 
@@ -1097,6 +1116,16 @@ const registerKill = (app, winner, loser) => {
   if (winner.log.deaths.length && winner.log.deaths[winner.log.deaths.length-1] === loser.hash) {
     winner.log.revenge += 1
   }
+
+  if (winner.isMod && winner.character.meta[1222] > 0) {
+    winner.overrideSpeed = winner.speed * (1 + (winner.character.meta[1222] / 100))
+    winner.overrideSpeedUntil = getTime() + 7000
+  }
+
+  if (winner.isMod && winner.character.meta[1219] > 0) {
+    winner.maxHp = winner.maxHp * (1 + (winner.character.meta[1219] / 100))
+  }
+  
 
   publishEvent('OnGameOver', loser.id, winner.id)
 
@@ -1160,6 +1189,7 @@ function spectate(player) {
       player.isInvincible = true
       player.points = 0
       player.xp = 0
+      player.maxHp = 100
       player.avatar = config.startAvatar
       player.speed = 7
       player.overrideSpeed = 7
@@ -1330,6 +1360,7 @@ async function resetLeaderboard(preset = null) {
       client.joinedRoundAt = getTime()
       client.points = 0
       client.kills = 0
+      client.killStreak = 0
       client.deaths = 0
       client.evolves = 0
       client.rewards = 0
@@ -1339,6 +1370,7 @@ async function resetLeaderboard(preset = null) {
       client.decayPower = 1
       client.pickups = []
       client.xp = 50
+      client.maxHp = 100
       client.avatar = config.startAvatar
       client.speed = getClientSpeed(client, config)
       client.cameraSize = client.overrideCameraSize || config.cameraSize
@@ -1878,6 +1910,10 @@ function detectCollisions(app) {
           player.powerups += 1
           player.points += config.pointsPerPowerup
           player.xp += (value * config.spriteXpMultiplier)
+
+          if (player.isMod && player.character.meta[1117] > 0) {
+            player.xp += (value * config.spriteXpMultiplier * (player.character.meta[1117] - player.character.meta[1118]) / 100)
+          }
       
           publishEvent('OnUpdatePickup', player.id, powerup.id, value)
 
@@ -1951,11 +1987,14 @@ function fastGameloop(app) {
       const isInvincible = config.isGodParty || client.isSpectating || client.isGod || client.isInvincible || (client.invincibleUntil > currentTime)
       const isPhased = client.isPhased ? true : now <= client.phasedUntil
 
-      if (client.isPhased) {
-        if (now > client.phasedUntil) {
-          client.phasedUntil = 0
-          client.isPhased = false
-        }
+      if (client.isPhased && now > client.phasedUntil) {
+        client.isPhased = false
+        client.phasedUntil = 0
+      }
+
+      if (client.overrideSpeed && now > client.overrideSpeedUntil) {
+        client.overrideSpeed = null
+        client.overrideSpeedUntil = 0
       }
 
       client.speed = getClientSpeed(client, config)
@@ -1965,10 +2004,10 @@ function fastGameloop(app) {
       if (!config.isRoundPaused && config.gameMode !== 'Pandamonium') {
         let decay = config.noDecay ? 0 : ((client.avatar + 1) / (1 / config.fastLoopSeconds) * ((config['avatarDecayPower' + client.avatar] || 1) * config.decayPower)) * (1 + (client.character.meta[1105] - client.character.meta[1104])/100)
   
-        if (client.xp > 100) {
+        if (client.xp > client.maxHp) {
           if (decay > 0) {
             if (client.avatar < (config.maxEvolves - 1)) {
-              client.xp = client.xp - 100
+              client.xp = client.xp - client.maxHp
               client.avatar = Math.max(Math.min(client.avatar + (1 * config.avatarDirection), config.maxEvolves - 1), 0)
               client.evolves += 1
               client.points += config.pointsPerEvolve
@@ -1976,14 +2015,19 @@ function fastGameloop(app) {
               if (config.leadercap && client.name === lastLeaderName) {
                 client.speed = client.speed * 0.8
               }
+
+              if (client.isMod && client.character.meta[1223] > 0) {
+                client.overrideSpeed = client.speed * (1 + (client.character.meta[1223] / 100))
+                client.overrideSpeedUntil = getTime() + 1000
+              }
       
               publishEvent('OnUpdateEvolution', client.id, client.avatar, client.speed)
             } else {
-              client.xp = 100
+              client.xp = client.maxHp
             }
           } else {
             if (client.avatar >= (config.maxEvolves - 1)) {
-              client.xp = 100
+              client.xp = client.maxHp
               // const currentTime = Math.round(now / 1000)
               // const isNew = client.joinedAt >= currentTime - config.immunitySeconds
                 
@@ -1991,13 +2035,18 @@ function fastGameloop(app) {
               //   disconnectPlayer(client)
               // }
             } else {
-              client.xp = client.xp - 100
+              client.xp = client.xp - client.maxHp
               client.avatar = Math.max(Math.min(client.avatar + (1 * config.avatarDirection), config.maxEvolves - 1), 0)
               client.evolves += 1
               client.points += config.pointsPerEvolve
       
               if (config.leadercap && client.name === lastLeaderName) {
                 client.speed = client.speed * 0.8
+              }
+
+              if (client.isMod && client.character.meta[1223] > 0) {
+                client.overrideSpeed = client.speed * (1 + (client.character.meta[1223] / 100))
+                client.overrideSpeedUntil = getTime() + 1000
               }
       
               publishEvent('OnUpdateEvolution', client.id, client.avatar, client.speed)
@@ -2021,7 +2070,7 @@ function fastGameloop(app) {
                   disconnectPlayer(app, client, 'starved')
                 }
               } else {
-                client.xp = 100
+                client.xp = client.maxHp
                 client.avatar = Math.max(Math.min(client.avatar - (1 * config.avatarDirection), config.maxEvolves - 1), 0)
   
                 if (config.leadercap && client.name === lastLeaderName) {
@@ -2034,7 +2083,7 @@ function fastGameloop(app) {
               if (client.avatar === 0) {
                 client.xp = 0
               } else {
-                client.xp = 100
+                client.xp = client.maxHp
                 client.avatar = Math.max(Math.min(client.avatar - (1 * config.avatarDirection), config.maxEvolves - 1), 0)
   
                 if (config.leadercap && client.name === lastLeaderName) {
@@ -2203,8 +2252,10 @@ function initEventHandler(app) {
         clientTarget: spawnPoint,
         rotation: null,
         xp: 50,
+        maxHp: 100,
         latency: 0,
         kills: 0,
+        killStreak: 0,
         deaths: 0,
         points: 0,
         evolves: 0,
@@ -2236,6 +2287,7 @@ function initEventHandler(app) {
         lastUpdate: 0,
         gameMode: config.gameMode,
         phasedUntil: getTime(),
+        overrideSpeedUntil: 0,
         joinedRoundAt: getTime(),
         baseSpeed: 1,
         character: {
@@ -2243,6 +2295,14 @@ function initEventHandler(app) {
             [ItemAttributes.EvolutionMovementSpeedIncrease.id]: 0,
             1104: 0,
             1105: 0,
+            1150: 0,
+            1160: 0,
+            1222: 0,
+            1223: 0,
+            1164: 0,
+            1219: 0,
+            1117: 0,
+            1118: 0,
             // MaximumHealthIncrease: 0,
             // DeathPenaltyDecrease: 0,
             // DeathPenaltyAvoid: 0,
@@ -2428,8 +2488,14 @@ function initEventHandler(app) {
                 }
               }
 
-              if (sockets[client.id])
-                emitDirect(sockets[client.id], 'OnBroadcast', `${client.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id]}% Increased Speed`, 0)
+              if (sockets[client.id]) {
+                emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id])}% Speed`, 0)
+                emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1150] - client.character.meta[1160])}% Rewards`, 0)
+                emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1222])}% Movement Speed On Kill`, 0)
+                // emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1223])}% Movement Burst On Evolve`, 0)
+                // emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1164])}% Double Pickup Chance`, 0)
+                // emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1219])}% Increased Health On Kill`, 0)
+              }
 
               socket.emit('RS_SetPlayerCharacterResponse', {
                 id: req.id,
@@ -2699,8 +2765,14 @@ function initEventHandler(app) {
           }
 
 
-          if (currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id] > 0)
-            emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id]}% Increased Speed`, 0)
+          if (currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id] > 0) {
+            emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id])}% Speed`, 0)
+            emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1150] - currentPlayer.character.meta[1160])}% Rewards`, 0)
+            emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1222])}% Movement Speed On Kill`, 0)
+            // emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1223])}% Movement Burst On Evolve`, 0)
+            // emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1164])}% Double Pickup Chance`, 0)
+            // emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1219])}% Increased Health On Kill`, 0)
+          }
 
           // spawn all connected clients for currentUser client 
           for (const client of clients) {
