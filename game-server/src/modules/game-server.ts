@@ -1101,11 +1101,27 @@ const registerKill = (app, winner, loser) => {
   winner.points += config.pointsPerKill * (loser.avatar + 1)
   winner.log.kills.push(loser.hash)
 
-  const orbOnDeathPercent = config.orbOnDeathPercent > 0 ? (config.leadercap && loser.name === lastLeaderName ? 50 : config.orbOnDeathPercent) : 0
-  const orbPoints = Math.floor(loser.points * (orbOnDeathPercent / 100))
+  let deathPenaltyAvoid = false
+
+  if (loser.isMod && loser.character.meta[1102] > 0) {
+    const r = random(1, 100)
+
+    if (r <= loser.character.meta[1102]) {
+      deathPenaltyAvoid = true
+    }
+  }
+
+  let orbOnDeathPercent = config.orbOnDeathPercent > 0 ? (config.leadercap && loser.name === lastLeaderName ? 50 : config.orbOnDeathPercent) : 0
+  let orbPoints = Math.floor(loser.points * (orbOnDeathPercent / 100))
+
+  if (deathPenaltyAvoid) {
+    orbOnDeathPercent = 0
+    orbPoints = 0
+  } else {
+    loser.points = Math.floor(loser.points * ((100 - orbOnDeathPercent) / 100))
+  }
 
   loser.deaths += 1
-  loser.points = Math.floor(loser.points * ((100 - orbOnDeathPercent) / 100))
   loser.isDead = true
   loser.log.deaths.push(winner.hash)
   
@@ -2293,6 +2309,7 @@ function initEventHandler(app) {
         character: {
           meta: {
             [ItemAttributes.EvolutionMovementSpeedIncrease.id]: 0,
+            1102: 0,
             1104: 0,
             1105: 0,
             1150: 0,
