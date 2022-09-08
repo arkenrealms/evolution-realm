@@ -2673,7 +2673,7 @@ function initEventHandler(app) {
           }
 
           if (['Testman', 'join'].includes(name)) {
-            currentPlayer.isGod = true
+            // currentPlayer.isGod = true
             currentPlayer.overrideCameraSize = 12
           }
 
