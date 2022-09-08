@@ -689,7 +689,7 @@ function formatNumber(num) {
 }
 
 function getClientSpeed(client, _config) {
-  return client.overrideSpeed || normalizeFloat((_config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed))
+  return normalizeFloat((_config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed))
 }
 
 async function spawnRandomReward() {
@@ -1601,7 +1601,7 @@ function detectCollisions(app) {
       //   player.log.resetPosition += 1
       // } else {
         // if (player.lastReportedTime > )
-      let position = moveVectorTowards(player.position, player.clientTarget, player.speed * deltaTime) // castVectorTowards(player.position, player.clientTarget, 9999)
+      let position = moveVectorTowards(player.position, player.clientTarget, (player.overrideSpeed || player.speed) * deltaTime) // castVectorTowards(player.position, player.clientTarget, 9999)
       // let target = castVectorTowards(position, player.clientTarget, 100)
 
       let outOfBounds = false
@@ -2057,7 +2057,7 @@ function fastGameloop(app) {
                 // publishEvent('OnBroadcast', `${client.name} evolution speed bonus!`, 0)
               }
       
-              publishEvent('OnUpdateEvolution', client.id, client.avatar, client.speed)
+              publishEvent('OnUpdateEvolution', client.id, client.avatar, client.overrideSpeed || client.speed)
             } else {
               client.xp = client.maxHp
             }
@@ -2087,7 +2087,7 @@ function fastGameloop(app) {
                 // publishEvent('OnBroadcast', `${client.name} evolution speed bonus!`, 0)
               }
       
-              publishEvent('OnUpdateEvolution', client.id, client.avatar, client.speed)
+              publishEvent('OnUpdateEvolution', client.id, client.avatar, client.overrideSpeed || client.speed)
             }
           }
         } else {
@@ -2115,7 +2115,7 @@ function fastGameloop(app) {
                   client.speed = client.speed * 0.8
                 }
         
-                publishEvent('OnUpdateRegression', client.id, client.avatar, client.speed)
+                publishEvent('OnUpdateRegression', client.id, client.avatar, client.overrideSpeed || client.speed)
               }
             } else {
               if (client.avatar === 0) {
@@ -2128,7 +2128,7 @@ function fastGameloop(app) {
                   client.speed = client.speed * 0.8
                 }
         
-                publishEvent('OnUpdateRegression', client.id, client.avatar, client.speed)
+                publishEvent('OnUpdateRegression', client.id, client.avatar, client.overrideSpeed || client.speed)
               }
             }
           }
@@ -2147,7 +2147,7 @@ function fastGameloop(app) {
 
       publishEvent('OnUpdatePlayer',
         client.id, 
-        client.speed, 
+        client.overrideSpeed || client.speed, 
         client.overrideCameraSize || client.cameraSize, 
         client.position.x, 
         client.position.y, 
@@ -2528,12 +2528,12 @@ function initEventHandler(app) {
               }
 
               if (sockets[client.id]) {
-                emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id])}% Speed`, 0)
                 emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1150] - client.character.meta[1160])}% Rewards`, 0)
-                emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1222])}% Movement Speed On Kill`, 0)
+                emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1222])}% Movement Burst On Kill`, 0)
+                emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1223])}% Movement Burst On Evolve`, 0)
+                emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id])}% Movement Burst Strength`, 0)
 
                 if (client.isMod) {
-                  emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1223])}% Movement Burst On Evolve`, 0)
                   emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1164])}% Double Pickup Chance`, 0)
                   emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1219])}% Increased Health On Kill`, 0)
                   emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1102])}% Avoid Death Penalty`, 0)
@@ -2815,12 +2815,18 @@ function initEventHandler(app) {
 
 
           if (currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id] > 0) {
-            emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id])}% Speed`, 0)
             emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1150] - currentPlayer.character.meta[1160])}% Rewards`, 0)
-            emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1222])}% Movement Speed On Kill`, 0)
-            // emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1223])}% Movement Burst On Evolve`, 0)
-            // emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1164])}% Double Pickup Chance`, 0)
-            // emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1219])}% Increased Health On Kill`, 0)
+            emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1222])}% Movement Burst On Kill`, 0)
+            emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1223])}% Movement Burst On Evolve`, 0)
+            emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id])}% Movement Burst Strength`, 0)
+
+            if (currentPlayer.isMod) {
+              emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1164])}% Double Pickup Chance`, 0)
+              emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1219])}% Increased Health On Kill`, 0)
+              emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1102])}% Avoid Death Penalty`, 0)
+              emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1105] - currentPlayer.character.meta[1104])}% Energy Decay`, 0)
+              emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1117] - currentPlayer.character.meta[1118])}% Sprite Fuel`, 0)
+            }
           }
 
           // spawn all connected clients for currentUser client 
@@ -2881,7 +2887,7 @@ function initEventHandler(app) {
             addToRecentPlayers(currentPlayer)
 
             // spawn currentPlayer client on clients in broadcast
-            publishEvent('OnSpawnPlayer', currentPlayer.id, currentPlayer.name, currentPlayer.speed, currentPlayer.avatar, currentPlayer.position.x, currentPlayer.position.y, currentPlayer.position.x, currentPlayer.position.y)
+            publishEvent('OnSpawnPlayer', currentPlayer.id, currentPlayer.name, currentPlayer.overrideSpeed || currentPlayer.speed, currentPlayer.avatar, currentPlayer.position.x, currentPlayer.position.y, currentPlayer.position.x, currentPlayer.position.y)
     
             if (config.isRoundPaused) {
               emitDirect(socket, 'OnRoundPaused')
