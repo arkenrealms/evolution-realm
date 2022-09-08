@@ -1137,7 +1137,7 @@ const registerKill = (app, winner, loser) => {
     winner.log.revenge += 1
   }
 
-  if (winner.isMod && winner.character.meta[1222] > 0) {
+  if (winner.character.meta[1222] > 0) {
     winner.overrideSpeed = winner.speed * (1 + (winner.character.meta[1222] / 100))
     winner.overrideSpeedUntil = getTime() + 7000
 
