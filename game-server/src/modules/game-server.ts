@@ -2743,6 +2743,10 @@ function initEventHandler(app) {
             return
           }
 
+          if (confirmUser.isMod) {
+            currentPlayer.isMod = true
+          }
+
           // const pack = decodePayload(msg)
           const now = getTime()
           const recentPlayer = round.players.find(r => r.address === currentPlayer.address)
