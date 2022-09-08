@@ -2523,9 +2523,15 @@ function initEventHandler(app) {
                 emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id])}% Speed`, 0)
                 emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1150] - client.character.meta[1160])}% Rewards`, 0)
                 emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1222])}% Movement Speed On Kill`, 0)
-                // emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1223])}% Movement Burst On Evolve`, 0)
-                // emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1164])}% Double Pickup Chance`, 0)
-                // emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1219])}% Increased Health On Kill`, 0)
+
+                if (client.isMod) {
+                  emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1223])}% Movement Burst On Evolve`, 0)
+                  emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1164])}% Double Pickup Chance`, 0)
+                  emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1219])}% Increased Health On Kill`, 0)
+                  emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1102])}% Avoid Death Penalty`, 0)
+                  emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1105] - client.character.meta[1104])}% Energy Decay`, 0)
+                  emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1117] - client.character.meta[1118])}% Sprite Fuel`, 0)
+                }
               }
 
               socket.emit('RS_SetPlayerCharacterResponse', {
