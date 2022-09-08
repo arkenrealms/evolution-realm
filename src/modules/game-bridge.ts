@@ -347,11 +347,12 @@ function connectGameServer(app) {
           id: req.id,
           data: { status: 0 }
         })
+        return
       }
 
       emitDirect(socket, 'GS_ConfirmUserResponse', {
         id: req.id,
-        data: { status: 1 }
+        data: { status: 1, isMod: app.realm.state.modList.includes(req.data.address) || app.realm.state.adminList.includes(req.data.address) }
       })
 
       let character = app.gameBridge.characterCache[req.data.address]
