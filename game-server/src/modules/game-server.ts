@@ -1704,12 +1704,14 @@ function detectCollisions(app) {
         player.log.phases += 1
         player.log.collided += 1
         player.overrideSpeed = 0.5
+        player.overrideSpeedUntil = getTime() + 2000
       } else if (stuck) {
         player.target = player.clientTarget
         player.phasedUntil = getTime() + 2000
         player.log.phases += 1
         player.log.stuck += 1
         player.overrideSpeed = 0.5
+        player.overrideSpeedUntil = getTime() + 2000
         if (config.stickyIslands) {
           player.isStuck = true
         }
@@ -1717,6 +1719,7 @@ function detectCollisions(app) {
         player.position = position
         player.target = player.clientTarget //castVectorTowards(position, player.clientTarget, 9999)
         player.overrideSpeed = null
+        player.overrideSpeedUntil = 0
       }
 
       const pos = Math.round(player.position.x) + ':' + Math.round(player.position.y)
@@ -2019,8 +2022,12 @@ function fastGameloop(app) {
       }
 
       if (client.overrideSpeed && now > client.overrideSpeedUntil) {
+        const oldSpeed = client.overrideSpeed
+
         client.overrideSpeed = null
         client.overrideSpeedUntil = 0
+
+        publishEvent('OnBroadcast', `${client.name} speed => ${oldSpeed} => ${client.speed} => ${getClientSpeed(client, config)}`, 0)
       }
 
       client.speed = getClientSpeed(client, config)
