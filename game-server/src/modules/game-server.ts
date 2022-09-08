@@ -104,7 +104,7 @@ const sharedConfig = {
   avatarSpeedMultiplier0: 1,
   avatarSpeedMultiplier1: 1,
   avatarSpeedMultiplier2: 0.85,
-  baseSpeed: 3,
+  baseSpeed: 2.8,
   cameraSize: 3,
   checkConnectionLoopSeconds: 2,
   checkInterval: 1,
@@ -2054,7 +2054,7 @@ function fastGameloop(app) {
                 client.overrideSpeed = client.speed * (1 + (client.character.meta[1223] / 100))
                 client.overrideSpeedUntil = getTime() + 1000
 
-                publishEvent('OnBroadcast', `${client.name} evolution speed bonus!`, 0)
+                // publishEvent('OnBroadcast', `${client.name} evolution speed bonus!`, 0)
               }
       
               publishEvent('OnUpdateEvolution', client.id, client.avatar, client.speed)
@@ -2084,7 +2084,7 @@ function fastGameloop(app) {
                 client.overrideSpeed = client.speed * (1 + (client.character.meta[1223] / 100))
                 client.overrideSpeedUntil = getTime() + 1000
 
-                publishEvent('OnBroadcast', `${client.name} evolution speed bonus!`, 0)
+                // publishEvent('OnBroadcast', `${client.name} evolution speed bonus!`, 0)
               }
       
               publishEvent('OnUpdateEvolution', client.id, client.avatar, client.speed)
