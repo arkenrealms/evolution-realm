@@ -2050,7 +2050,7 @@ function fastGameloop(app) {
                 client.speed = client.speed * 0.8
               }
 
-              if (client.isMod && client.character.meta[1223] > 0) {
+              if (client.character.meta[1223] > 0) {
                 client.overrideSpeed = client.speed * (1 + (client.character.meta[1223] / 100)) * (1 + client.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id]/100)
                 client.overrideSpeedUntil = getTime() + 1000
 
@@ -2080,7 +2080,7 @@ function fastGameloop(app) {
                 client.speed = client.speed * 0.8
               }
 
-              if (client.isMod && client.character.meta[1223] > 0) {
+              if (client.character.meta[1223] > 0) {
                 client.overrideSpeed = client.speed * (1 + (client.character.meta[1223] / 100)) * (1 + client.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id]/100)
                 client.overrideSpeedUntil = getTime() + 1000
 
