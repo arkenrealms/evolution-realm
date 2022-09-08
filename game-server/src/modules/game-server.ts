@@ -1601,7 +1601,7 @@ function detectCollisions(app) {
       //   player.log.resetPosition += 1
       // } else {
         // if (player.lastReportedTime > )
-      let position = moveVectorTowards(player.position, player.clientTarget, (player.overrideSpeed || player.speed) * deltaTime) // castVectorTowards(player.position, player.clientTarget, 9999)
+      let position = moveVectorTowards(player.position, player.clientTarget, player.speed * deltaTime) // castVectorTowards(player.position, player.clientTarget, 9999)
       // let target = castVectorTowards(position, player.clientTarget, 100)
 
       let outOfBounds = false
@@ -1718,8 +1718,8 @@ function detectCollisions(app) {
       } else {
         player.position = position
         player.target = player.clientTarget //castVectorTowards(position, player.clientTarget, 9999)
-        player.overrideSpeed = null
-        player.overrideSpeedUntil = 0
+        // player.overrideSpeed = null
+        // player.overrideSpeedUntil = 0
       }
 
       const pos = Math.round(player.position.x) + ':' + Math.round(player.position.y)
@@ -2021,12 +2021,13 @@ function fastGameloop(app) {
         client.phasedUntil = 0
       }
 
-      if (client.overrideSpeed && now > client.overrideSpeedUntil) {
+      if (client.overrideSpeed && client.overrideSpeedUntil && now > client.overrideSpeedUntil) {
         const oldSpeed = client.overrideSpeed
 
         client.overrideSpeed = null
         client.overrideSpeedUntil = 0
 
+        console.log(`${client.name} speed => ${oldSpeed} => ${client.speed} => ${getClientSpeed(client, config)}`)
         publishEvent('OnBroadcast', `${client.name} speed => ${oldSpeed} => ${client.speed} => ${getClientSpeed(client, config)}`, 0)
       }
 
@@ -2146,7 +2147,7 @@ function fastGameloop(app) {
 
       publishEvent('OnUpdatePlayer',
         client.id, 
-        client.overrideSpeed || client.speed, 
+        client.speed, 
         client.overrideCameraSize || client.cameraSize, 
         client.position.x, 
         client.position.y, 
