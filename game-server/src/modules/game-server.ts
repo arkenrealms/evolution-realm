@@ -794,6 +794,8 @@ async function claimReward(player, reward) {
 
     if (r <= player.character.meta[1164]) {
       player.pickups.push(reward)
+
+      publishEvent('OnBroadcast', `${player.name} got a double pickup!`, 0)
     }
   }
 
@@ -1108,6 +1110,8 @@ const registerKill = (app, winner, loser) => {
 
     if (r <= loser.character.meta[1102]) {
       deathPenaltyAvoid = true
+
+      publishEvent('OnBroadcast', `${loser.name} avoided penalty!`, 0)
     }
   }
 
@@ -1136,10 +1140,14 @@ const registerKill = (app, winner, loser) => {
   if (winner.isMod && winner.character.meta[1222] > 0) {
     winner.overrideSpeed = winner.speed * (1 + (winner.character.meta[1222] / 100))
     winner.overrideSpeedUntil = getTime() + 7000
+
+    publishEvent('OnBroadcast', `${winner.name} kill speed buff!`, 0)
   }
 
   if (winner.isMod && winner.character.meta[1219] > 0) {
     winner.maxHp = winner.maxHp * (1 + (winner.character.meta[1219] / 100))
+
+    publishEvent('OnBroadcast', `${winner.name} is feeling stronger!`, 0)
   }
   
 
@@ -1929,6 +1937,8 @@ function detectCollisions(app) {
 
           if (player.isMod && player.character.meta[1117] > 0) {
             player.xp += (value * config.spriteXpMultiplier * (player.character.meta[1117] - player.character.meta[1118]) / 100)
+
+            publishEvent('OnBroadcast', `${player.name} xp bonus`, 0)
           }
       
           publishEvent('OnUpdatePickup', player.id, powerup.id, value)
@@ -2035,6 +2045,8 @@ function fastGameloop(app) {
               if (client.isMod && client.character.meta[1223] > 0) {
                 client.overrideSpeed = client.speed * (1 + (client.character.meta[1223] / 100))
                 client.overrideSpeedUntil = getTime() + 1000
+
+                publishEvent('OnBroadcast', `${client.name} evolution speed bonus!`, 0)
               }
       
               publishEvent('OnUpdateEvolution', client.id, client.avatar, client.speed)
@@ -2063,6 +2075,8 @@ function fastGameloop(app) {
               if (client.isMod && client.character.meta[1223] > 0) {
                 client.overrideSpeed = client.speed * (1 + (client.character.meta[1223] / 100))
                 client.overrideSpeedUntil = getTime() + 1000
+
+                publishEvent('OnBroadcast', `${client.name} evolution speed bonus!`, 0)
               }
       
               publishEvent('OnUpdateEvolution', client.id, client.avatar, client.speed)
