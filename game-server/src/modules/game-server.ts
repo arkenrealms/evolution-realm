@@ -1141,13 +1141,13 @@ const registerKill = (app, winner, loser) => {
     winner.overrideSpeed = winner.speed * (1 + (winner.character.meta[1222] / 100))
     winner.overrideSpeedUntil = getTime() + 7000
 
-    publishEvent('OnBroadcast', `${winner.name} kill speed buff!`, 0)
+    // publishEvent('OnBroadcast', `${winner.name} on a rampage!`, 0)
   }
 
   if (winner.isMod && winner.character.meta[1219] > 0) {
     winner.maxHp = winner.maxHp * (1 + (winner.character.meta[1219] / 100))
 
-    publishEvent('OnBroadcast', `${winner.name} is feeling stronger!`, 0)
+    // publishEvent('OnBroadcast', `${winner.name} is feeling stronger!`, 0)
   }
   
 
@@ -2027,8 +2027,8 @@ function fastGameloop(app) {
         client.overrideSpeed = null
         client.overrideSpeedUntil = 0
 
-        console.log(`${client.name} speed => ${oldSpeed} => ${client.speed} => ${getClientSpeed(client, config)}`)
-        publishEvent('OnBroadcast', `${client.name} speed => ${oldSpeed} => ${client.speed} => ${getClientSpeed(client, config)}`, 0)
+        // console.log(`${client.name} speed => ${oldSpeed} => ${client.speed} => ${getClientSpeed(client, config)}`)
+        // publishEvent('OnBroadcast', `${client.name} speed => ${oldSpeed} => ${client.speed} => ${getClientSpeed(client, config)}`, 0)
       }
 
       client.speed = getClientSpeed(client, config)
