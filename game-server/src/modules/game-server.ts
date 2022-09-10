@@ -1126,6 +1126,7 @@ const registerKill = (app, winner, loser) => {
   }
 
   loser.deaths += 1
+  loser.killStreak = 0
   loser.isDead = true
   loser.log.deaths.push(winner.hash)
   
