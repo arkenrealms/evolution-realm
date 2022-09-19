@@ -1105,7 +1105,7 @@ const registerKill = (app, winner, loser) => {
 
   let deathPenaltyAvoid = false
 
-  if (loser.isMod && loser.character.meta[1102] > 0) {
+  if (loser.character.meta[1102] > 0) {
     const r = random(1, 100)
 
     if (r <= loser.character.meta[1102]) {
@@ -2533,11 +2533,11 @@ function initEventHandler(app) {
                 emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1222])}% Movement Burst On Kill`, 0)
                 emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1223])}% Movement Burst On Evolve`, 0)
                 emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id])}% Movement Burst Strength`, 0)
+                emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1102])}% Avoid Death Penalty`, 0)
 
                 if (client.isMod) {
                   emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1164])}% Double Pickup Chance`, 0)
                   emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1219])}% Increased Health On Kill`, 0)
-                  emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1102])}% Avoid Death Penalty`, 0)
                   emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1105] - client.character.meta[1104])}% Energy Decay`, 0)
                   emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1117] - client.character.meta[1118])}% Sprite Fuel`, 0)
                 }
@@ -2820,12 +2820,12 @@ function initEventHandler(app) {
             emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1222])}% Movement Burst On Kill`, 0)
             emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1223])}% Movement Burst On Evolve`, 0)
             emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id])}% Movement Burst Strength`, 0)
+            emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1105] - currentPlayer.character.meta[1104])}% Energy Decay`, 0)
 
             if (currentPlayer.isMod) {
               emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1164])}% Double Pickup Chance`, 0)
               emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1219])}% Increased Health On Kill`, 0)
               emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1102])}% Avoid Death Penalty`, 0)
-              emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1105] - currentPlayer.character.meta[1104])}% Energy Decay`, 0)
               emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1117] - currentPlayer.character.meta[1118])}% Sprite Fuel`, 0)
             }
           }
