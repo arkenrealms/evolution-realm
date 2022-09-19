@@ -50,7 +50,7 @@ function onRealmConnection(app, socket) {
 
         emitDirect(socket, 'AuthResponse', {
           id: req.id,
-          data: { status: 1, isMod: currentClient.isMod || currentClient.isAdmin }
+          data: { status: 1 }
         })
 
       } else {
