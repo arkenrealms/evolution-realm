@@ -304,10 +304,10 @@ function connectGameServer(app) {
           data: { status: 0 }
         })
 
-        config.rewardItemAmount = 0
-        config.rewardItemAmountPerLegitPlayer = 0
-        config.rewardWinnerAmount = 0
-        config.rewardWinnerAmountPerLegitPlayer = 0
+        // config.rewardItemAmount = 0
+        // config.rewardItemAmountPerLegitPlayer = 0
+        // config.rewardWinnerAmount = 0
+        // config.rewardWinnerAmountPerLegitPlayer = 0
       } else {
         for (const game of app.state.unsavedGames.filter(g => g.status === undefined)) {
           const res = await app.realm.call('SaveRoundRequest', game)

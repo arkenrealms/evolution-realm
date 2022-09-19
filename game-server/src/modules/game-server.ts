@@ -159,7 +159,7 @@ const presets = [
   {
     gameMode: 'Standard',
     leadercap: true,
-    weight: 20,
+    weight: 100,
     pointsPerEvolve: 1,
     pointsPerPowerup: 1,
     pointsPerKill: 20,
@@ -222,7 +222,7 @@ const presets = [
   {
     gameMode: 'Deathmatch',
     leadercap: true,
-    weight: 50,
+    weight: 30,
     pointsPerKill: 200,
     orbOnDeathPercent: 0,
     pointsPerEvolve: 0,
@@ -319,7 +319,7 @@ const presets = [
   {
     gameMode: 'Fast Drake',
     leadercap: true,
-    weight: 40,
+    weight: 20,
     avatarDecayPower0: 1,
     avatarDecayPower1: 1,
     avatarDecayPower2: 1,
@@ -878,7 +878,7 @@ function disconnectPlayer(app, player, reason = 'Unknown', immediate = false) {
       syncSprites()
       flushEventQueue(app)
 
-      if (oldSocket.emit && oldSocket.connected)
+      if (oldSocket && oldSocket.emit && oldSocket.connected)
         oldSocket.disconnect()
         delete sockets[player.id]
     }, immediate ? 0 : 1000)
