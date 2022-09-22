@@ -80,6 +80,8 @@ let baseConfig = {
   avatarDirection: 1,
   calcRoundRewards: true,
   flushEventQueueSeconds: 0.02,
+  mechanics: [1150, 1160, 1222, 1223, 1030, 1102, 1164, 1219, 1105, 1104, 1117, 1118],
+  disabledMechanics: [],
   log: {
     connections: false
   },
@@ -98,9 +100,12 @@ const sharedConfig = {
   avatarDecayPower0: 1.5,
   avatarDecayPower1: 2.5,
   avatarDecayPower2: 3,
-  avatarTouchDistance0: 0.25 * 0.7,
-  avatarTouchDistance1: 0.45 * 0.7,
-  avatarTouchDistance2: 0.65 * 0.7,
+  // avatarTouchDistance0: 0.25 * 0.7,
+  // avatarTouchDistance1: 0.45 * 0.7,
+  // avatarTouchDistance2: 0.65 * 0.7,
+  avatarTouchDistance0: 0.25,
+  avatarTouchDistance1: 0.45,
+  avatarTouchDistance2: 0.65,
   avatarSpeedMultiplier0: 1,
   avatarSpeedMultiplier1: 1,
   avatarSpeedMultiplier2: 0.85,
@@ -575,6 +580,7 @@ function comparePlayers(a, b) {
   return 0
 }
 
+
 function random(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
@@ -770,6 +776,13 @@ function moveVectorTowards(current, target, maxDistanceDelta) {
   }
 }
 
+function isMechanicEnabled(player, mechanicId) {
+  if (player.isMod) return true
+  if (config.disabledMechanics.includes(mechanicId)) return false
+
+  return config.mechanics.includes(mechanicId)
+}
+
 async function claimReward(player, reward) {
   if (!reward) return
 
@@ -789,7 +802,7 @@ async function claimReward(player, reward) {
   player.points += config.pointsPerReward
   player.pickups.push(reward)
 
-  if (player.isMod && player.character.meta[1164] > 0) {
+  if (isMechanicEnabled(player, 1164) && player.character.meta[1164] > 0) {
     const r = random(1, 100)
 
     if (r <= player.character.meta[1164]) {
@@ -1091,12 +1104,12 @@ const registerKill = (app, winner, loser) => {
   // LV3 vs LV1 = 0.5 * 3 + 0.5 * 2 * 2 = 3.5
   // LV3 vs LV2 = 0.5 * 3 + 0.5 * 1 * 2 = 2.5
   // LV2 vs LV1 = 0.5 * 2 + 0.5 * 1 * 2 = 2
-  // loser.xp -= config.damagePerTouch * (winner.avatar + 1) + config.damagePerTouch * (winner.avatar - loser.avatar) * 2
+  loser.xp -= config.damagePerTouch * (winner.avatar + 1) + config.damagePerTouch * (winner.avatar - loser.avatar) * 2
 
-  // if (loser.avatar !== 0 || loser.xp > 0) {
-  //   // Can't be killed yet
-  //   return
-  // }
+  if (loser.avatar !== 0 || loser.xp > 0) {
+    // Can't be killed yet
+    return
+  }
 
   winner.kills += 1
   winner.killStreak += 1
@@ -1105,7 +1118,7 @@ const registerKill = (app, winner, loser) => {
 
   let deathPenaltyAvoid = false
 
-  if (loser.character.meta[1102] > 0) {
+  if (isMechanicEnabled(loser, 1102) && loser.character.meta[1102] > 0) {
     const r = random(1, 100)
 
     if (r <= loser.character.meta[1102]) {
@@ -1138,14 +1151,14 @@ const registerKill = (app, winner, loser) => {
     winner.log.revenge += 1
   }
 
-  if (winner.character.meta[1222] > 0) {
-    winner.overrideSpeed = winner.speed * (1 + (winner.character.meta[1222] / 100)) * (1 + winner.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id]/100)
+  if (isMechanicEnabled(winner, 1222) && winner.character.meta[1222] > 0) {
+    winner.overrideSpeed = winner.speed * (1 + (winner.character.meta[1222] / 100)) * (1 + winner.character.meta[1030]/100)
     winner.overrideSpeedUntil = getTime() + 7000
 
     // publishEvent('OnBroadcast', `${winner.name} on a rampage!`, 0)
   }
 
-  if (winner.isMod && winner.character.meta[1219] > 0) {
+  if (isMechanicEnabled(winner, 1219) && winner.character.meta[1219] > 0) {
     winner.maxHp = winner.maxHp * (1 + (winner.character.meta[1219] / 100))
 
     // publishEvent('OnBroadcast', `${winner.name} is feeling stronger!`, 0)
@@ -1939,7 +1952,7 @@ function detectCollisions(app) {
           player.points += config.pointsPerPowerup
           player.xp += (value * config.spriteXpMultiplier)
 
-          if (player.isMod && player.character.meta[1117] > 0) {
+          if (isMechanicEnabled(player, 1117) && player.character.meta[1117] > 0) {
             player.xp += (value * config.spriteXpMultiplier * (player.character.meta[1117] - player.character.meta[1118]) / 100)
 
             publishEvent('OnBroadcast', `${player.name} xp bonus`, 0)
@@ -2037,7 +2050,11 @@ function fastGameloop(app) {
       // console.log('speed', client.name, client.avatar, client.speed)
 
       if (!config.isRoundPaused && config.gameMode !== 'Pandamonium') {
-        let decay = config.noDecay ? 0 : ((client.avatar + 1) / (1 / config.fastLoopSeconds) * ((config['avatarDecayPower' + client.avatar] || 1) * config.decayPower)) * (1 + (client.character.meta[1105] - client.character.meta[1104])/100)
+        let decay = config.noDecay ? 0 : ((client.avatar + 1) / (1 / config.fastLoopSeconds) * ((config['avatarDecayPower' + client.avatar] || 1) * config.decayPower))
+
+        if (isMechanicEnabled(client, 1105) && isMechanicEnabled(client, 1104)) {
+          decay = decay * (1 + (client.character.meta[1105] - client.character.meta[1104])/100)
+        }
   
         if (client.xp > client.maxHp) {
           if (decay > 0) {
@@ -2051,10 +2068,13 @@ function fastGameloop(app) {
                 client.speed = client.speed * 0.8
               }
 
-              if (client.character.meta[1223] > 0) {
-                client.overrideSpeed = client.speed * (1 + (client.character.meta[1223] / 100)) * (1 + client.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id]/100)
+              if (isMechanicEnabled(client, 1223) && client.character.meta[1223] > 0) {
                 client.overrideSpeedUntil = getTime() + 1000
+                client.overrideSpeed = client.speed * (1 + (client.character.meta[1223] / 100))
 
+                if (isMechanicEnabled(client, 1030) && client.character.meta[1030] > 0) {
+                  client.overrideSpeed = client.overrideSpeed * (1 + client.character.meta[1030]/100)
+                }
                 // publishEvent('OnBroadcast', `${client.name} evolution speed bonus!`, 0)
               }
       
@@ -2081,10 +2101,13 @@ function fastGameloop(app) {
                 client.speed = client.speed * 0.8
               }
 
-              if (client.character.meta[1223] > 0) {
-                client.overrideSpeed = client.speed * (1 + (client.character.meta[1223] / 100)) * (1 + client.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id]/100)
+              if (isMechanicEnabled(client, 1223) && client.character.meta[1223] > 0) {
                 client.overrideSpeedUntil = getTime() + 1000
+                client.overrideSpeed = client.speed * (1 + (client.character.meta[1223] / 100))
 
+                if (isMechanicEnabled(client, 1030) && client.character.meta[1030] > 0) {
+                  client.overrideSpeed = client.overrideSpeed * (1 + client.character.meta[1030]/100)
+                }
                 // publishEvent('OnBroadcast', `${client.name} evolution speed bonus!`, 0)
               }
       
@@ -2260,6 +2283,18 @@ function flushEventQueue(app) {
   }
 }
 
+function broadcastMechanics(client) {
+  if (isMechanicEnabled(client, 1150)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1150] - client.character.meta[1160])}% Rewards`, 0)
+  if (isMechanicEnabled(client, 1222)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1222])}% Movement Burst On Kill`, 0)
+  if (isMechanicEnabled(client, 1223)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1223])}% Movement Burst On Evolve`, 0)
+  if (isMechanicEnabled(client, 1030)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1030])}% Movement Burst Strength`, 0)
+  if (isMechanicEnabled(client, 1102)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1102])}% Avoid Death Penalty`, 0)
+  if (isMechanicEnabled(client, 1164)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1164])}% Double Pickup Chance`, 0)
+  if (isMechanicEnabled(client, 1219)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1219])}% Increased Health On Kill`, 0)
+  if (isMechanicEnabled(client, 1105)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1105] - client.character.meta[1104])}% Energy Decay`, 0)
+  if (isMechanicEnabled(client, 1117)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1117] - client.character.meta[1118])}% Sprite Fuel`, 0)
+}
+
 function clearSprites() {
   powerups.splice(0, powerups.length) // clear the powerup list
 }
@@ -2331,7 +2366,7 @@ function initEventHandler(app) {
         baseSpeed: 1,
         character: {
           meta: {
-            [ItemAttributes.EvolutionMovementSpeedIncrease.id]: 0,
+            1030: 0,
             1102: 0,
             1104: 0,
             1105: 0,
@@ -2529,18 +2564,7 @@ function initEventHandler(app) {
               }
 
               if (sockets[client.id]) {
-                emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1150] - client.character.meta[1160])}% Rewards`, 0)
-                emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1222])}% Movement Burst On Kill`, 0)
-                emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1223])}% Movement Burst On Evolve`, 0)
-                emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id])}% Movement Burst Strength`, 0)
-                emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1102])}% Avoid Death Penalty`, 0)
-
-                if (client.isMod) {
-                  emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1164])}% Double Pickup Chance`, 0)
-                  emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1219])}% Increased Health On Kill`, 0)
-                  emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1105] - client.character.meta[1104])}% Energy Decay`, 0)
-                  emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1117] - client.character.meta[1118])}% Sprite Fuel`, 0)
-                }
+                broadcastMechanics(client)
               }
 
               socket.emit('RS_SetPlayerCharacterResponse', {
@@ -2814,21 +2838,7 @@ function initEventHandler(app) {
             emitDirect(socket, 'OnCloseLevel2')
           }
 
-
-          if (currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id] > 0) {
-            emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1150] - currentPlayer.character.meta[1160])}% Rewards`, 0)
-            emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1222])}% Movement Burst On Kill`, 0)
-            emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1223])}% Movement Burst On Evolve`, 0)
-            emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[ItemAttributes.EvolutionMovementSpeedIncrease.id])}% Movement Burst Strength`, 0)
-            emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1105] - currentPlayer.character.meta[1104])}% Energy Decay`, 0)
-
-            if (currentPlayer.isMod) {
-              emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1164])}% Double Pickup Chance`, 0)
-              emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1219])}% Increased Health On Kill`, 0)
-              emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1102])}% Avoid Death Penalty`, 0)
-              emitDirect(sockets[currentPlayer.id], 'OnBroadcast', `${formatNumber(currentPlayer.character.meta[1117] - currentPlayer.character.meta[1118])}% Sprite Fuel`, 0)
-            }
-          }
+          broadcastMechanics(currentPlayer)
 
           // spawn all connected clients for currentUser client 
           for (const client of clients) {
