@@ -53,7 +53,7 @@ const pandas = [
 let baseConfig = {
   id: undefined,
   roundId: 1,
-  damagePerTouch: 2,
+  damagePerTouch: 1,
   periodicReboots: false,
   startAvatar: 0,
   spriteXpMultiplier: 1,
