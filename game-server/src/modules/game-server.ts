@@ -1153,7 +1153,7 @@ const registerKill = (app, winner, loser) => {
 
   if (isMechanicEnabled(winner, 1222) && winner.character.meta[1222] > 0) {
     winner.overrideSpeed = winner.speed * (1 + (winner.character.meta[1222] / 100)) * (1 + winner.character.meta[1030]/100)
-    winner.overrideSpeedUntil = getTime() + 7000
+    winner.overrideSpeedUntil = getTime() + 5000
 
     // publishEvent('OnBroadcast', `${winner.name} on a rampage!`, 0)
   }
