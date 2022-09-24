@@ -53,7 +53,7 @@ const pandas = [
 let baseConfig = {
   id: undefined,
   roundId: 1,
-  damagePerTouch: 2,
+  damagePerTouch: 12,
   periodicReboots: false,
   startAvatar: 0,
   spriteXpMultiplier: 1,
@@ -1104,8 +1104,10 @@ const registerKill = (app, winner, loser) => {
   // LV3 vs LV1 = 0.5 * 3 + 0.5 * 2 * 2 = 3.5
   // LV3 vs LV2 = 0.5 * 3 + 0.5 * 1 * 2 = 2.5
   // LV2 vs LV1 = 0.5 * 2 + 0.5 * 1 * 2 = 2
-  loser.xp -= config.damagePerTouch * (winner.avatar + 1) + config.damagePerTouch * Math.max(winner.avatar - loser.avatar, 0)
-  winner.xp -= config.damagePerTouch * (loser.avatar + 1) + config.damagePerTouch * Math.max(loser.avatar - winner.avatar, 0)
+  loser.xp -= config.damagePerTouch
+  winner.xp -= config.damagePerTouch
+  // loser.xp -= config.damagePerTouch * (winner.avatar + 1) + config.damagePerTouch * Math.max(winner.avatar - loser.avatar, 0)
+  // winner.xp -= config.damagePerTouch * (loser.avatar + 1) + config.damagePerTouch * Math.max(loser.avatar - winner.avatar, 0)
 
   loser.overrideSpeed = 2.5
   loser.overrideSpeedUntil = getTime() + 2000
