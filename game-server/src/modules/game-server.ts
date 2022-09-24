@@ -1718,21 +1718,21 @@ function detectCollisions(app) {
       if (collided) {
         player.position = position
         player.target = player.clientTarget
-        player.phasedUntil = getTime() + 2000
+        player.phasedUntil = getTime() + 5000
         if (!player.phasedPosition)
           player.phasedPosition = position
         player.log.phases += 1
         player.log.collided += 1
         player.overrideSpeed = 0.1
-        player.overrideSpeedUntil = getTime() + 5000
+        player.overrideSpeedUntil = getTime() + 3000
       } else if (stuck) {
         player.position = position
         player.target = player.clientTarget
-        player.phasedUntil = getTime() + 2000
+        player.phasedUntil = getTime() + 5000
         player.log.phases += 1
         player.log.stuck += 1
         player.overrideSpeed = 0.1
-        player.overrideSpeedUntil = getTime() + 5000
+        player.overrideSpeedUntil = getTime() + 3000
         if (config.stickyIslands) {
           player.isStuck = true
         }
