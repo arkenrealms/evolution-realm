@@ -1805,7 +1805,7 @@ function detectCollisions(app) {
           if (player2.isDead) continue
           if (player2.isSpectating) continue
           if (isPlayer2Invincible) continue
-          if (player2.avatar === player1.avatar) continue
+          // if (player2.avatar === player1.avatar) continue
 
           // log(player1.position, player2.position, distanceBetweenPoints(player1.position.x, player1.position.y, player2.position.x, player2.position.y))
 
