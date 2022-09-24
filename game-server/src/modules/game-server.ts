@@ -53,7 +53,7 @@ const pandas = [
 let baseConfig = {
   id: undefined,
   roundId: 1,
-  damagePerTouch: 12,
+  damagePerTouch: 10,
   periodicReboots: false,
   startAvatar: 0,
   spriteXpMultiplier: 1,
@@ -1726,16 +1726,16 @@ function detectCollisions(app) {
           player.phasedPosition = position
         player.log.phases += 1
         player.log.collided += 1
-        player.overrideSpeed = 0.1
-        player.overrideSpeedUntil = getTime() + 3000
+        player.overrideSpeed = 0.02
+        player.overrideSpeedUntil = getTime() + 1000
       } else if (stuck) {
         player.position = position
         player.target = player.clientTarget
         player.phasedUntil = getTime() + 5000
         player.log.phases += 1
         player.log.stuck += 1
-        player.overrideSpeed = 0.1
-        player.overrideSpeedUntil = getTime() + 3000
+        player.overrideSpeed = 0.02
+        player.overrideSpeedUntil = getTime() + 1000
         if (config.stickyIslands) {
           player.isStuck = true
         }
