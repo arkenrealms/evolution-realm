@@ -1816,31 +1816,33 @@ function detectCollisions(app) {
 
           if (distanceBetweenPoints(position1, position2) > distance) continue
 
-          if (player2.avatar > player1.avatar) {
-            // if (distanceBetweenPoints(player2.position, player2.clientPosition) > config.pickupCheckPositionDistance) continue
-            // playerDamageGiven[currentPlayer.id + pack.id] = now
-            // // log('Player Damage Given', currentPlayer.id + pack.id)
-            // if (playerDamageTaken[currentPlayer.id + pack.id] > now - 500) {
-              // if (player1.xp > 5) {
-                // player1.xp -= 1
-              // } else {
-                registerKill(app, player2, player1)
-              // }
-              break
-            // }
-          } else if (player1.avatar > player2.avatar) {
-            // if (distanceBetweenPoints(player1.position, player1.clientPosition) > config.pickupCheckPositionDistance) continue
-            // playerDamageGiven[pack.id + currentPlayer.id] = now
-            // // log('Player Damage Given', pack.id + currentPlayer.id)
-            // if (playerDamageTaken[pack.id + currentPlayer.id] > now - 500) {
-              // if (player2.xp > 5) {
-              //   player2.xp -= 1
-              // } else {
-                registerKill(app, player1, player2)
-              // }
-              break
-            // }
-          }
+          registerKill(app, player1, player2)
+
+          // if (player2.avatar > player1.avatar) {
+          //   // if (distanceBetweenPoints(player2.position, player2.clientPosition) > config.pickupCheckPositionDistance) continue
+          //   // playerDamageGiven[currentPlayer.id + pack.id] = now
+          //   // // log('Player Damage Given', currentPlayer.id + pack.id)
+          //   // if (playerDamageTaken[currentPlayer.id + pack.id] > now - 500) {
+          //     // if (player1.xp > 5) {
+          //       // player1.xp -= 1
+          //     // } else {
+          //       registerKill(app, player2, player1)
+          //     // }
+          //     break
+          //   // }
+          // } else if (player1.avatar > player2.avatar) {
+          //   // if (distanceBetweenPoints(player1.position, player1.clientPosition) > config.pickupCheckPositionDistance) continue
+          //   // playerDamageGiven[pack.id + currentPlayer.id] = now
+          //   // // log('Player Damage Given', pack.id + currentPlayer.id)
+          //   // if (playerDamageTaken[pack.id + currentPlayer.id] > now - 500) {
+          //     // if (player2.xp > 5) {
+          //     //   player2.xp -= 1
+          //     // } else {
+          //       registerKill(app, player1, player2)
+          //     // }
+          //     break
+          //   // }
+          // }
         }
       }
 
