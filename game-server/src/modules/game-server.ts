@@ -1107,6 +1107,9 @@ const registerKill = (app, winner, loser) => {
   loser.xp -= config.damagePerTouch * (winner.avatar + 1) + config.damagePerTouch * (winner.avatar - loser.avatar) * 2
 
   if (loser.avatar !== 0 || loser.xp > 0) {
+    loser.overrideSpeed = 2.5
+    loser.overrideSpeedUntil = getTime() + 1000
+
     // Can't be killed yet
     return
   }
