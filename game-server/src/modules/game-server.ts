@@ -1717,8 +1717,10 @@ function detectCollisions(app) {
       }
 
       player.isStuck = false
+      
+      const isPlayerInvincible = player.isInvincible ? true : (player.invincibleUntil > currentTime)
 
-      if (collided) {
+      if (collided && !isPlayerInvincible) {
         player.position = position
         player.target = player.clientTarget
         player.phasedUntil = getTime() + 5000
@@ -1728,7 +1730,7 @@ function detectCollisions(app) {
         player.log.collided += 1
         player.overrideSpeed = 0.02
         player.overrideSpeedUntil = getTime() + 1000
-      } else if (stuck) {
+      } else if (stuck && !isPlayerInvincible) {
         player.position = position
         player.target = player.clientTarget
         player.phasedUntil = getTime() + 5000
