@@ -163,7 +163,7 @@ let config = {
 const presets = [
   {
     gameMode: 'Standard',
-    leadercap: true,
+    leadercap: false,
     weight: 100,
     pointsPerEvolve: 1,
     pointsPerPowerup: 1,
@@ -172,7 +172,7 @@ const presets = [
   },
   {
     gameMode: 'Lets Be Friends',
-    leadercap: true,
+    leadercap: false,
     weight: 2,
     pointsPerKill: -200,
     orbOnDeathPercent: 0,
@@ -188,7 +188,7 @@ const presets = [
   },
   {
     gameMode: 'Indiana Jones',
-    leadercap: true,
+    leadercap: false,
     weight: 30,
     pointsPerEvolve: 0,
     pointsPerPowerup: 0,
@@ -206,7 +206,7 @@ const presets = [
   },
   {
     gameMode: 'Mix Game 1',
-    leadercap: true,
+    leadercap: false,
     weight: 1,
     pointsPerEvolve: 1,
     pointsPerPowerup: 1,
@@ -217,7 +217,7 @@ const presets = [
   },
   {
     gameMode: 'Mix Game 2',
-    leadercap: true,
+    leadercap: false,
     weight: 1,
     pointsPerEvolve: 10,
     pointsPerKill: 200,
@@ -226,7 +226,7 @@ const presets = [
   },
   {
     gameMode: 'Deathmatch',
-    leadercap: true,
+    leadercap: false,
     weight: 30,
     pointsPerKill: 200,
     orbOnDeathPercent: 0,
@@ -247,7 +247,7 @@ const presets = [
   },
   {
     gameMode: 'Evolution',
-    leadercap: true,
+    leadercap: false,
     weight: 1,
     pointsPerKill: 0,
     pointsPerEvolve: 1,
@@ -262,7 +262,7 @@ const presets = [
   },
   {
     gameMode: 'Classic Evolution',
-    leadercap: true,
+    leadercap: false,
     weight: 10,
     pointsPerEvolve: 10,
     pointsPerPowerup: 0,
@@ -275,7 +275,7 @@ const presets = [
   },
   {
     gameMode: 'Orb Master',
-    leadercap: true,
+    leadercap: false,
     weight: 10,
     // orbOnDeathPercent: 25,
     orbTimeoutSeconds: 3,
@@ -294,7 +294,7 @@ const presets = [
   },
   {
     gameMode: 'Sprite Leader',
-    leadercap: true,
+    leadercap: false,
     weight: 10,
     spritesPerPlayerCount: 40,
     // decayPower: 7,
@@ -323,7 +323,7 @@ const presets = [
   },
   {
     gameMode: 'Fast Drake',
-    leadercap: true,
+    leadercap: false,
     weight: 20,
     avatarDecayPower0: 1,
     avatarDecayPower1: 1,
@@ -344,7 +344,7 @@ const presets = [
   },
   {
     gameMode: 'Bird Eye',
-    leadercap: true,
+    leadercap: false,
     weight: 10,
     cameraSize: 6,
     baseSpeed: 3.5,
@@ -359,7 +359,7 @@ const presets = [
   },
   {
     gameMode: 'Friendly Reverse',
-    leadercap: true,
+    leadercap: false,
     weight: 10,
     pointsPerKill: -200,
     orbOnDeathPercent: 0,
@@ -387,7 +387,7 @@ const presets = [
   },
   {
     gameMode: 'Reverse Evolve',
-    leadercap: true,
+    leadercap: false,
     weight: 1,
     startAvatar: 2,
     decayPower: -1,
@@ -410,7 +410,7 @@ const presets = [
   },
   {
     gameMode: 'Classic Marco Polo',
-    leadercap: true,
+    leadercap: false,
     weight: 30,
     cameraSize: 2,
     baseSpeed: 2.5,
@@ -429,7 +429,7 @@ const presets = [
   },
   {
     gameMode: 'Marco Polo',
-    leadercap: true,
+    leadercap: false,
     weight: 20,
     cameraSize: 2,
     baseSpeed: 2.5,
@@ -446,19 +446,19 @@ const presets = [
       'Sprites Change Camera',
     ]
   },
-  // {
-  //   gameMode: 'Leadercap',
-  //   leadercap: true,
-  //   guide: [
-  //     'Game Mode - Leadercap',
-  //     'Kill the last round leader',
-  //     'Leader -20% Speed',
-  //     'Leader 75% Death Orb'
-  //   ]
-  // },
+  {
+    gameMode: 'Leadercap',
+    leadercap: true,
+    guide: [
+      'Game Mode - Leadercap',
+      'Kill the last round leader',
+      'Leader -20% Speed',
+      'Leader 75% Death Orb'
+    ]
+  },
   {
     gameMode: 'Sticky Mode',
-    leadercap: true,
+    leadercap: false,
     weight: 1,
     stickyIslands: true,
     colliderBuffer: 0,
@@ -472,7 +472,7 @@ const presets = [
   },
   {
     gameMode: 'Sprite Juice',
-    leadercap: true,
+    leadercap: false,
     weight: 1,
     // spritesPerPlayerCount: 1,
     spritesStartCount: 25,
@@ -513,7 +513,7 @@ const presets = [
   },
   {
     gameMode: 'Hayai',
-    leadercap: true,
+    leadercap: false,
     weight: 2,
     level2forced: true,
     decayPower: 3.6,
@@ -525,7 +525,7 @@ const presets = [
   },
   {
     gameMode: 'Storm Cuddle',
-    leadercap: true,
+    leadercap: false,
     weight: 10,
     fortnight: true,
     isOmit: true,
