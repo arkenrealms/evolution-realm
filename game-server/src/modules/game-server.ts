@@ -1179,7 +1179,10 @@ const registerKill = (app, winner, loser) => {
 
     // publishEvent('OnBroadcast', `${winner.name} is feeling stronger!`, 0)
   }
+
+  winner.xp += 25
   
+  if (winner.xp > winner.maxHp) winner.xp = winner.maxHp
 
   publishEvent('OnGameOver', loser.id, winner.id)
 
