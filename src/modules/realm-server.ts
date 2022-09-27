@@ -32,28 +32,35 @@ function onRealmConnection(app, socket) {
 
     // Use by GS to tell DB it's connected
     socket.on('AuthRequest', async function(req) {
-      // if (req.data !== 'myverysexykey') {
-      //   log('Invalid observer creds:', req)
-      //   socket.disconnect()
-      //   return
-      // }
-
-      if (await isValidRequest(app.web3, req)) {
-        if (app.realm.state.adminList.includes(req.signature.address)) {
-          currentClient.isAdmin = true
-          currentClient.isMod = true
-
-          await app.gameBridge.call('RS_ApiConnected', await getSignedRequest(app.web3, app.secrets, {}), {})
-        } else if (app.realm.state.modList.includes(req.signature.address)) {
-          currentClient.isMod = true
+      try {
+        // if (req.data !== 'myverysexykey') {
+        //   log('Invalid observer creds:', req)
+        //   socket.disconnect()
+        //   return
+        // }
+  
+        if (await isValidRequest(app.web3, req)) {
+          if (app.realm.state.adminList.includes(req.signature.address)) {
+            currentClient.isAdmin = true
+            currentClient.isMod = true
+  
+            await app.gameBridge.call('RS_ApiConnected', await getSignedRequest(app.web3, app.secrets, {}), {})
+          } else if (app.realm.state.modList.includes(req.signature.address)) {
+            currentClient.isMod = true
+          }
+  
+          emitDirect(socket, 'AuthResponse', {
+            id: req.id,
+            data: { status: 1 }
+          })
+  
+        } else {
+          emitDirect(socket, 'AuthResponse', {
+            id: req.id,
+            data: { status: 0 }
+          })
         }
-
-        emitDirect(socket, 'AuthResponse', {
-          id: req.id,
-          data: { status: 1 }
-        })
-
-      } else {
+      } catch(e) {
         emitDirect(socket, 'AuthResponse', {
           id: req.id,
           data: { status: 0 }
