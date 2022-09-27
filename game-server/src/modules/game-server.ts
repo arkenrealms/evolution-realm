@@ -2151,7 +2151,7 @@ function fastGameloop(app) {
                 if (!config.noBoot && !isInvincible && !isNew && !config.isGodParty) {
                   client.log.ranOutOfHealth += 1
 
-                  if (client.lastTouchTime > now - 1000) {
+                  if (client.lastTouchTime > now - 2000) {
                     registerKill(app, clientLookup[client.lastTouchPlayerId], client)
                   } else {
                     disconnectPlayer(app, client, 'starved')
