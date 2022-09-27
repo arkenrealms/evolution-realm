@@ -1068,6 +1068,7 @@ const registerKill = (app, winner, loser) => {
   if (config.isGodParty) return
   if (winner.isInvincible || loser.isInvincible) return
   if (winner.isGod || loser.isGod) return
+  if (winner.isDead) return
 
   if (config.gameMode !== 'Pandamonium' || !pandas.includes(winner.address)) {
     if (config.preventBadKills && (winner.isPhased || now < winner.phasedUntil)) return
@@ -1109,13 +1110,19 @@ const registerKill = (app, winner, loser) => {
   // loser.xp -= config.damagePerTouch * (winner.avatar + 1) + config.damagePerTouch * Math.max(winner.avatar - loser.avatar, 0)
   // winner.xp -= config.damagePerTouch * (loser.avatar + 1) + config.damagePerTouch * Math.max(loser.avatar - winner.avatar, 0)
 
+  const time = getTime()
+
   loser.overrideSpeed = 2.5
-  loser.overrideSpeedUntil = getTime() + 2000
+  loser.overrideSpeedUntil = time + 2000
 
   winner.overrideSpeed = 2.5
-  winner.overrideSpeedUntil = getTime() + 2000
+  winner.overrideSpeedUntil = time + 2000
 
   if (loser.avatar !== 0 || loser.xp > 0) {
+    loser.lastTouchPlayerId = winner.id
+    winner.lastTouchPlayerId = loser.id
+    loser.lastTouchTime = time
+    winner.lastTouchTime = time
     // Can't be killed yet
     return
   }
@@ -2143,7 +2150,12 @@ function fastGameloop(app) {
                   
                 if (!config.noBoot && !isInvincible && !isNew && !config.isGodParty) {
                   client.log.ranOutOfHealth += 1
-                  disconnectPlayer(app, client, 'starved')
+
+                  if (client.lastTouchTime > now - 1000) {
+                    registerKill(app, clientLookup[client.lastTouchPlayerId], client)
+                  } else {
+                    disconnectPlayer(app, client, 'starved')
+                  }
                 }
               } else {
                 client.xp = client.maxHp
