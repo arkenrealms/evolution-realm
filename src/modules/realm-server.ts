@@ -33,6 +33,7 @@ function onRealmConnection(app, socket) {
     // Use by GS to tell DB it's connected
     socket.on('AuthRequest', async function(req) {
       try {
+        log('AuthRequest', req)
         // if (req.data !== 'myverysexykey') {
         //   log('Invalid observer creds:', req)
         //   socket.disconnect()

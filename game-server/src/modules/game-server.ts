@@ -2333,6 +2333,8 @@ function initEventHandler(app) {
 
   app.io.on('connection', function(socket) {
     try {
+      log('Connection', socket.id)
+
       const ip = socket.handshake.headers['x-forwarded-for']?.split(',')[0] || socket.conn.remoteAddress?.split(":")[3]
       // socket.request.connection.remoteAddress ::ffff:127.0.0.1
       // socket.conn.remoteAddress ::ffff:127.0.0.1
