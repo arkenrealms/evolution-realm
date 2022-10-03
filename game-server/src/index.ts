@@ -15,7 +15,7 @@ if (isDebug) {
 
 function startServer(app) {
   log('startServer', app.isHttps)
-  
+
   if (app.isHttps) {
     // app.https.on('error', function (e) {
     //   app.state.sslPort++
@@ -93,7 +93,7 @@ async function init() {
 
     startServer(app)
   } catch(e) {
-    logError('Error 383892', e)
+    log('Error 383892', e)
   }
 }
 
