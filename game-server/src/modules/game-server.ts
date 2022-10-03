@@ -928,7 +928,7 @@ function randomRoundPreset() {
       ...sharedConfig,
       ...currentPreset
     }
-    log('randomRoundPreset', config.gameMode, gameMode, filteredPresets.length, currentPreset)
+    log('randomRoundPreset', config.gameMode, gameMode, filteredPresets, currentPreset)
 
     config = JSON.parse(JSON.stringify(roundConfig))
   }
