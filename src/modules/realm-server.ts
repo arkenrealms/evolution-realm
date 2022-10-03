@@ -44,7 +44,7 @@ function onRealmConnection(app, socket) {
             currentClient.isAdmin = true
             currentClient.isMod = true
   
-            await app.gameBridge.call('RS_ApiConnected', await getSignedRequest(app.web3, app.secrets, {}), {})
+            app.gameBridge.call('RS_ApiConnected', await getSignedRequest(app.web3, app.secrets, {}), {})
           } else if (app.realm.state.modList.includes(req.signature.address)) {
             currentClient.isMod = true
           }
@@ -61,6 +61,8 @@ function onRealmConnection(app, socket) {
           })
         }
       } catch(e) {
+        log('Error', e)
+
         emitDirect(socket, 'AuthResponse', {
           id: req.id,
           data: { status: 0 }
