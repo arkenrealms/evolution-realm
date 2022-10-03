@@ -1489,7 +1489,7 @@ async function resetLeaderboard(preset = null) {
     const roundTimer = (round.startedAt + config.roundLoopSeconds) - Math.round(getTime() / 1000)
     publishEvent('OnSetRoundInfo', roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'))
 
-    log(roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'), (config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':')).split(':').length)
+    log('roundInfo', roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'), (config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':')).split(':').length)
 
     publishEvent('OnClearLeaderboard')
 
@@ -3734,6 +3734,8 @@ function initEventHandler(app) {
       log('Error:', e)
     }
   })
+
+  log('Started event handler')
 }
 
 export async function initGameServer(app) {

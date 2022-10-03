@@ -87,7 +87,7 @@ async function init() {
     })
 
     await initMonitor(app)
-    await initGameServer(app)
+    initGameServer(app)
 
     startServer(app)
   } catch(e) {
