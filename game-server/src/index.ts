@@ -14,6 +14,8 @@ if (isDebug) {
 }
 
 function startServer(app) {
+  log('startServer', app.isHttps)
+  
   if (app.isHttps) {
     // app.https.on('error', function (e) {
     //   app.state.sslPort++
@@ -86,12 +88,12 @@ async function init() {
       }
     })
 
-    await initMonitor(app)
+    initMonitor(app)
     initGameServer(app)
 
     startServer(app)
   } catch(e) {
-    logError(e)
+    logError('Error 383892', e)
   }
 }
 
