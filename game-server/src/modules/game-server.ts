@@ -904,7 +904,7 @@ function weightedRandom(items) {
   // @ts-ignore
   let table = items.flatMap((item) => Array(item).fill(item.weight))
 
-  return table[Math.floor(Math.random() * table.length)]
+  return items[table[Math.floor(Math.random() * table.length)]]
 }
 // function weightedRandom(items, weights) {
 //   let i
