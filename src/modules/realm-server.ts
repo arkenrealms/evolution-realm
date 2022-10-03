@@ -57,7 +57,7 @@ function onRealmConnection(app, socket) {
         } else {
           emitDirect(socket, 'AuthResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 1 }
           })
         }
       } catch(e) {
@@ -65,7 +65,7 @@ function onRealmConnection(app, socket) {
 
         emitDirect(socket, 'AuthResponse', {
           id: req.id,
-          data: { status: 0 }
+          data: { status: 1 }
         })
       }
     })
