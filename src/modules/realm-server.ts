@@ -159,14 +159,14 @@ function onRealmConnection(app, socket) {
           }
         })
       } catch(e) {
+        logError('Error 39483', e)
+
         emitDirect(socket, 'InfoResponse', {
           id: req.id,
           data: {
             status: 0
           }
         })
-
-        logError(e)
       }
     })
 
