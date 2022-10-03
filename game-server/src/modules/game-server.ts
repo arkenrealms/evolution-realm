@@ -1381,7 +1381,7 @@ async function resetLeaderboard(preset = null) {
     })
 
     if (config.calcRoundRewards) {
-      await calcRoundRewards()
+      calcRoundRewards()
     }
 
     if (preset) {
