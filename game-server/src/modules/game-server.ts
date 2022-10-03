@@ -900,23 +900,29 @@ function disconnectPlayer(app, player, reason = 'Unknown', immediate = false) {
   }
 }
 
-function weightedRandom(items, weights) {
-  let i
+function weightedRandom(items) {
+  // @ts-ignore
+  let table = items.flatMap((item) => Array(item).fill(item.weight))
 
-  for (i = 0; i < weights.length; i++)
-      weights[i] += weights[i - 1] || 0
-  
-  let random = Math.random() * weights[weights.length - 1]
-  
-  let id = 0
-  for (i = 0; i < weights.length; i++) {
-      id = i
-      if (weights[i] > random)
-          break
-  }
-  
-  return items[id]
+  return table[Math.floor(Math.random() * table.length)]
 }
+// function weightedRandom(items, weights) {
+//   let i
+
+//   for (i = 0; i < weights.length; i++)
+//       weights[i] += weights[i - 1] || 0
+  
+//   let random = Math.random() * weights[weights.length - 1]
+  
+//   let id = 0
+//   for (i = 0; i < weights.length; i++) {
+//       id = i
+//       if (weights[i] > random)
+//           break
+//   }
+  
+//   return items[id]
+// }
 
 function randomRoundPreset() {
   const gameMode = config.gameMode
@@ -924,7 +930,7 @@ function randomRoundPreset() {
   while(config.gameMode === gameMode) {
     const filteredPresets = presets.filter(p => !p.isOmit)
 
-    currentPreset = weightedRandom(filteredPresets, filteredPresets.map(f => f.weight))
+    currentPreset = weightedRandom(filteredPresets)
   
     roundConfig = {
       ...baseConfig,
