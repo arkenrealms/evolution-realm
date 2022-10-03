@@ -1321,6 +1321,8 @@ let lastFastestGameloopTime = getTime()
 
 async function resetLeaderboard(preset = null) {
   try {
+    log('resetLeaderboard', preset)
+
     if (config.gameMode === 'Pandamonium') {
       roundLoopTimeout = setTimeout(resetLeaderboard, config.roundLoopSeconds * 1000)
       return
