@@ -26,40 +26,44 @@ function getSocket(app, endpoint) {
 }
 
 function startGameServer(app) {
-  // const binaryPath = {
-  //   linux: '../game-server/build/index.js',
-  //   darwin: '../game-server/build/index.js',
-  //   win32: ''
-  // }[process.platform]
+  try {
+    // const binaryPath = {
+    //   linux: '../game-server/build/index.js',
+    //   darwin: '../game-server/build/index.js',
+    //   win32: ''
+    // }[process.platform]
 
-  process.env.GS_PORT = app.gameBridge.state.spawnPort + ''
+    process.env.GS_PORT = app.gameBridge.state.spawnPort + ''
 
-  const env = {
-    ...process.env,
-    LOG_PREFIX: '[REGS]'
+    const env = {
+      ...process.env,
+      LOG_PREFIX: '[REGS]'
+    }
+
+    // Start the server
+    app.gameBridge.process = spawn('node',
+      ['-r', 'tsconfig-paths/register', 'build/index.js'], 
+      {cwd: path.resolve('./game-server'), env, stdio: ['ignore', 'pipe', 'pipe']}
+    )
+
+    app.gameBridge.process.stdout.pipe(process.stdout)
+    app.gameBridge.process.stderr.pipe(process.stderr)
+
+    app.gameBridge.process.on('exit', (code, signal) => {
+      log(`Child process exited with code ${code} and signal ${signal}. Lets exit too.`)
+
+      process.exit()
+      // setTimeout(() => {
+      //   startGameServer(app)
+      // }, 1000)
+    })
+
+    app.subProcesses.push(app.gameBridge.process)
+
+    process.env.GS_PORT = app.gameBridge.state.spawnPort+1 + ''
+  } catch (e) {
+    log('startGameServer error', e)
   }
-
-  // Start the server
-  app.gameBridge.process = spawn('node',
-    ['-r', 'tsconfig-paths/register', 'build/index.js'], 
-    {cwd: path.resolve('./game-server'), env, stdio: ['ignore', 'pipe', 'pipe']}
-  )
-
-  app.gameBridge.process.stdout.pipe(process.stdout)
-  app.gameBridge.process.stderr.pipe(process.stderr)
-
-  app.gameBridge.process.on('exit', (code, signal) => {
-    log(`Child process exited with code ${code} and signal ${signal}. Lets exit too.`)
-
-    process.exit()
-    // setTimeout(() => {
-    //   startGameServer(app)
-    // }, 1000)
-  })
-
-  app.subProcesses.push(app.gameBridge.process)
-
-  process.env.GS_PORT = app.gameBridge.state.spawnPort+1 + ''
 }
 
 async function callGameServer(app, name, signature, data = {}) {
