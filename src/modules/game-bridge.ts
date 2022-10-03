@@ -135,7 +135,7 @@ function connectGameServer(app) {
   })
 
   socket.on('GS_Ping', function(msg) {
-    log(msg)
+    log('GS_Ping', msg)
   })
 
   socket.on('GS_InitRequest', async function(req) {
@@ -238,7 +238,7 @@ function connectGameServer(app) {
             config.totalLegitPlayers += 1
           }
         } catch (e) {
-          log(e)
+          log('Error 9343', e)
         }
       }
 

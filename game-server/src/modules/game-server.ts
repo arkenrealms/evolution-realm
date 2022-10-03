@@ -1381,7 +1381,7 @@ async function resetLeaderboard(preset = null) {
     })
 
     if (config.calcRoundRewards) {
-      calcRoundRewards()
+      await calcRoundRewards()
     }
 
     if (preset) {
@@ -2028,7 +2028,7 @@ function detectCollisions(app) {
 
     lastFastestGameloopTime = now
   } catch (e) {
-    log(e)
+    log('Error 342', e)
   }
 }
 
