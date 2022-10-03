@@ -3739,22 +3739,26 @@ function initEventHandler(app) {
 }
 
 export async function initGameServer(app) {
-  initEventHandler(app)
+  try {
+    initEventHandler(app)
 
-  if (Object.keys(clientLookup).length == 0) {
-    randomRoundPreset()
-    clearSprites()
-    spawnSprites(config.spritesStartCount)
+    if (Object.keys(clientLookup).length == 0) {
+      randomRoundPreset()
+      clearSprites()
+      spawnSprites(config.spritesStartCount)
+    }
+
+    // setTimeout(fastestGameloop, config.fastestLoopSeconds * 1000)
+
+    setTimeout(() => monitorObservers(app), 30 * 1000)
+    setTimeout(() => fastGameloop(app), config.fastLoopSeconds * 1000)
+    setTimeout(() => slowGameloop(app), config.slowLoopSeconds * 1000)
+    setTimeout(() => sendUpdates(app), config.sendUpdateLoopSeconds * 1000)
+    setTimeout(() => spawnRewards(app), config.rewardSpawnLoopSeconds * 1000)
+    setTimeout(() => checkConnectionLoop(app), config.checkConnectionLoopSeconds * 1000)
+    roundLoopTimeout = setTimeout(resetLeaderboard, config.roundLoopSeconds * 1000)
+    // setTimeout(flushEventQueue, config.flushEventQueueSeconds * 1000)
+  } catch (e) {
+    log('initGameServer', e)
   }
-
-  // setTimeout(fastestGameloop, config.fastestLoopSeconds * 1000)
-
-  setTimeout(() => monitorObservers(app), 30 * 1000)
-  setTimeout(() => fastGameloop(app), config.fastLoopSeconds * 1000)
-  setTimeout(() => slowGameloop(app), config.slowLoopSeconds * 1000)
-  setTimeout(() => sendUpdates(app), config.sendUpdateLoopSeconds * 1000)
-  setTimeout(() => spawnRewards(app), config.rewardSpawnLoopSeconds * 1000)
-  setTimeout(() => checkConnectionLoop(app), config.checkConnectionLoopSeconds * 1000)
-  roundLoopTimeout = setTimeout(resetLeaderboard, config.roundLoopSeconds * 1000)
-  // setTimeout(flushEventQueue, config.flushEventQueueSeconds * 1000)
 }
