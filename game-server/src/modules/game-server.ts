@@ -908,11 +908,14 @@ function weightedRandom(items, weights) {
   
   let random = Math.random() * weights[weights.length - 1]
   
-  for (i = 0; i < weights.length; i++)
+  let id = 0
+  for (i = 0; i < weights.length; i++) {
+      id = i
       if (weights[i] > random)
           break
+  }
   
-  return items[i]
+  return items[id]
 }
 
 function randomRoundPreset() {
