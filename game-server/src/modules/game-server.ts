@@ -919,8 +919,8 @@ function randomRoundPreset() {
   const gameMode = config.gameMode
 
   while(config.gameMode === gameMode) {
-    log('randomRoundPreset', config.gameMode, gameMode)
     const filteredPresets = presets.filter(p => !p.isOmit)
+    log('randomRoundPreset', config.gameMode, gameMode, filteredPresets.length)
 
     currentPreset = weightedRandom(filteredPresets, filteredPresets.map(f => f.weight))
   
