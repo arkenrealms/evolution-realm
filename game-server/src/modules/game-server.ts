@@ -2882,7 +2882,9 @@ function initEventHandler(app) {
             emitDirect(socket, 'OnCloseLevel2')
           }
 
-          broadcastMechanics(currentPlayer)
+          // if (currentPlayer.character.isMetaSet) {
+          //   broadcastMechanics(currentPlayer)
+          // }
 
           // spawn all connected clients for currentUser client 
           for (const client of clients) {
