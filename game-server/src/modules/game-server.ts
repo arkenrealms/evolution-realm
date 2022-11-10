@@ -194,7 +194,7 @@ const presets = [
     pointsPerPowerup: 0,
     pointsPerKill: 1,
     pointsPerReward: 100,
-    pointsPerOrb: 1,
+    pointsPerOrb: 0,
     baseSpeed: 4,
     cameraSize: 2.5,
     hideMap: true,
@@ -505,7 +505,9 @@ const presets = [
     isBattleRoyale: true,
     avatarSpeedMultiplier0: 1,
     avatarSpeedMultiplier1: 1,
-    avatarSpeedMultiplier2: 1,
+    avatarSpeedMultiplier2: 1.2,
+    avatarSpeedDistance2: 3,
+    damagerPerTouch: 40,
     guide: [
       'Game Mode - Pandamonium',
       'Beware the Panda'
