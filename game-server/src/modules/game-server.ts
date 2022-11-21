@@ -505,9 +505,9 @@ const presets = [
     isBattleRoyale: true,
     avatarSpeedMultiplier0: 1,
     avatarSpeedMultiplier1: 1,
-    avatarSpeedMultiplier2: 1.2,
-    avatarSpeedDistance2: 3,
-    damagerPerTouch: 40,
+    avatarSpeedMultiplier2: 1.4,
+    avatarTouchDistance2: 1,
+    damagerPerTouch: 500,
     guide: [
       'Game Mode - Pandamonium',
       'Beware the Panda'
