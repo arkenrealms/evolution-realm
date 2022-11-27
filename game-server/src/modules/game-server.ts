@@ -779,6 +779,7 @@ function moveVectorTowards(current, target, maxDistanceDelta) {
 }
 
 function isMechanicEnabled(player, mechanicId) {
+  if (config.isBattleRoyale) return false
   if (player.isMod) return true
   if (config.disabledMechanics.includes(mechanicId)) return false
 
