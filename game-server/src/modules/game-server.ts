@@ -2984,6 +2984,37 @@ function initEventHandler(app) {
         }
       })
 
+      socket.on('RS_RestartRequest', async function(req) {
+        try {
+          log('RS_RestartRequest', req)
+
+          if (await isValidAdminRequest(req)) {
+            socket.emit('RS_RestartResponse', {
+              id: req.id,
+              data: { status: 1 }
+            })
+
+            publishEvent('OnBroadcast', `Server is rebooting in 10 seconds`, 3)
+            
+            setTimeout(function() {
+              process.exit(1)
+            }, 10 * 1000)
+          } else {
+            socket.emit('RS_RestartResponse', {
+              id: req.id,
+              data: { status: 0 }
+            })
+          }
+        } catch (e) {
+          log('Error:', e)
+          
+          socket.emit('RS_RestartResponse', {
+            id: req.id,
+            data: { status: 0 }
+          })
+        }
+      })
+
       socket.on('RS_MaintenanceRequest', async function(req) {
         try {
           log('RS_MaintenanceRequest', req)
