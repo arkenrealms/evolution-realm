@@ -14,9 +14,9 @@ export function initMonitor(app) {
         const free = os.freemem() / 1024 / 1024
         const total = os.totalmem() / 1024 / 1024
         
-        logError('Free mem', free)
-        logError('Available mem', available)
-        logError('Total mem', total)
+        logError('GS Free mem', free)
+        logError('GS Available mem', available)
+        logError('GS Total mem', total)
 
         process.exit()
       }
@@ -33,7 +33,7 @@ export function initMonitor(app) {
     // log('Available mem', available)
     // log('Total mem', total)
     if (available < 500) { // if ((os.freemem() / os.totalmem()) < 0.2) {
-      log('Memory flagged', available)
+      log('GS Memory flagged', available)
       logs.push(true)
     }
   }, 10 * 1000)
