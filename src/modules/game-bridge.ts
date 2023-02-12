@@ -52,7 +52,7 @@ function startGameServer(app) {
     app.gameBridge.process.on('exit', (code, signal) => {
       log(`Child process exited with code ${code} and signal ${signal}. Lets exit too.`)
 
-      process.exit()
+      process.exit(1)
       // setTimeout(() => {
       //   startGameServer(app)
       // }, 1000)
