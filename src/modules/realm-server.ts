@@ -274,8 +274,16 @@ function onRealmConnection(app, socket) {
           return
         }
 
+        let overview = {}
+      
+        if (!overview) {
+          try {
+            overview = ((await (await fetch(`https://cache.rune.game/users/${req.data.target}/overview.json`)).json()) as any)
+          } catch(e) {}
+        }
+
         app.gameBridge.userCache[req.data.target] = {
-          ...((await (await fetch(`https://cache.rune.game/users/${req.data.target}/overview.json`)).json()) as any),
+          ...overview,
           isBanned: true,
           bannedReason: req.data.bannedReason,
           bannedUntil: req.data.bannedUntil

@@ -340,9 +340,22 @@ function connectGameServer(app) {
     try {
       log('GS_ConfirmUserRequest', req)
 
-      const overview = app.gameBridge.userCache[req.data.address] || (await (await fetch(`https://cache.rune.game/users/${req.data.address}/overview.json`)).json()) as any
+      let overview = app.gameBridge.userCache[req.data.address]
+      
+      if (!overview) {
+        try {
+          overview = (await (await fetch(`https://cache.rune.game/users/${req.data.address}/overview.json`)).json()) as any
 
-      app.gameBridge.userCache[req.data.address] = overview
+          app.gameBridge.userCache[req.data.address] = overview
+        } catch(e) {
+          // No user exists, but they can play as guest
+          emitDirect(socket, 'GS_ConfirmUserResponse', {
+            id: req.id,
+            data: { status: 1 }
+          })
+          return
+        }
+      }
 
       const now = (new Date()).getTime() / 1000
 
