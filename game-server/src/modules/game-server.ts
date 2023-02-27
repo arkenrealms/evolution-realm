@@ -8,7 +8,7 @@ const shortId = require('shortid')
 
 const mapData = jetpack.read(path.resolve('./public/data/map.json'), 'json')
 
-const guestNames = ['Robin Banks', 'Rick Axely', 'Short McAngrystout', 'Whiffletree', 'Thistlebutt', 'The Potato']
+const guestNames = ['Robin Banks', 'Rick Axely', 'Shorty McAngrystout', 'Whiffletree', 'Thistlebutt', 'The Potato']
 
 const serverVersion = "1.6.3"
 let observers = []
