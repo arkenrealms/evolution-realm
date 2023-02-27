@@ -840,7 +840,7 @@ async function getUsername(address: string): Promise<string> {
   
     return username
   } catch (error) {
-    return guestNames[random(0, guestNames.length-1)] + ' ' + Math.floor(Math.random() * 99) // 'Guest' + Math.floor(Math.random() * 999)
+    return // 'Guest' + Math.floor(Math.random() * 999)
   }
 }
 
@@ -2395,6 +2395,7 @@ function initEventHandler(app) {
         isStuck: false,
         isGod: false,
         isRealm: false,
+        isGuest: false,
         isInvincible: config.isGodParty ? true : false,
         isPhased: false,
         overrideSpeed: null,
@@ -2751,9 +2752,11 @@ function initEventHandler(app) {
             name = await getUsername(address)
 
             if (!name) {
-              currentPlayer.log.usernameProblem += 1
-              disconnectPlayer(app, currentPlayer, 'no name')
-              return
+              currentPlayer.isGuest = true
+              name = guestNames[random(0, guestNames.length-1)] + ' ' + Math.floor(Math.random() * 99)
+              // currentPlayer.log.usernameProblem += 1
+              // disconnectPlayer(app, currentPlayer, 'no name')
+              // return
             }
 
             addressToUsername[address] = name

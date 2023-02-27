@@ -235,7 +235,7 @@ function connectGameServer(app) {
       config.totalLegitPlayers = 0
 
       for (const client of req.data.clients) {
-        if (client.name.indexOf('Guest') !== -1 || client.name.indexOf('Unknown') !== -1) continue
+        if (client.isGuest) continue
 
         try {
           if ((client.powerups > 100 && client.kills > 1) || (client.evolves > 20 && client.powerups > 200) || (client.rewards > 3 && client.powerups > 200) || (client.evolves > 100) || (client.points > 1000)) {
