@@ -840,7 +840,7 @@ async function getUsername(address: string): Promise<string> {
   
     return username
   } catch (error) {
-    return 'Guest' + Math.floor(Math.random() * 999)
+    return guestNames[random(0, guestNames.length-1)] + ' ' + Math.floor(Math.random() * 99) // 'Guest' + Math.floor(Math.random() * 999)
   }
 }
 
@@ -2751,10 +2751,9 @@ function initEventHandler(app) {
             name = await getUsername(address)
 
             if (!name) {
-              name = guestNames[random(0, guestNames.length-1)]
-              // currentPlayer.log.usernameProblem += 1
-              // disconnectPlayer(app, currentPlayer, 'no name')
-              // return
+              currentPlayer.log.usernameProblem += 1
+              disconnectPlayer(app, currentPlayer, 'no name')
+              return
             }
 
             addressToUsername[address] = name
