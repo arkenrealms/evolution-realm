@@ -1,13 +1,14 @@
 import jetpack from 'fs-jetpack'
 import axios from 'axios'
 import semver from 'semver/preload.js'
-import { log, logError, getTime, shuffleArray, randomPosition, sha256, decodePayload, isNumeric } from '@rune-backend-sdk/util'
-import { ItemAttributes } from '@rune-backend-sdk/data/items'
+import { log, getTime, shuffleArray, randomPosition, sha256, decodePayload, isNumeric } from '@rune-backend-sdk/util'
 
 const path = require('path')
 const shortId = require('shortid')
 
 const mapData = jetpack.read(path.resolve('./public/data/map.json'), 'json')
+
+const guestNames = ['Robin Banks', 'Rick Axely', 'Short McAngrystout', 'Whiffletree', 'Thistlebutt', 'The Potato']
 
 const serverVersion = "1.6.3"
 let observers = []
@@ -2750,9 +2751,10 @@ function initEventHandler(app) {
             name = await getUsername(address)
 
             if (!name) {
-              currentPlayer.log.usernameProblem += 1
-              disconnectPlayer(app, currentPlayer, 'no name')
-              return
+              name = guestNames[random(0, guestNames.length-1)]
+              // currentPlayer.log.usernameProblem += 1
+              // disconnectPlayer(app, currentPlayer, 'no name')
+              // return
             }
 
             addressToUsername[address] = name
