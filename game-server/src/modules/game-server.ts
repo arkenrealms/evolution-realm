@@ -8,7 +8,7 @@ const shortId = require('shortid')
 
 const mapData = jetpack.read(path.resolve('./public/data/map.json'), 'json')
 
-const guestNames = ['Robin Banks', 'Rick Axely', 'Shorty McAngrystout', 'Whiffletree', 'Thistlebutt', 'The Potato']
+const guestNames = ['Robin Banks', 'Rick Axely', 'Shorty McAngrystout', 'Whiffletree', 'Thistlebutt', 'The Potato', 'Gumbuns Moonbrain', 'Drakus', 'Nyx', 'Aedigarr', 'Vaergahl', 'Anbraxas', 'Rezoth', 'Felscathor', 'Kathax', 'Rokk', 'Terra', 'Valaebal', 'Nox', 'Ulfryz', "X'ek", 'Bastis', 'Draugh', 'Raek', 'Zyphon', 'Smaug']
 
 const serverVersion = "1.6.3"
 let observers = []
@@ -535,6 +535,8 @@ const presets = [
   },
 ]
 
+const loggableEvents = ['OnMaintenance']
+
 let currentPreset = presets[(Math.floor(Math.random() * presets.length))]
 let roundConfig = {
   ...baseConfig,
@@ -624,7 +626,7 @@ function emitDirect(socket, ...args) {
     round.events.push({ type: 'emitDirect', player: socket.id, name, args })
   }
 
-  socket.emit('Events', getPayload(compiled))
+  publishEventDirect(socket, 'Events', getPayload(compiled))
 }
 
 // function emitAllFast(socket, ...args) {
@@ -635,13 +637,21 @@ function emitDirect(socket, ...args) {
 //     return
 //   }
 
-//   socket.emit(...args)
+//   publishEventDirect(...args)
 //   socket.broadcast.emit(...args)
 // }
 
 function publishEvent(...args) {
   // log(args)
   eventQueue.push(args)
+}
+
+function publishEventDirect(socket, eventName, eventData) {
+  if (loggableEvents.includes(eventName)) {
+    console.log(`Publish EventDirect: ${eventName}`, eventData)
+  }
+
+  socket.emit(eventName, eventData)
 }
 
 async function rsCall(name, data = {}) {
@@ -2303,7 +2313,7 @@ function flushEventQueue(app) {
     if (recordDetailed) {
       eventFlushedAt = now
     }
-
+    
     const compiled = []
     for (const e of eventQueue) {
       const name = e[0]
@@ -2317,6 +2327,10 @@ function flushEventQueue(app) {
         }
       } else {
         round.events.push({ type: 'emitAll', name, args })
+      }
+
+      if (loggableEvents.includes(name)) {
+        console.log(`Publish Event: ${name}`, args)
       }
     }
 
@@ -2527,7 +2541,7 @@ function initEventHandler(app) {
           realmServer.socket = socket
           currentPlayer.isRealm = true
 
-          socket.emit('RS_ConnectedResponse', {
+          publishEventDirect(socket, 'RS_ConnectedResponse', {
             id: req.id,
             data: { status: 1 }
           })
@@ -2549,7 +2563,7 @@ function initEventHandler(app) {
 
           realmServer.socket = undefined
 
-          socket.emit('RS_ConnectedResponse', {
+          publishEventDirect(socket, 'RS_ConnectedResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -2562,7 +2576,7 @@ function initEventHandler(app) {
         log('RS_ApiConnected', req)
 
         if (!await isValidAdminRequest(req)) {
-          socket.emit('RS_ApiConnectedResponse', {
+          publishEventDirect(socket, 'RS_ApiConnectedResponse', {
             id: req.id,
             data: { status: 0 }
           }) 
@@ -2571,7 +2585,7 @@ function initEventHandler(app) {
       
         publishEvent('OnBroadcast', `API connected`, 0)
 
-        socket.emit('RS_ApiConnectedResponse', {
+        publishEventDirect(socket, 'RS_ApiConnectedResponse', {
           id: req.id,
           data: { status: 1 }
         })
@@ -2581,7 +2595,7 @@ function initEventHandler(app) {
         log('RS_ApiDisconnected', req)
 
         if (!await isValidAdminRequest(req)) {
-          socket.emit('RS_ApiDisconnectedResponse', {
+          publishEventDirect(socket, 'RS_ApiDisconnectedResponse', {
             id: req.id,
             data: { status: 0 }
           }) 
@@ -2590,7 +2604,7 @@ function initEventHandler(app) {
 
         publishEvent('OnBroadcast', `API disconnected`, 0)
 
-        socket.emit('RS_ApiDisconnectedResponse', {
+        publishEventDirect(socket, 'RS_ApiDisconnectedResponse', {
           id: req.id,
           data: { status: 1 }
         })
@@ -2616,7 +2630,7 @@ function initEventHandler(app) {
                 broadcastMechanics(client)
               }
 
-              socket.emit('RS_SetPlayerCharacterResponse', {
+              publishEventDirect(socket, 'RS_SetPlayerCharacterResponse', {
                 id: req.id,
                 data: { status: 1 }
               })
@@ -2628,7 +2642,7 @@ function initEventHandler(app) {
           log('Error:', e)
         }
 
-        socket.emit('RS_SetPlayerCharacterResponse', {
+        publishEventDirect(socket, 'RS_SetPlayerCharacterResponse', {
           id: req.id,
           data: { status: 0 }
         })
@@ -2661,12 +2675,12 @@ function initEventHandler(app) {
               publishEvent('OnSetRoundInfo', roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'))
             }
 
-            socket.emit('RS_SetConfigResponse', {
+            publishEventDirect(socket, 'RS_SetConfigResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_SetConfigResponse', {
+            publishEventDirect(socket, 'RS_SetConfigResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -2674,7 +2688,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
 
-          socket.emit('RS_SetConfigResponse', {
+          publishEventDirect(socket, 'RS_SetConfigResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -2684,7 +2698,7 @@ function initEventHandler(app) {
       socket.on('RS_GetConfigRequest', function(req) {
         log('RS_GetConfigRequest', req)
 
-        socket.emit('RS_GetConfigResponse', {
+        publishEventDirect(socket, 'RS_GetConfigResponse', {
           id: req.id,
           data: {
             status: 1,
@@ -2993,7 +3007,7 @@ function initEventHandler(app) {
           log('RS_RestartRequest', req)
 
           if (await isValidAdminRequest(req)) {
-            socket.emit('RS_RestartResponse', {
+            publishEventDirect(socket, 'RS_RestartResponse', {
               id: req.id,
               data: { status: 1 }
             })
@@ -3004,7 +3018,7 @@ function initEventHandler(app) {
               process.exit(1)
             }, 10 * 1000)
           } else {
-            socket.emit('RS_RestartResponse', {
+            publishEventDirect(socket, 'RS_RestartResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -3012,7 +3026,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
           
-          socket.emit('RS_RestartResponse', {
+          publishEventDirect(socket, 'RS_RestartResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3029,12 +3043,12 @@ function initEventHandler(app) {
         
             publishEvent('OnMaintenance', config.isMaintenance)
 
-            socket.emit('RS_MaintenanceResponse', {
+            publishEventDirect(socket, 'RS_MaintenanceResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_MaintenanceResponse', {
+            publishEventDirect(socket, 'RS_MaintenanceResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -3042,7 +3056,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
           
-          socket.emit('RS_MaintenanceResponse', {
+          publishEventDirect(socket, 'RS_MaintenanceResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3059,12 +3073,12 @@ function initEventHandler(app) {
         
             publishEvent('OnUnmaintenance', config.isMaintenance)
 
-            socket.emit('RS_UnmaintenanceResponse', {
+            publishEventDirect(socket, 'RS_UnmaintenanceResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_UnmaintenanceResponse', {
+            publishEventDirect(socket, 'RS_UnmaintenanceResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -3072,7 +3086,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
           
-          socket.emit('RS_UnmaintenanceResponse', {
+          publishEventDirect(socket, 'RS_UnmaintenanceResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3106,12 +3120,12 @@ function initEventHandler(app) {
               }, 1000)
             }, 1000)
 
-            socket.emit('RS_StartBattleRoyaleResponse', {
+            publishEventDirect(socket, 'RS_StartBattleRoyaleResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_StartBattleRoyaleResponse', {
+            publishEventDirect(socket, 'RS_StartBattleRoyaleResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -3119,7 +3133,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
           
-          socket.emit('RS_StartBattleRoyaleResponse', {
+          publishEventDirect(socket, 'RS_StartBattleRoyaleResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3136,12 +3150,12 @@ function initEventHandler(app) {
 
             publishEvent('OnBroadcast', `Battle Royale Stopped`, 0)
         
-            socket.emit('RS_StopBattleRoyaleResponse', {
+            publishEventDirect(socket, 'RS_StopBattleRoyaleResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_StopBattleRoyaleResponse', {
+            publishEventDirect(socket, 'RS_StopBattleRoyaleResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -3149,7 +3163,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
           
-          socket.emit('RS_StopBattleRoyaleResponse', {
+          publishEventDirect(socket, 'RS_StopBattleRoyaleResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3169,12 +3183,12 @@ function initEventHandler(app) {
             publishEvent('OnRoundPaused')
             publishEvent('OnBroadcast', `Round Paused`, 0)
         
-            socket.emit('RS_PauseRoundResponse', {
+            publishEventDirect(socket, 'RS_PauseRoundResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_PauseRoundResponse', {
+            publishEventDirect(socket, 'RS_PauseRoundResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -3182,7 +3196,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
           
-          socket.emit('RS_PauseRoundResponse', {
+          publishEventDirect(socket, 'RS_PauseRoundResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3203,12 +3217,12 @@ function initEventHandler(app) {
 
             resetLeaderboard(presets.find(p => p.gameMode === req.data.gameMode))
 
-            socket.emit('RS_StartRoundResponse', {
+            publishEventDirect(socket, 'RS_StartRoundResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_StartRoundResponse', {
+            publishEventDirect(socket, 'RS_StartRoundResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -3216,7 +3230,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
 
-          socket.emit('RS_StartRoundResponse', {
+          publishEventDirect(socket, 'RS_StartRoundResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3231,12 +3245,12 @@ function initEventHandler(app) {
             baseConfig.level2forced = true
             config.level2forced = true
             
-            socket.emit('RS_EnableForceLevel2Response', {
+            publishEventDirect(socket, 'RS_EnableForceLevel2Response', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_EnableForceLevel2Response', {
+            publishEventDirect(socket, 'RS_EnableForceLevel2Response', {
               id: req.id,
               data: { status: 0 }
             })
@@ -3244,7 +3258,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
 
-          socket.emit('RS_EnableForceLevel2Response', {
+          publishEventDirect(socket, 'RS_EnableForceLevel2Response', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3259,12 +3273,12 @@ function initEventHandler(app) {
             baseConfig.level2forced = false
             config.level2forced = false
             
-            socket.emit('RS_DisableForceLevel2Response', {
+            publishEventDirect(socket, 'RS_DisableForceLevel2Response', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_DisableForceLevel2Response', {
+            publishEventDirect(socket, 'RS_DisableForceLevel2Response', {
               id: req.id,
               data: { status: 0 }
             })
@@ -3272,7 +3286,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
 
-          socket.emit('RS_DisableForceLevel2Response', {
+          publishEventDirect(socket, 'RS_DisableForceLevel2Response', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3289,12 +3303,12 @@ function initEventHandler(app) {
 
             publishEvent('OnBroadcast', `God Party Started`, 0)
             
-            socket.emit('RS_StartGodPartyResponse', {
+            publishEventDirect(socket, 'RS_StartGodPartyResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_StartGodPartyResponse', {
+            publishEventDirect(socket, 'RS_StartGodPartyResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -3302,7 +3316,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
           
-          socket.emit('RS_StartGodPartyResponse', {
+          publishEventDirect(socket, 'RS_StartGodPartyResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3325,12 +3339,12 @@ function initEventHandler(app) {
 
             publishEvent('OnBroadcast', `God Party Stopped`, 2)
             
-            socket.emit('RS_StopGodPartyResponse', {
+            publishEventDirect(socket, 'RS_StopGodPartyResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_StopGodPartyResponse', {
+            publishEventDirect(socket, 'RS_StopGodPartyResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -3338,7 +3352,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
           
-          socket.emit('RS_StopGodPartyResponse', {
+          publishEventDirect(socket, 'RS_StopGodPartyResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3355,12 +3369,12 @@ function initEventHandler(app) {
 
             publishEvent('OnBroadcast', `Rune Royale Started`, 0)
             
-            socket.emit('RS_StartRuneRoyaleResponse', {
+            publishEventDirect(socket, 'RS_StartRuneRoyaleResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_StartRuneRoyaleResponse', {
+            publishEventDirect(socket, 'RS_StartRuneRoyaleResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -3368,7 +3382,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
           
-          socket.emit('RS_StartRuneRoyaleResponse', {
+          publishEventDirect(socket, 'RS_StartRuneRoyaleResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3382,12 +3396,12 @@ function initEventHandler(app) {
           if (await isValidAdminRequest(req)) {
             publishEvent('OnBroadcast', `Rune Royale Paused`, 2)
             
-            socket.emit('RS_PauseRuneRoyaleResponse', {
+            publishEventDirect(socket, 'RS_PauseRuneRoyaleResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_PauseRuneRoyaleResponse', {
+            publishEventDirect(socket, 'RS_PauseRuneRoyaleResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -3395,7 +3409,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
           
-          socket.emit('RS_PauseRuneRoyaleResponse', {
+          publishEventDirect(socket, 'RS_PauseRuneRoyaleResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3409,12 +3423,12 @@ function initEventHandler(app) {
           if (await isValidAdminRequest(req)) {
             publishEvent('OnBroadcast', `Rune Royale Unpaused`, 2)
             
-            socket.emit('RS_UnpauseRuneRoyaleResponse', {
+            publishEventDirect(socket, 'RS_UnpauseRuneRoyaleResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_UnpauseRuneRoyaleResponse', {
+            publishEventDirect(socket, 'RS_UnpauseRuneRoyaleResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -3422,7 +3436,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
           
-          socket.emit('RS_UnpauseRuneRoyaleResponse', {
+          publishEventDirect(socket, 'RS_UnpauseRuneRoyaleResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3439,12 +3453,12 @@ function initEventHandler(app) {
 
             publishEvent('OnBroadcast', `Rune Royale Stopped`, 2)
             
-            socket.emit('RS_StopRuneRoyaleResponse', {
+            publishEventDirect(socket, 'RS_StopRuneRoyaleResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_StopRuneRoyaleResponse', {
+            publishEventDirect(socket, 'RS_StopRuneRoyaleResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -3452,7 +3466,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
           
-          socket.emit('RS_StopRuneRoyaleResponse', {
+          publishEventDirect(socket, 'RS_StopRuneRoyaleResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3487,12 +3501,12 @@ function initEventHandler(app) {
 
             syncSprites()
             
-            socket.emit('RS_MakeBattleHarderResponse', {
+            publishEventDirect(socket, 'RS_MakeBattleHarderResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_MakeBattleHarderResponse', {
+            publishEventDirect(socket, 'RS_MakeBattleHarderResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -3500,7 +3514,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
           
-          socket.emit('RS_MakeBattleHarderResponse', {
+          publishEventDirect(socket, 'RS_MakeBattleHarderResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3535,18 +3549,18 @@ function initEventHandler(app) {
 
             syncSprites()
         
-            socket.emit('RS_MakeBattleEasierResponse', {
+            publishEventDirect(socket, 'RS_MakeBattleEasierResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_MakeBattleEasierResponse', {
+            publishEventDirect(socket, 'RS_MakeBattleEasierResponse', {
               id: req.id,
               data: { status: 0 }
             })
           }
         } catch (e) {
-          socket.emit('RS_MakeBattleEasierResponse', {
+          publishEventDirect(socket, 'RS_MakeBattleEasierResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3576,18 +3590,18 @@ function initEventHandler(app) {
             publishEvent('OnSetPositionMonitor', config.checkPositionDistance + ':' + config.checkInterval + ':' + config.resetInterval)
             publishEvent('OnBroadcast', `Difficulty Reset!`, 0)
         
-            socket.emit('RS_ResetBattleDifficultyResponse', {
+            publishEventDirect(socket, 'RS_ResetBattleDifficultyResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_ResetBattleDifficultyResponse', {
+            publishEventDirect(socket, 'RS_ResetBattleDifficultyResponse', {
               id: req.id,
               data: { status: 0 }
             })
           }
         } catch (e) {
-          socket.emit('RS_ResetBattleDifficultyResponse', {
+          publishEventDirect(socket, 'RS_ResetBattleDifficultyResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3610,12 +3624,12 @@ function initEventHandler(app) {
 
       //       publishEvent('OnBroadcast', `${req.data.key} = ${val}`, 1)
             
-      //       socket.emit('RS_SetConfigResponse', {
+      //       publishEventDirect(socket, 'RS_SetConfigResponse', {
       //         id: req.id,
       //         data: { status: 1 }
       //       })
       //     } else {
-      //       socket.emit('RS_SetConfigResponse', {
+      //       publishEventDirect(socket, 'RS_SetConfigResponse', {
       //         id: req.id,
       //         data: { status: 0 }
       //       })
@@ -3623,7 +3637,7 @@ function initEventHandler(app) {
       //   } catch (e) {
       //     log('Error:', e)
           
-      //     socket.emit('RS_SetConfigResponse', {
+      //     publishEventDirect(socket, 'RS_SetConfigResponse', {
       //       id: req.id,
       //       data: { status: 0 }
       //     })
@@ -3639,18 +3653,18 @@ function initEventHandler(app) {
 
             emitDirect(socket, 'OnBroadcast', req.data.message.replace(/:/gi, ''), 0)
             
-            socket.emit('RS_MessageUserResponse', {
+            publishEventDirect(socket, 'RS_MessageUserResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_MessageUserResponse', {
+            publishEventDirect(socket, 'RS_MessageUserResponse', {
               id: req.id,
               data: { status: 0 }
             })
           }
         } catch (e) {
-          socket.emit('RS_MessageUserResponse', {
+          publishEventDirect(socket, 'RS_MessageUserResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3673,18 +3687,18 @@ function initEventHandler(app) {
                 throw new Error('User doesnt have that option')
             }
 
-            socket.emit('RS_ChangeUserResponse', {
+            publishEventDirect(socket, 'RS_ChangeUserResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_ChangeUserResponse', {
+            publishEventDirect(socket, 'RS_ChangeUserResponse', {
               id: req.id,
               data: { status: 0 }
             })
           }
         } catch (e) {
-          socket.emit('RS_ChangeUserResponse', {
+          publishEventDirect(socket, 'RS_ChangeUserResponse', {
             id: req.id,
             data: { status: 0, message: e.toString() }
           })
@@ -3701,12 +3715,12 @@ function initEventHandler(app) {
           if (await isValidAdminRequest(req)) {
             publishEvent('OnBroadcast', req.data.message.replace(/:/gi, ''), 0)
             
-            socket.emit('RS_BroadcastResponse', {
+            publishEventDirect(socket, 'RS_BroadcastResponse', {
               id: req.id,
               data: { status: 1 }
             })
           } else {
-            socket.emit('RS_BroadcastResponse', {
+            publishEventDirect(socket, 'RS_BroadcastResponse', {
               id: req.id,
               data: { status: 0 }
             })
@@ -3714,7 +3728,7 @@ function initEventHandler(app) {
         } catch (e) {
           log('Error:', e)
           
-          socket.emit('RS_BroadcastResponse', {
+          publishEventDirect(socket, 'RS_BroadcastResponse', {
             id: req.id,
             data: { status: 0 }
           })
@@ -3728,7 +3742,7 @@ function initEventHandler(app) {
       })
 
       socket.on('RS_InfoRequest', function(req) {
-        socket.emit('RS_InfoResponse', {
+        publishEventDirect(socket, 'RS_InfoResponse', {
           id: req.id,
           data: {
             status: 1,
