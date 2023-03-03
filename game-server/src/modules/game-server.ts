@@ -1,7 +1,7 @@
 import jetpack from 'fs-jetpack'
 import axios from 'axios'
 import semver from 'semver/preload.js'
-import { log, getTime, shuffleArray, randomPosition, sha256, decodePayload, isNumeric } from '@rune-backend-sdk/util'
+import { log as logger, getTime, shuffleArray, randomPosition, sha256, decodePayload, isNumeric } from '@rune-backend-sdk/util'
 
 const path = require('path')
 const shortId = require('shortid')
@@ -535,7 +535,14 @@ const presets = [
   },
 ]
 
-const loggableEvents = ['OnMaintenance']
+const loggableEvents = ['OnMaintenance', 'GS_SaveRoundRequest', 'SaveRoundRequest', ]
+
+
+function log(...args) {
+  if (loggableEvents.includes(args[0])) {
+    logger(...args)
+  }
+}
 
 let currentPreset = presets[(Math.floor(Math.random() * presets.length))]
 let roundConfig = {
@@ -637,7 +644,7 @@ function emitDirect(socket, ...args) {
 //     return
 //   }
 
-//   publishEventDirect(...args)
+//   publishEventDirect(socket, ...args)
 //   socket.broadcast.emit(...args)
 // }
 
@@ -672,7 +679,9 @@ async function rsCall(name, data = {}) {
       return
     }
 
-    log('Emit Realm', name, { id, data })
+    if (loggableEvents.includes(name)) {
+      log('Emit Realm', name, { id, data })
+    }
 
     realmServer.socket.emit(name, { id, data })
   })
