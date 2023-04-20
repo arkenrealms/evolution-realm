@@ -22,7 +22,7 @@ function startServer(app) {
     //   setTimeout(() => startServer(app), 10 * 1000)
     // })
 
-    app.https.listen(app.state.sslPort, function() {
+    app.https.listen(app.state.sslPort, function () {
       log(`Backend ready and listening on *:${app.state.sslPort} (https)`)
 
       app.state.spawnPort = app.state.sslPort
@@ -33,7 +33,7 @@ function startServer(app) {
     //   setTimeout(() => startServer(app), 10 * 1000)
     // })
 
-    app.http.listen(app.state.port, function() {
+    app.http.listen(app.state.port, function () {
       log(`Backend ready and listening on *:${app.state.port} (http)`)
 
       app.state.spawnPort = app.state.port
@@ -59,17 +59,27 @@ async function init() {
     app.server.use(helmet())
     app.server.use(
       cors({
-        allowedHeaders: ['Accept', 'Authorization', 'Cache-Control', 'X-Requested-With', 'Content-Type', 'applicationId'],
+        allowedHeaders: [
+          'Accept',
+          'Authorization',
+          'Cache-Control',
+          'X-Requested-With',
+          'Content-Type',
+          'applicationId',
+        ],
       })
     )
 
     app.isHttps = process.env.RUNE_ENV !== 'local'
 
     if (app.isHttps) {
-      app.https = require('https').createServer({ 
-        key: fs.readFileSync(path.resolve('../privkey.pem')),
-        cert: fs.readFileSync(path.resolve('../fullchain.pem'))
-      }, app.server)
+      app.https = require('https').createServer(
+        {
+          key: fs.readFileSync(path.resolve('../privkey.pem')),
+          cert: fs.readFileSync(path.resolve('../fullchain.pem')),
+        },
+        app.server
+      )
     } else {
       app.http = require('http').Server(app.server)
     }
@@ -84,15 +94,15 @@ async function init() {
       serveClient: false,
       allowEIO3: true,
       cors: {
-        origin: "*"
-      }
+        origin: '*',
+      },
     })
 
     initMonitor(app)
     initGameServer(app)
 
     startServer(app)
-  } catch(e) {
+  } catch (e) {
     log('Error 383892', e)
   }
 }

@@ -27,7 +27,7 @@ async function init() {
     app.state.unsavedGames = jetpack.read(path.resolve('./public/data/unsavedGames.json'), 'json') || []
 
     app.flags = {
-      testBanSystem: false
+      testBanSystem: false,
     }
 
     app.tests = tests
@@ -39,7 +39,14 @@ async function init() {
     app.server.use(helmet())
     app.server.use(
       cors({
-        allowedHeaders: ['Accept', 'Authorization', 'Cache-Control', 'X-Requested-With', 'Content-Type', 'applicationId'],
+        allowedHeaders: [
+          'Accept',
+          'Authorization',
+          'Cache-Control',
+          'X-Requested-With',
+          'Content-Type',
+          'applicationId',
+        ],
       })
     )
 
@@ -47,10 +54,13 @@ async function init() {
 
     app.http = require('http').Server(app.server)
 
-    app.https = require('https').createServer({ 
-      key: fs.readFileSync(path.resolve('./privkey.pem')),
-      cert: fs.readFileSync(path.resolve('./fullchain.pem'))
-    }, app.server)
+    app.https = require('https').createServer(
+      {
+        key: fs.readFileSync(path.resolve('./privkey.pem')),
+        cert: fs.readFileSync(path.resolve('./fullchain.pem')),
+      },
+      app.server
+    )
 
     app.io = require('socket.io')(process.env.RUNE_ENV !== 'local' ? app.https : app.http, {
       secure: process.env.RUNE_ENV !== 'local' ? true : false,
@@ -63,8 +73,8 @@ async function init() {
       serveClient: false,
       allowEIO3: true,
       cors: {
-        origin: "*"
-      }
+        origin: '*',
+      },
     })
 
     // app.io.set('close timeout', 60)
@@ -77,36 +87,36 @@ async function init() {
         name: 'initMonitor',
         instance: initMonitor,
         async: false,
-        timeout: 0
+        timeout: 0,
       },
       {
         name: 'initWeb3',
         instance: initWeb3,
         async: false,
-        timeout: 0
+        timeout: 0,
       },
       {
         name: 'initRealmServer',
         instance: initRealmServer,
         async: false,
-        timeout: 0
+        timeout: 0,
       },
       {
         name: 'initWebServer',
         instance: initWebServer,
         async: false,
-        timeout: 0
+        timeout: 0,
       },
       {
         name: 'initGameBridge',
         instance: initGameBridge,
         async: false,
-        timeout: 0
+        timeout: 0,
       },
     ]
 
     app.modules = {}
-    
+
     for (const module of app.moduleConfig) {
       app.modules[module.name] = module.instance
 
@@ -127,9 +137,8 @@ async function init() {
       }
     }
 
-    if (app.flags.testBanSystem)
-      app.tests.testBanSystem(app)
-  } catch(e) {
+    if (app.flags.testBanSystem) app.tests.testBanSystem(app)
+  } catch (e) {
     logError(e)
   }
 }

@@ -57,9 +57,6 @@
     "nodemon": "^1.18.10",
     "ts-node": "^8.3.0"
   },
-  "engines": {
-    "node": "14.*.*"
-  },
   "scripts": {
     "dev": "GS_PORT=3001 LOG_PREFIX=[REGS] tsnd --respawn -r tsconfig-paths/register ./src/index.ts",
     "inspect": "NODE_ENV=development yarn build && GS_PORT=3001 NODE_ENV=production node --inspect build/index.js",

@@ -1,4 +1,3 @@
-
 import express from 'express'
 import RateLimit from 'express-rate-limit'
 import bodyParser from 'body-parser'
@@ -11,7 +10,7 @@ const path = require('path')
 
 function initRoutes(app) {
   try {
-    app.server.get('/admin/upgrade', async function(req, res) {
+    app.server.get('/admin/upgrade', async function (req, res) {
       try {
         app.realm.upgrade()
 
@@ -22,7 +21,7 @@ function initRoutes(app) {
       }
     })
 
-    app.server.get('/admin/gs/start', function(req, res) {
+    app.server.get('/admin/gs/start', function (req, res) {
       try {
         app.gameBridge.start()
 
@@ -37,7 +36,7 @@ function initRoutes(app) {
       }
     })
 
-    app.server.get('/admin/gs/reconnect', function(req, res) {
+    app.server.get('/admin/gs/reconnect', function (req, res) {
       try {
         app.gameBridge.connect()
 
@@ -48,7 +47,7 @@ function initRoutes(app) {
       }
     })
 
-    app.server.get('/admin/gs/stop', function(req, res) {
+    app.server.get('/admin/gs/stop', function (req, res) {
       try {
         killSubProcesses()
 
@@ -59,7 +58,7 @@ function initRoutes(app) {
       }
     })
 
-    app.server.get('/admin/gs/reboot', function(req, res) {
+    app.server.get('/admin/gs/reboot', function (req, res) {
       try {
         killSubProcesses()
         setTimeout(app.gameBridge.start, 5 * 1000)
@@ -71,7 +70,7 @@ function initRoutes(app) {
       }
     })
 
-    app.server.get('/admin/gs/upgrade', async function(req, res) {
+    app.server.get('/admin/gs/upgrade', async function (req, res) {
       try {
         // Tell players and game servers to shut down
         emitAll('ServerUpgrade')
@@ -81,7 +80,7 @@ function initRoutes(app) {
         setTimeout(async () => {
           killSubProcesses()
           setTimeout(app.gameBridge.start, 5 * 1000)
-  
+
           res.json({ status: 1 })
         }, 5 * 1000)
       } catch (e) {
@@ -90,7 +89,7 @@ function initRoutes(app) {
       }
     })
 
-    app.server.get('/admin/gs/clone', async function(req, res) {
+    app.server.get('/admin/gs/clone', async function (req, res) {
       try {
         app.gameBridge.clone()
 
@@ -101,50 +100,52 @@ function initRoutes(app) {
       }
     })
 
-    app.server.get('/info', async function(req, res) {
+    app.server.get('/info', async function (req, res) {
       const response = await app.gameBridge.call('RS_ServerInfoRequest')
 
       res.json(response)
     })
 
-    app.server.get('/config', async function(req, res) {
+    app.server.get('/config', async function (req, res) {
       const response = await app.gameBridge.call('RS_GetConfigRequest')
 
       res.json(response)
     })
 
-    app.server.post('/call/:method', async function(req, res) {
+    app.server.post('/call/:method', async function (req, res) {
       const response = await app.gameBridge.call(req.params.method, req.body.signature, req.body.data)
 
       if (response.status === 1) {
         await app.realm.call('ModRequest', {
           params: req.params,
-          body: req.body
+          body: req.body,
         })
       }
 
       res.json(response)
     })
 
-    app.server.get('/admin/test/:testName', async function(req, res) {
+    app.server.get('/admin/test/:testName', async function (req, res) {
       try {
         if (!app.tests[req.params.testName]) {
           logError('Test doesnt exist')
           res.json({ status: 0 })
         }
-        
+
         res.json(await app.tests[req.params.testName](app))
       } catch (e) {
         logError(e)
         res.json({ status: 0 })
       }
     })
-    
+
     app.server.get('/readiness_check', (req, res) => res.sendStatus(200))
     app.server.get('/liveness_check', (req, res) => res.sendStatus(200))
 
-    app.server.get('/.well-known/acme-challenge/-mROdU-GRZs53IaKoASvx7og2NHoD0fw5_nnaHtE4Ic', (req, res) => res.end('-mROdU-GRZs53IaKoASvx7og2NHoD0fw5_nnaHtE4Ic.rf1Z-ViQiJBjN-_x-EzQlmFjnB7obDoQD_BId0Z24Oc'))
-  } catch(e) {
+    app.server.get('/.well-known/acme-challenge/-mROdU-GRZs53IaKoASvx7og2NHoD0fw5_nnaHtE4Ic', (req, res) =>
+      res.end('-mROdU-GRZs53IaKoASvx7og2NHoD0fw5_nnaHtE4Ic.rf1Z-ViQiJBjN-_x-EzQlmFjnB7obDoQD_BId0Z24Oc')
+    )
+  } catch (e) {
     logError(e)
   }
 }
@@ -172,12 +173,12 @@ export async function initWebServer(app) {
 
   // Finalize
   const port = process.env.RS_PORT || 80
-  app.http.listen(port, function() {
+  app.http.listen(port, function () {
     log(`:: Backend ready and listening on *:${port} (http)`)
   })
 
   const sslPort = process.env.RS_SSL_PORT || 443
-  app.https.listen(sslPort, function() {
+  app.https.listen(sslPort, function () {
     log(`:: Backend ready and listening on *:${sslPort} (https)`)
   })
 }

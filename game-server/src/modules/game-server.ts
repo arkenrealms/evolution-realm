@@ -1,16 +1,51 @@
 import jetpack from 'fs-jetpack'
 import axios from 'axios'
 import semver from 'semver/preload.js'
-import { log as logger, getTime, shuffleArray, randomPosition, sha256, decodePayload, isNumeric } from '@rune-backend-sdk/util'
+import {
+  log as logger,
+  getTime,
+  shuffleArray,
+  randomPosition,
+  sha256,
+  decodePayload,
+  isNumeric,
+} from '@rune-backend-sdk/util'
 
 const path = require('path')
 const shortId = require('shortid')
 
 const mapData = jetpack.read(path.resolve('./public/data/map.json'), 'json')
 
-const guestNames = ['Robin Banks', 'Rick Axely', 'Shorty McAngrystout', 'Whiffletree', 'Thistlebutt', 'The Potato', 'Gumbuns Moonbrain', 'Drakus', 'Nyx', 'Aedigarr', 'Vaergahl', 'Anbraxas', 'Rezoth', 'Felscathor', 'Kathax', 'Rokk', 'Terra', 'Valaebal', 'Nox', 'Ulfryz', "X'ek", 'Bastis', 'Draugh', 'Raek', 'Zyphon', 'Smaug']
+const guestNames = [
+  'Robin Banks',
+  'Rick Axely',
+  'Shorty McAngrystout',
+  'Whiffletree',
+  'Thistlebutt',
+  'The Potato',
+  'Gumbuns Moonbrain',
+  'Drakus',
+  'Nyx',
+  'Aedigarr',
+  'Vaergahl',
+  'Anbraxas',
+  'Rezoth',
+  'Felscathor',
+  'Kathax',
+  'Rokk',
+  'Terra',
+  'Valaebal',
+  'Nox',
+  'Ulfryz',
+  "X'ek",
+  'Bastis',
+  'Draugh',
+  'Raek',
+  'Zyphon',
+  'Smaug',
+]
 
-const serverVersion = "1.6.3"
+const serverVersion = '1.6.3'
 let observers = []
 const testMode = false
 let roundLoopTimeout
@@ -35,11 +70,11 @@ let round = {
   endedAt: null,
   events: [],
   states: [],
-  players: []
+  players: [],
 }
 const ranks = {}
 const realmServer = {
-  socket: undefined
+  socket: undefined,
 }
 const ioCallbacks = {}
 
@@ -48,7 +83,7 @@ const pandas = [
   '0x3551691499D740790C4511CDBD1D64b2f146f6Bd',
   '0x1a367CA7bD311F279F1dfAfF1e60c4d797Faa6eb',
   '0x82b644E1B2164F5B81B3e7F7518DdE8E515A419d',
-  '0xeb3fCb993dDe8a2Cd081FbE36238E4d64C286AC0'
+  '0xeb3fCb993dDe8a2Cd081FbE36238E4d64C286AC0',
 ]
 
 let baseConfig = {
@@ -84,16 +119,16 @@ let baseConfig = {
   mechanics: [1150, 1160, 1222, 1223, 1030, 1102, 1164, 1219, 1105, 1104, 1117, 1118],
   disabledMechanics: [],
   log: {
-    connections: false
+    connections: false,
   },
   anticheat: {
     enabled: false,
     samePlayerCantClaimRewardTwiceInRow: false,
-    disconnectPositionJumps: false
+    disconnectPositionJumps: false,
   },
   optimization: {
-    sendPlayerUpdateWithNoChanges: true
-  }
+    sendPlayerUpdateWithNoChanges: true,
+  },
 }
 
 const sharedConfig = {
@@ -128,7 +163,7 @@ const sharedConfig = {
   maxEvolves: 3,
   noBoot: testMode,
   noDecay: testMode,
-  orbCutoffSeconds: testMode? 0 : 60,
+  orbCutoffSeconds: testMode ? 0 : 60,
   orbOnDeathPercent: 25,
   orbTimeoutSeconds: testMode ? 3 : 10,
   pickupDistance: 0.3,
@@ -145,7 +180,7 @@ const sharedConfig = {
   rewardItemAmount: 0,
   rewardItemName: '?',
   rewardItemType: 0,
-  rewardSpawnLoopSeconds: testMode ? 1 : 3 * 60 / 20,
+  rewardSpawnLoopSeconds: testMode ? 1 : (3 * 60) / 20,
   rewardWinnerAmount: 0,
   rewardWinnerName: 'ZOD',
   roundLoopSeconds: testMode ? 1 * 60 : 5 * 60,
@@ -153,12 +188,12 @@ const sharedConfig = {
   slowLoopSeconds: 1,
   spritesPerPlayerCount: 1,
   spritesStartCount: 50,
-  spritesTotal: 50
+  spritesTotal: 50,
 }
 
 let config = {
   ...baseConfig,
-  ...sharedConfig
+  ...sharedConfig,
 }
 
 const presets = [
@@ -181,11 +216,7 @@ const presets = [
     antifeed2: false,
     calcRoundRewards: false,
     preventBadKills: false,
-    guide: [
-      'Game Mode - Lets Be Friends',
-      '-200 Points Per Kill',
-      'No Death Orbs'
-    ]
+    guide: ['Game Mode - Lets Be Friends', '-200 Points Per Kill', 'No Death Orbs'],
   },
   {
     gameMode: 'Indiana Jones',
@@ -200,10 +231,7 @@ const presets = [
     cameraSize: 2.5,
     hideMap: true,
     orbOnDeathPercent: 0,
-    guide: [
-      'Game Mode - Indiana Jones',
-      '+100 Points Per Treasure Found'
-    ]
+    guide: ['Game Mode - Indiana Jones', '+100 Points Per Treasure Found'],
   },
   {
     gameMode: 'Mix Game 1',
@@ -239,12 +267,7 @@ const presets = [
     antifeed1: false,
     // dynamicDecayPower: true,
     // decayPowerPerMaxEvolvedPlayers: 0.2,
-    guide: [
-      'Game Mode - Deathmatch',
-      '+300 Points Per Kill (Per Evolve)',
-      'No Death Orbs',
-      'Faster Decay'
-    ]
+    guide: ['Game Mode - Deathmatch', '+300 Points Per Kill (Per Evolve)', 'No Death Orbs', 'Faster Decay'],
   },
   {
     gameMode: 'Evolution',
@@ -256,10 +279,7 @@ const presets = [
     pointsPerReward: 0,
     pointsPerOrb: 0,
     orbOnDeathPercent: 0,
-    guide: [
-      'Game Mode - Evolution',
-      '+1 Points Per Evolution'
-    ]
+    guide: ['Game Mode - Evolution', '+1 Points Per Evolution'],
   },
   {
     gameMode: 'Classic Evolution',
@@ -269,10 +289,7 @@ const presets = [
     pointsPerPowerup: 0,
     pointsPerReward: 0,
     pointsPerOrb: 0,
-    guide: [
-      'Game Mode - Evolution',
-      '+10 Points Per Evolution'
-    ]
+    guide: ['Game Mode - Evolution', '+10 Points Per Evolution'],
   },
   {
     gameMode: 'Orb Master',
@@ -290,8 +307,8 @@ const presets = [
       'Game Mode - Orb Master',
       '+200 Points Per Orb Pickup',
       'No Points Per Kill, Evolve, etc.',
-      'Orbs Last Until End of Round'
-    ]
+      'Orbs Last Until End of Round',
+    ],
   },
   {
     gameMode: 'Sprite Leader',
@@ -319,8 +336,8 @@ const presets = [
       'No Points Per Kill, Evolve, etc.',
       'No Orbs',
       'Faster Decay',
-      'Longer Immunity'
-    ]
+      'Longer Immunity',
+    ],
   },
   {
     gameMode: 'Fast Drake',
@@ -336,12 +353,7 @@ const presets = [
     orbOnDeathPercent: 0,
     spritesPerPlayerCount: 20,
     level2forced: true,
-    guide: [
-      'Game Mode - Fast Drake',
-      '+50% Speed as Black Drake',
-      'Faster Decay',
-      'Longer Immunity'
-    ]
+    guide: ['Game Mode - Fast Drake', '+50% Speed as Black Drake', 'Faster Decay', 'Longer Immunity'],
   },
   {
     gameMode: 'Bird Eye',
@@ -352,11 +364,7 @@ const presets = [
     decayPower: 2.8,
     pointsPerKill: 500,
     level2forced: true,
-    guide: [
-      'Game Mode - Bird Eye',
-      'Faster Movement',
-      'Faster Decay'
-    ]
+    guide: ['Game Mode - Bird Eye', 'Faster Movement', 'Faster Decay'],
   },
   {
     gameMode: 'Friendly Reverse',
@@ -383,8 +391,8 @@ const presets = [
       '-200 Points Per Kill (Per Evolve)',
       '+25 Points Per Evolve',
       'Reverse Evolution',
-      'No Orbs'
-    ]
+      'No Orbs',
+    ],
   },
   {
     gameMode: 'Reverse Evolve',
@@ -404,10 +412,7 @@ const presets = [
     // avatarDecayPower2: 3,
     spriteXpMultiplier: -2,
     // avatarDirection: -1,
-    guide: [
-      'Game Mode - Reverse Evolve',
-      'Evolution is reversed'
-    ]
+    guide: ['Game Mode - Reverse Evolve', 'Evolution is reversed'],
   },
   {
     gameMode: 'Classic Marco Polo',
@@ -422,11 +427,7 @@ const presets = [
     // pointsPerReward: 20,
     hideMap: true,
     // level2forced: true,
-    guide: [
-      'Game Mode - Classic Marco Polo',
-      'Zoomed in + no map',
-      'Faster Decay'
-    ]
+    guide: ['Game Mode - Classic Marco Polo', 'Zoomed in + no map', 'Faster Decay'],
   },
   {
     gameMode: 'Marco Polo',
@@ -441,21 +442,12 @@ const presets = [
     pointsPerReward: 20,
     hideMap: true,
     level2forced: true,
-    guide: [
-      'Game Mode - Marco Polo',
-      'Zoomed in + no map',
-      'Sprites Change Camera',
-    ]
+    guide: ['Game Mode - Marco Polo', 'Zoomed in + no map', 'Sprites Change Camera'],
   },
   {
     gameMode: 'Leadercap',
     leadercap: true,
-    guide: [
-      'Game Mode - Leadercap',
-      'Kill the last round leader',
-      'Leader -20% Speed',
-      'Leader 75% Death Orb'
-    ]
+    guide: ['Game Mode - Leadercap', 'Kill the last round leader', 'Leader -20% Speed', 'Leader 75% Death Orb'],
   },
   {
     gameMode: 'Sticky Mode',
@@ -466,10 +458,7 @@ const presets = [
     pointsPerKill: 50,
     pointsPerOrb: 100,
     isOmit: true,
-    guide: [
-      'Game Mode - Sticky Mode',
-      'Sticky islands'
-    ]
+    guide: ['Game Mode - Sticky Mode', 'Sticky islands'],
   },
   {
     gameMode: 'Sprite Juice',
@@ -488,7 +477,7 @@ const presets = [
       'Pink - Decrease Speed',
       'Yellow - Increase Speed',
       'Blue - Shield',
-    ]
+    ],
   },
   // {
   //   gameMode: 'Friendly Pandamonium',
@@ -509,10 +498,7 @@ const presets = [
     avatarSpeedMultiplier2: 1.4,
     avatarTouchDistance2: 1,
     damagerPerTouch: 500,
-    guide: [
-      'Game Mode - Pandamonium',
-      'Beware the Panda'
-    ]
+    guide: ['Game Mode - Pandamonium', 'Beware the Panda'],
   },
   {
     gameMode: 'Hayai',
@@ -521,10 +507,7 @@ const presets = [
     level2forced: true,
     decayPower: 3.6,
     isOmit: true,
-    guide: [
-      'Game Mode - Hayai',
-      'You feel energy growing around you...'
-    ]
+    guide: ['Game Mode - Hayai', 'You feel energy growing around you...'],
   },
   {
     gameMode: 'Storm Cuddle',
@@ -535,8 +518,7 @@ const presets = [
   },
 ]
 
-const loggableEvents = ['OnMaintenance', 'GS_SaveRoundRequest', 'SaveRoundRequest', ]
-
+const loggableEvents = ['OnMaintenance', 'GS_SaveRoundRequest', 'SaveRoundRequest']
 
 function log(...args) {
   if (loggableEvents.includes(args[0])) {
@@ -544,34 +526,34 @@ function log(...args) {
   }
 }
 
-let currentPreset = presets[(Math.floor(Math.random() * presets.length))]
+let currentPreset = presets[Math.floor(Math.random() * presets.length)]
 let roundConfig = {
   ...baseConfig,
   ...sharedConfig,
-  ...currentPreset
+  ...currentPreset,
 }
 
 const spawnBoundary1 = {
-  x: {min: -17, max: 0},
-  y: {min: -13, max: -4}
+  x: { min: -17, max: 0 },
+  y: { min: -13, max: -4 },
 }
 
 const spawnBoundary2 = {
-  x: {min: -37, max: 0},
-  y: {min: -13, max: -2}
+  x: { min: -37, max: 0 },
+  y: { min: -13, max: -2 },
 }
 
 const mapBoundary = {
-  x: {min: -38, max: 2},
-  y: {min: -20, max: 2}
+  x: { min: -38, max: 2 },
+  y: { min: -20, max: 2 },
 }
 
 const playerSpawnPoints = [
-  {x: -4.14, y: -11.66},
-  {x: -11.14, y: -8.55},
-  {x: -12.27, y: -14.24},
-  {x: -7.08, y: -12.75},
-  {x: -7.32, y: -15.29},
+  { x: -4.14, y: -11.66 },
+  { x: -11.14, y: -8.55 },
+  { x: -12.27, y: -14.24 },
+  { x: -7.08, y: -12.75 },
+  { x: -7.32, y: -15.29 },
 ]
 
 //auxiliary function to sort the best players
@@ -591,7 +573,6 @@ function comparePlayers(a, b) {
 
   return 0
 }
-
 
 function random(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min
@@ -627,7 +608,7 @@ function emitDirect(socket, ...args) {
   for (const e of eventQueue) {
     const name = e[0]
     const args = e.slice(1)
-    
+
     compiled.push(`["${name}","${args.join(':')}"]`)
 
     round.events.push({ type: 'emitDirect', player: socket.id, name, args })
@@ -665,12 +646,12 @@ async function rsCall(name, data = {}) {
   return new Promise((resolve, reject) => {
     const id = shortId()
 
-    const timeout = setTimeout(function() {
+    const timeout = setTimeout(function () {
       resolve({ status: 0, message: 'Request timeout' })
 
       delete ioCallbacks[id]
     }, 15 * 1000)
-    
+
     ioCallbacks[id] = { resolve, reject, timeout }
 
     if (!realmServer.socket) {
@@ -690,10 +671,10 @@ async function rsCall(name, data = {}) {
 async function normalizeAddress(address) {
   if (!address) return false
   try {
-    const res = await rsCall('GS_NormalizeAddressRequest', { address }) as any
+    const res = (await rsCall('GS_NormalizeAddressRequest', { address })) as any
     log('GS_NormalizeAddressResponse', res)
     return res.address
-  } catch(e) {
+  } catch (e) {
     log('Error:', e)
     return false
   }
@@ -704,20 +685,20 @@ async function isValidSignatureRequest(req) {
   if (!req.signature.address) return false
   if (req.signature.address.length !== 42 || req.signature.address.slice(0, 2) !== '0x') return false
   try {
-    const res = await rsCall('GS_VerifySignatureRequest', req) as any
+    const res = (await rsCall('GS_VerifySignatureRequest', req)) as any
     return res.verified === true
-  } catch(e) {
+  } catch (e) {
     log('Error:', e)
     return false
   }
 }
 
 function formatNumber(num) {
-  return (num >= 0 ? '+' + num : '-' + num)
+  return num >= 0 ? '+' + num : '-' + num
 }
 
 function getClientSpeed(client, _config) {
-  return normalizeFloat((_config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed))
+  return normalizeFloat(_config.baseSpeed * config['avatarSpeedMultiplier' + client.avatar] * client.baseSpeed)
 }
 
 async function spawnRandomReward() {
@@ -725,10 +706,10 @@ async function spawnRandomReward() {
   if (currentReward) {
     return
   }
-  
+
   removeReward()
 
-  const rewardRes = (await rsCall('GS_GetRandomRewardRequest') as any)
+  const rewardRes = (await rsCall('GS_GetRandomRewardRequest')) as any
 
   if (rewardRes?.status !== 1) {
     return
@@ -747,12 +728,20 @@ async function spawnRandomReward() {
   setTimeout(() => {
     currentReward = JSON.parse(JSON.stringify(tempReward))
 
-    publishEvent('OnSpawnReward', currentReward.id, currentReward.rewardItemType, currentReward.rewardItemName, currentReward.quantity, currentReward.position.x, currentReward.position.y)
+    publishEvent(
+      'OnSpawnReward',
+      currentReward.id,
+      currentReward.rewardItemType,
+      currentReward.rewardItemName,
+      currentReward.quantity,
+      currentReward.position.x,
+      currentReward.position.y
+    )
 
     setTimeout(() => {
       if (!currentReward) return
       if (currentReward.id !== tempReward.id) return
-      
+
       removeReward()
     }, 30 * 1000)
   }, 3 * 1000)
@@ -784,17 +773,16 @@ function monitorObservers(app) {
 function moveVectorTowards(current, target, maxDistanceDelta) {
   const a = {
     x: target.x - current.x,
-    y: target.y - current.y
+    y: target.y - current.y,
   }
 
   const magnitude = Math.sqrt(a.x * a.x + a.y * a.y)
 
-  if (magnitude <= maxDistanceDelta || magnitude == 0)
-      return target
+  if (magnitude <= maxDistanceDelta || magnitude == 0) return target
 
   return {
-    x: current.x + a.x / magnitude * maxDistanceDelta,
-    y: current.y + a.y / magnitude * maxDistanceDelta
+    x: current.x + (a.x / magnitude) * maxDistanceDelta,
+    y: current.y + (a.y / magnitude) * maxDistanceDelta,
   }
 }
 
@@ -856,7 +844,7 @@ async function getUsername(address: string): Promise<string> {
     // const data = await response.json()
 
     const { username = '' } = response.data as any
-  
+
     return username
   } catch (error) {
     return // 'Guest' + Math.floor(Math.random() * 999)
@@ -869,12 +857,12 @@ function distanceBetweenPoints(pos1, pos2) {
 
 function syncSprites() {
   log('Syncing sprites')
-  const playerCount = clients.filter(c => !c.isDead && !c.isSpectating && !c.isGod).length
+  const playerCount = clients.filter((c) => !c.isDead && !c.isSpectating && !c.isGod).length
   const length = config.spritesStartCount + playerCount * config.spritesPerPlayerCount
 
   if (powerups.length > length) {
     const deletedPoints = powerups.splice(length)
-  
+
     for (let i = 0; i < deletedPoints.length; i++) {
       publishEvent('OnUpdatePickup', 'null', deletedPoints[i].id, 0)
       // delete powerupLookup[deletedPoints[i].id]
@@ -889,12 +877,18 @@ function syncSprites() {
 function disconnectPlayer(app, player, reason = 'Unknown', immediate = false) {
   if (player.isRealm) return
 
-  clients = clients.filter(c => c.id !== player.id)
-  
+  clients = clients.filter((c) => c.id !== player.id)
+
   if (config.gameMode === 'Pandamonium') {
-    publishEvent('OnBroadcast', `${clients.filter(c => !c.isDead && !c.isDisconnected && !c.isSpectating && !pandas.includes(c.address)).length} alive`, 0)
+    publishEvent(
+      'OnBroadcast',
+      `${
+        clients.filter((c) => !c.isDead && !c.isDisconnected && !c.isSpectating && !pandas.includes(c.address)).length
+      } alive`,
+      0
+    )
   }
-  
+
   if (player.isDisconnected) return
 
   try {
@@ -909,16 +903,18 @@ function disconnectPlayer(app, player, reason = 'Unknown', immediate = false) {
 
     const oldSocket = sockets[player.id]
 
-    setTimeout(function() {
-      publishEvent('OnUserDisconnected', player.id)
-      syncSprites()
-      flushEventQueue(app)
+    setTimeout(
+      function () {
+        publishEvent('OnUserDisconnected', player.id)
+        syncSprites()
+        flushEventQueue(app)
 
-      if (oldSocket && oldSocket.emit && oldSocket.connected)
-        oldSocket.disconnect()
+        if (oldSocket && oldSocket.emit && oldSocket.connected) oldSocket.disconnect()
         delete sockets[player.id]
-    }, immediate ? 0 : 1000)
-  } catch(e) {
+      },
+      immediate ? 0 : 1000
+    )
+  } catch (e) {
     log('Error:', e)
   }
 }
@@ -934,31 +930,31 @@ function weightedRandom(items) {
 
 //   for (i = 0; i < weights.length; i++)
 //       weights[i] += weights[i - 1] || 0
-  
+
 //   let random = Math.random() * weights[weights.length - 1]
-  
+
 //   let id = 0
 //   for (i = 0; i < weights.length; i++) {
 //       id = i
 //       if (weights[i] > random)
 //           break
 //   }
-  
+
 //   return items[id]
 // }
 
 function randomRoundPreset() {
   const gameMode = config.gameMode
 
-  while(config.gameMode === gameMode) {
-    const filteredPresets = presets.filter(p => !p.isOmit)
+  while (config.gameMode === gameMode) {
+    const filteredPresets = presets.filter((p) => !p.isOmit)
 
     currentPreset = weightedRandom(filteredPresets)
-  
+
     roundConfig = {
       ...baseConfig,
       ...sharedConfig,
-      ...currentPreset
+      ...currentPreset,
     }
     log('randomRoundPreset', config.gameMode, gameMode, currentPreset)
 
@@ -970,7 +966,7 @@ function removeSprite(id) {
   if (powerupLookup[id]) {
     delete powerupLookup[id]
   }
-  
+
   for (let i = 0; i < powerups.length; i++) {
     if (powerups[i].id == id) {
       powerups.splice(i, 1)
@@ -982,7 +978,7 @@ function removeOrb(id) {
   if (orbLookup[id]) {
     delete orbLookup[id]
   }
-  
+
   for (let i = 0; i < orbs.length; i++) {
     if (orbs[i].id == id) {
       orbs.splice(i, 1)
@@ -1001,14 +997,14 @@ function getUnobstructedPosition() {
 
   let res
 
-  while(!res) {
+  while (!res) {
     let collided = false
 
     const position = {
       x: randomPosition(spawnBoundary.x.min, spawnBoundary.x.max),
-      y: randomPosition(spawnBoundary.y.min, spawnBoundary.y.max)
+      y: randomPosition(spawnBoundary.y.min, spawnBoundary.y.max),
     }
-  
+
     for (const gameObject of mapData) {
       if (!gameObject.Colliders || !gameObject.Colliders.length) continue
 
@@ -1017,7 +1013,7 @@ function getUnobstructedPosition() {
           minX: gameCollider.Min[0],
           maxX: gameCollider.Max[0],
           minY: gameCollider.Min[1],
-          maxY: gameCollider.Max[1]
+          maxY: gameCollider.Max[1],
         }
 
         if (config.level2open && gameObject.Name === 'Level2Divider') {
@@ -1055,16 +1051,23 @@ function spawnSprites(amount) {
 
     const powerupSpawnPoint = {
       id: shortId.generate(),
-      type: (Math.floor(Math.random() * 4)),
+      type: Math.floor(Math.random() * 4),
       scale: 1,
-      position
+      position,
     }
 
     powerups.push(powerupSpawnPoint) // add power up on the list
 
     powerupLookup[powerupSpawnPoint.id] = powerupSpawnPoint //add powerup in search engine
 
-    publishEvent('OnSpawnPowerUp', powerupSpawnPoint.id, powerupSpawnPoint.type, powerupSpawnPoint.position.x, powerupSpawnPoint.position.y, powerupSpawnPoint.scale)
+    publishEvent(
+      'OnSpawnPowerUp',
+      powerupSpawnPoint.id,
+      powerupSpawnPoint.type,
+      powerupSpawnPoint.position.x,
+      powerupSpawnPoint.position.y,
+      powerupSpawnPoint.scale
+    )
   }
 
   config.spritesTotal = powerups.length
@@ -1073,7 +1076,7 @@ function spawnSprites(amount) {
 function addToRecentPlayers(player) {
   if (!player.address || !player.name) return
 
-  round.players = round.players.filter(r => r.address !== player.address)
+  round.players = round.players.filter((r) => r.address !== player.address)
 
   round.players.push(player)
 }
@@ -1083,16 +1086,16 @@ async function isValidAdminRequest(req) {
   if (!req.signature?.address) return false
   if (req.signature.address.length !== 42 || req.signature.address.slice(0, 2) !== '0x') return false
   try {
-    const res = await rsCall('GS_VerifyAdminSignatureRequest', req) as any
+    const res = (await rsCall('GS_VerifyAdminSignatureRequest', req)) as any
     return res?.status === 1
-  } catch(e) {
+  } catch (e) {
     log('Error:', e)
     return false
   }
 }
 
 function roundEndingSoon(sec) {
-  const roundTimer = (round.startedAt + config.roundLoopSeconds) - Math.round(getTime() / 1000)
+  const roundTimer = round.startedAt + config.roundLoopSeconds - Math.round(getTime() / 1000)
   return roundTimer < sec
 }
 
@@ -1107,11 +1110,18 @@ const registerKill = (app, winner, loser) => {
   if (config.gameMode !== 'Pandamonium' || !pandas.includes(winner.address)) {
     if (config.preventBadKills && (winner.isPhased || now < winner.phasedUntil)) return
 
-    const totalKills = winner.log.kills.filter(h => h === loser.hash).length
-    const notReallyTrying = config.antifeed1 ? (totalKills >= 2 && loser.kills < 2 && loser.rewards <= 1) || (totalKills >= 2 && loser.kills < 2 && loser.powerups <= 100) : false
-    const tooManyKills = config.antifeed2 ? clients.length > 2 && totalKills >= 5 && totalKills > winner.log.kills.length / clients.filter(c => !c.isDead).length : false
+    const totalKills = winner.log.kills.filter((h) => h === loser.hash).length
+    const notReallyTrying = config.antifeed1
+      ? (totalKills >= 2 && loser.kills < 2 && loser.rewards <= 1) ||
+        (totalKills >= 2 && loser.kills < 2 && loser.powerups <= 100)
+      : false
+    const tooManyKills = config.antifeed2
+      ? clients.length > 2 &&
+        totalKills >= 5 &&
+        totalKills > winner.log.kills.length / clients.filter((c) => !c.isDead).length
+      : false
     const killingThemselves = config.antifeed3 ? winner.hash === loser.hash : false
-    const allowKill = !notReallyTrying && !tooManyKills// && !killingThemselves
+    const allowKill = !notReallyTrying && !tooManyKills // && !killingThemselves
 
     if (notReallyTrying) {
       loser.log.notReallyTrying += 1
@@ -1178,7 +1188,12 @@ const registerKill = (app, winner, loser) => {
     }
   }
 
-  let orbOnDeathPercent = config.orbOnDeathPercent > 0 ? (config.leadercap && loser.name === lastLeaderName ? 50 : config.orbOnDeathPercent) : 0
+  let orbOnDeathPercent =
+    config.orbOnDeathPercent > 0
+      ? config.leadercap && loser.name === lastLeaderName
+        ? 50
+        : config.orbOnDeathPercent
+      : 0
   let orbPoints = Math.floor(loser.points * (orbOnDeathPercent / 100))
 
   if (deathPenaltyAvoid) {
@@ -1192,30 +1207,30 @@ const registerKill = (app, winner, loser) => {
   loser.killStreak = 0
   loser.isDead = true
   loser.log.deaths.push(winner.hash)
-  
 
   if (winner.points < 0) winner.points = 0
   if (loser.points < 0) loser.points = 0
 
-  if (winner.log.deaths.length && winner.log.deaths[winner.log.deaths.length-1] === loser.hash) {
+  if (winner.log.deaths.length && winner.log.deaths[winner.log.deaths.length - 1] === loser.hash) {
     winner.log.revenge += 1
   }
 
   if (isMechanicEnabled(winner, 1222) && winner.character.meta[1222] > 0) {
-    winner.overrideSpeed = winner.speed * (1 + (winner.character.meta[1222] / 100)) * (1 + winner.character.meta[1030]/100)
+    winner.overrideSpeed =
+      winner.speed * (1 + winner.character.meta[1222] / 100) * (1 + winner.character.meta[1030] / 100)
     winner.overrideSpeedUntil = getTime() + 5000
 
     // publishEvent('OnBroadcast', `${winner.name} on a rampage!`, 0)
   }
 
   if (isMechanicEnabled(winner, 1219) && winner.character.meta[1219] > 0) {
-    winner.maxHp = winner.maxHp * (1 + (winner.character.meta[1219] / 100))
+    winner.maxHp = winner.maxHp * (1 + winner.character.meta[1219] / 100)
 
     // publishEvent('OnBroadcast', `${winner.name} is feeling stronger!`, 0)
   }
 
   winner.xp += 25
-  
+
   if (winner.xp > winner.maxHp) winner.xp = winner.maxHp
 
   publishEvent('OnGameOver', loser.id, winner.id)
@@ -1232,8 +1247,8 @@ const registerKill = (app, winner, loser) => {
     enabledAt: now + config.orbTimeoutSeconds * 1000,
     position: {
       x: loser.position.x,
-      y: loser.position.y
-    }
+      y: loser.position.y,
+    },
   }
 
   const currentRound = config.roundId
@@ -1244,7 +1259,7 @@ const registerKill = (app, winner, loser) => {
 
       orbs.push(orb)
       orbLookup[orb.id] = orb
-  
+
       publishEvent('OnSpawnPowerUp', orb.id, orb.type, orb.position.x, orb.position.y, orb.scale)
     }, config.orbTimeoutSeconds * 1000)
   }
@@ -1260,7 +1275,6 @@ function spectate(player) {
       //   disconnectPlayer(player)
       //   return
       // // }
-  
       // player.isSpectating = false
       // player.isInvincible = false
       // player.isJoining = true
@@ -1271,9 +1285,7 @@ function spectate(player) {
       // player.overrideSpeed = null
       // player.cameraSize = config.cameraSize
       // player.overrideCameraSize = null
-  
       // syncSprites()
-  
       // publishEvent('OnUnspectate', player.id, player.speed, player.cameraSize)
     } else {
       player.isSpectating = true
@@ -1287,18 +1299,18 @@ function spectate(player) {
       player.cameraSize = 8
       player.overrideCameraSize = 8
       player.log.spectating += 1
-  
+
       syncSprites()
-  
+
       publishEvent('OnSpectate', player.id, player.speed, player.cameraSize)
     }
-  } catch(e) {
+  } catch (e) {
     log('Error:', e)
   }
 }
 
 function updateObservers() {
-  observers = observers.filter(observer => observer.socket.connected)
+  observers = observers.filter((observer) => observer.socket.connected)
 }
 
 function sendUpdates(app) {
@@ -1306,11 +1318,23 @@ function sendUpdates(app) {
 
   const leaderboard = round.players.sort(comparePlayers).slice(0, 10)
   for (let j = 0; j < leaderboard.length; j++) {
-    publishEvent('OnUpdateBestKiller', leaderboard[j].name, j, leaderboard[j].points, leaderboard[j].kills, leaderboard[j].deaths, leaderboard[j].powerups, leaderboard[j].evolves, leaderboard[j].rewards, leaderboard[j].isDead ? '-' : Math.round(leaderboard[j].latency), ranks[leaderboard[j].address]?.kills / 5 || 1)
+    publishEvent(
+      'OnUpdateBestKiller',
+      leaderboard[j].name,
+      j,
+      leaderboard[j].points,
+      leaderboard[j].kills,
+      leaderboard[j].deaths,
+      leaderboard[j].powerups,
+      leaderboard[j].evolves,
+      leaderboard[j].rewards,
+      leaderboard[j].isDead ? '-' : Math.round(leaderboard[j].latency),
+      ranks[leaderboard[j].address]?.kills / 5 || 1
+    )
   }
 
   flushEventQueue(app)
-  
+
   setTimeout(() => sendUpdates(app), config.sendUpdateLoopSeconds * 1000)
 }
 
@@ -1321,20 +1345,19 @@ function spawnRewards(app) {
 }
 
 function getRoundInfo() {
-  return Object.keys(sharedConfig).sort().reduce(
-    (obj, key) => {
+  return Object.keys(sharedConfig)
+    .sort()
+    .reduce((obj, key) => {
       obj.push(config[key])
-      return obj;
-    }, 
-    []
-  )
+      return obj
+    }, [])
 }
 
 async function calcRoundRewards() {
-  const calcRewardsRes = await rsCall('GS_ConfigureRequest', {
-    clients
-  }) as any
-  
+  const calcRewardsRes = (await rsCall('GS_ConfigureRequest', {
+    clients,
+  })) as any
+
   if (calcRewardsRes?.data) {
     sharedConfig.rewardWinnerAmount = calcRewardsRes.data.rewardWinnerAmount
     config.rewardWinnerAmount = calcRewardsRes.data.rewardWinnerAmount
@@ -1342,8 +1365,11 @@ async function calcRoundRewards() {
     config.rewardItemAmount = calcRewardsRes.data.rewardItemAmount
 
     if (config.rewardWinnerAmount === 0 && calcRewardsRes.data.rewardWinnerAmount !== 0) {
-      const roundTimer = (round.startedAt + config.roundLoopSeconds) - Math.round(getTime() / 1000)
-      publishEvent('OnSetRoundInfo', roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'))
+      const roundTimer = round.startedAt + config.roundLoopSeconds - Math.round(getTime() / 1000)
+      publishEvent(
+        'OnSetRoundInfo',
+        roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':')
+      )
     }
   }
 }
@@ -1368,23 +1394,33 @@ async function resetLeaderboard(preset = null) {
       return
     }
 
-    round.endedAt =  Math.round(getTime() / 1000)
+    round.endedAt = Math.round(getTime() / 1000)
 
     const fiveSecondsAgo = getTime() - 7000
     const thirtySecondsAgo = getTime() - 30 * 1000
 
-    const winners = round.players.filter(p => p.lastUpdate >= fiveSecondsAgo).sort((a, b) => b.points - a.points).slice(0, 10) //  && p.joinedRoundAt < thirtySecondsAgo
+    const winners = round.players
+      .filter((p) => p.lastUpdate >= fiveSecondsAgo)
+      .sort((a, b) => b.points - a.points)
+      .slice(0, 10) //  && p.joinedRoundAt < thirtySecondsAgo
 
     if (winners.length) {
       lastLeaderName = winners[0].name
       log('Leader: ', winners[0])
-    
+
       if (winners[0]?.address) {
         publishEvent('OnRoundWinner', winners[0].name)
       }
 
       if (config.isBattleRoyale) {
-        publishEvent('OnBroadcast', `Top 5 - ${winners.slice(0, 5).map(l => l.name).join(', ')}`, 0)
+        publishEvent(
+          'OnBroadcast',
+          `Top 5 - ${winners
+            .slice(0, 5)
+            .map((l) => l.name)
+            .join(', ')}`,
+          0
+        )
       }
     }
 
@@ -1392,26 +1428,26 @@ async function resetLeaderboard(preset = null) {
       startedAt: round.startedAt,
       endedAt: round.endedAt,
       players: round.players,
-      winners
+      winners,
     }) as any
 
     // clearInterval(problemInterval)
 
-    saveRoundReq.then(function(saveRoundRes) {
+    saveRoundReq.then(function (saveRoundRes) {
       if (saveRoundRes?.status !== 1) {
         sharedConfig.rewardWinnerAmount = 0
         config.rewardWinnerAmount = 0
         sharedConfig.rewardItemAmount = 0
         config.rewardItemAmount = 0
-  
+
         // if (!preset) {
-          setTimeout(() => {
-            publishEvent('OnBroadcast', `Maintanence`, 3)
-    
-            // clearTimeout(roundLoopTimeout)
-    
-            // resetLeaderboard()
-          }, 30 * 1000)
+        setTimeout(() => {
+          publishEvent('OnBroadcast', `Maintanence`, 3)
+
+          // clearTimeout(roundLoopTimeout)
+
+          // resetLeaderboard()
+        }, 30 * 1000)
         // }
       }
     })
@@ -1424,11 +1460,10 @@ async function resetLeaderboard(preset = null) {
       roundConfig = {
         ...baseConfig,
         ...sharedConfig,
-        ...preset
+        ...preset,
       }
       config = JSON.parse(JSON.stringify(roundConfig))
-    }
-    else {
+    } else {
       randomRoundPreset()
     }
 
@@ -1492,7 +1527,7 @@ async function resetLeaderboard(preset = null) {
         path: '',
         positions: 0,
         spectating: 0,
-        replay: []
+        replay: [],
       }
       client.gameMode = config.gameMode
 
@@ -1522,10 +1557,18 @@ async function resetLeaderboard(preset = null) {
 
     syncSprites()
 
-    const roundTimer = (round.startedAt + config.roundLoopSeconds) - Math.round(getTime() / 1000)
-    publishEvent('OnSetRoundInfo', roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'))
+    const roundTimer = round.startedAt + config.roundLoopSeconds - Math.round(getTime() / 1000)
+    publishEvent(
+      'OnSetRoundInfo',
+      roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':')
+    )
 
-    log('roundInfo', roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'), (config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':')).split(':').length)
+    log(
+      'roundInfo',
+      roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'),
+      (config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':')).split(':')
+        .length
+    )
 
     publishEvent('OnClearLeaderboard')
 
@@ -1550,14 +1593,14 @@ async function resetLeaderboard(preset = null) {
       const value = 'Restarting server at end of this round.'
 
       publishEvent('OnBroadcast', value, 1)
-      
+
       rebootAfterRound = true
     }
 
     // for (const observer of observers) {
     //   observer.socket.emit('GS_StartRound')
     // }
-  } catch(e) {
+  } catch (e) {
     log('Error:', e)
   }
 
@@ -1566,7 +1609,7 @@ async function resetLeaderboard(preset = null) {
 
 function checkConnectionLoop(app) {
   if (!config.noBoot && !config.isRoundPaused) {
-    const oneMinuteAgo = getTime() - (config.disconnectPlayerSeconds * 1000)
+    const oneMinuteAgo = getTime() - config.disconnectPlayerSeconds * 1000
     // const oneMinuteAgo = Math.round(getTime() / 1000) - config.disconnectPlayerSeconds
 
     for (const client of clients) {
@@ -1583,32 +1626,35 @@ function checkConnectionLoop(app) {
       }
     }
   }
-  
+
   setTimeout(() => checkConnectionLoop(app), config.checkConnectionLoopSeconds * 1000)
 }
 
 function getPayload(messages) {
   // super-cheap JSON Array construction
-  return Buffer.from([ '[', messages.join(','), ']' ].join(''));
+  return Buffer.from(['[', messages.join(','), ']'].join(''))
 }
 
 //updates the list of best players every 1000 milliseconds
 function slowGameloop(app) {
   if (config.dynamicDecayPower) {
-    const players = clients.filter(p => !p.isDead && !p.isSpectating)
-    const maxEvolvedPlayers = players.filter(p => p.avatar === config.maxEvolves - 1)
-    
+    const players = clients.filter((p) => !p.isDead && !p.isSpectating)
+    const maxEvolvedPlayers = players.filter((p) => p.avatar === config.maxEvolves - 1)
+
     // if (maxEvolvedPlayers.length > players.length / 2) {
-      config.avatarDecayPower0 = roundConfig.avatarDecayPower0 + (maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers) * 0.33
-      config.avatarDecayPower1 = roundConfig.avatarDecayPower1 + (maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers) * 0.66
-      config.avatarDecayPower2 = roundConfig.avatarDecayPower1 + (maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers) * 1
+    config.avatarDecayPower0 =
+      roundConfig.avatarDecayPower0 + maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers * 0.33
+    config.avatarDecayPower1 =
+      roundConfig.avatarDecayPower1 + maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers * 0.66
+    config.avatarDecayPower2 =
+      roundConfig.avatarDecayPower1 + maxEvolvedPlayers.length * config.decayPowerPerMaxEvolvedPlayers * 1
     // }
   }
 
   // if (config.calcRoundRewards && config.rewardWinnerAmount === 0) {
   //   await calcRoundRewards()
   // }
-  
+
   setTimeout(() => slowGameloop(app), config.slowLoopSeconds * 1000)
 }
 
@@ -1622,7 +1668,7 @@ function slowGameloop(app) {
 // }
 
 function resetPlayer(player) {
-  const spawnPoint = playerSpawnPoints[(Math.floor(Math.random() * playerSpawnPoints.length))]
+  const spawnPoint = playerSpawnPoints[Math.floor(Math.random() * playerSpawnPoints.length)]
   player.position = spawnPoint
   player.target = spawnPoint
   player.clientPosition = spawnPoint
@@ -1640,7 +1686,7 @@ function detectCollisions(app) {
     const distanceMap = {
       0: config.avatarTouchDistance0,
       1: config.avatarTouchDistance0,
-      2: config.avatarTouchDistance0
+      2: config.avatarTouchDistance0,
     }
 
     // Update players
@@ -1652,7 +1698,8 @@ function detectCollisions(app) {
       // if (player.isGod) continue
       if (player.isJoining) continue
 
-      if (!Number.isFinite(player.position.x) || !Number.isFinite(player.speed)) { // Not sure what happened
+      if (!Number.isFinite(player.position.x) || !Number.isFinite(player.speed)) {
+        // Not sure what happened
         player.log.speedProblem += 1
         disconnectPlayer(app, player, 'speed problem')
         continue
@@ -1669,8 +1716,12 @@ function detectCollisions(app) {
       //   player.position = moveVectorTowards(player.position, player.clientPosition, player.speed * deltaTime)
       //   player.log.resetPosition += 1
       // } else {
-        // if (player.lastReportedTime > )
-      let position = moveVectorTowards(player.position, player.clientTarget, (player.overrideSpeed || player.speed) * deltaTime) // castVectorTowards(player.position, player.clientTarget, 9999)
+      // if (player.lastReportedTime > )
+      let position = moveVectorTowards(
+        player.position,
+        player.clientTarget,
+        (player.overrideSpeed || player.speed) * deltaTime
+      ) // castVectorTowards(player.position, player.clientTarget, 9999)
       // let target = castVectorTowards(position, player.clientTarget, 100)
 
       let outOfBounds = false
@@ -1705,20 +1756,20 @@ function detectCollisions(app) {
 
         for (const gameCollider of gameObject.Colliders) {
           let collider
-          
+
           if (gameObject.Name.indexOf('Island') === 0) {
             collider = {
               minX: gameCollider.Min[0],
               maxX: gameCollider.Max[0],
               minY: gameCollider.Min[1],
-              maxY: gameCollider.Max[1]
+              maxY: gameCollider.Max[1],
             }
           } else {
             collider = {
               minX: gameCollider.Min[0],
               maxX: gameCollider.Max[0],
               minY: gameCollider.Min[1],
-              maxY: gameCollider.Max[1]
+              maxY: gameCollider.Max[1],
             }
           }
 
@@ -1736,18 +1787,15 @@ function detectCollisions(app) {
           ) {
             if (gameObject.Name.indexOf('Land') === 0) {
               stuck = true
-            }
-            else if (gameObject.Name.indexOf('Island') === 0) {
+            } else if (gameObject.Name.indexOf('Island') === 0) {
               if (config.stickyIslands) {
                 stuck = true
               } else {
                 collided = true
               }
-            }
-            else if (gameObject.Name.indexOf('Collider') === 0) {
+            } else if (gameObject.Name.indexOf('Collider') === 0) {
               stuck = true
-            }
-            else if (gameObject.Name.indexOf('Level2Divider') === 0) {
+            } else if (gameObject.Name.indexOf('Level2Divider') === 0) {
               stuck = true
             }
           }
@@ -1763,15 +1811,14 @@ function detectCollisions(app) {
       }
 
       player.isStuck = false
-      
-      const isPlayerInvincible = player.isInvincible ? true : (player.invincibleUntil > currentTime)
+
+      const isPlayerInvincible = player.isInvincible ? true : player.invincibleUntil > currentTime
 
       if (collided && !isPlayerInvincible) {
         player.position = position
         player.target = player.clientTarget
         player.phasedUntil = getTime() + 5000
-        if (!player.phasedPosition)
-          player.phasedPosition = position
+        if (!player.phasedPosition) player.phasedPosition = position
         player.log.phases += 1
         player.log.collided += 1
         player.overrideSpeed = 0.02
@@ -1795,7 +1842,7 @@ function detectCollisions(app) {
       }
 
       const pos = Math.round(player.position.x) + ':' + Math.round(player.position.y)
-      
+
       if (player.log.path.indexOf(pos) === -1) {
         // player.log.path += pos + ','
         player.log.positions += 1
@@ -1803,7 +1850,10 @@ function detectCollisions(app) {
     }
 
     if (config.level2allowed) {
-      if (config.level2forced || clients.filter(c => !c.isSpectating && !c.isDead).length >= config.playersRequiredForLevel2) {
+      if (
+        config.level2forced ||
+        clients.filter((c) => !c.isSpectating && !c.isDead).length >= config.playersRequiredForLevel2
+      ) {
         if (!config.level2open) {
           baseConfig.level2open = true
           config.level2open = true
@@ -1821,7 +1871,10 @@ function detectCollisions(app) {
         }
       }
 
-      if (!config.level2forced && clients.filter(c => !c.isSpectating && !c.isDead).length < config.playersRequiredForLevel2 - 7) {
+      if (
+        !config.level2forced &&
+        clients.filter((c) => !c.isSpectating && !c.isDead).length < config.playersRequiredForLevel2 - 7
+      ) {
         if (config.level2open) {
           baseConfig.level2open = false
           config.level2open = false
@@ -1836,7 +1889,7 @@ function detectCollisions(app) {
           setTimeout(() => {
             for (const player of round.players) {
               // if (player.position.x < -18) {
-                resetPlayer(player)
+              resetPlayer(player)
               // }
             }
           }, 2 * 1000)
@@ -1850,14 +1903,14 @@ function detectCollisions(app) {
       // Check kills
       for (let i = 0; i < clients.length; i++) {
         const player1 = clients[i]
-        const isPlayer1Invincible = player1.isInvincible ? true : (player1.invincibleUntil > currentTime)
+        const isPlayer1Invincible = player1.isInvincible ? true : player1.invincibleUntil > currentTime
         if (player1.isSpectating) continue
         if (player1.isDead) continue
         if (isPlayer1Invincible) continue
 
         for (let j = 0; j < clients.length; j++) {
           const player2 = clients[j]
-          const isPlayer2Invincible = player2.isInvincible ? true : (player2.invincibleUntil > currentTime)
+          const isPlayer2Invincible = player2.isInvincible ? true : player2.invincibleUntil > currentTime
 
           if (player1.id === player2.id) continue
           if (player2.isDead) continue
@@ -2010,14 +2063,15 @@ function detectCollisions(app) {
 
           player.powerups += 1
           player.points += config.pointsPerPowerup
-          player.xp += (value * config.spriteXpMultiplier)
+          player.xp += value * config.spriteXpMultiplier
 
           if (isMechanicEnabled(player, 1117) && player.character.meta[1117] > 0) {
-            player.xp += (value * config.spriteXpMultiplier * (player.character.meta[1117] - player.character.meta[1118]) / 100)
+            player.xp +=
+              (value * config.spriteXpMultiplier * (player.character.meta[1117] - player.character.meta[1118])) / 100
 
             publishEvent('OnBroadcast', `${player.name} xp bonus`, 0)
           }
-      
+
           publishEvent('OnUpdatePickup', player.id, powerup.id, value)
 
           removeSprite(powerup.id)
@@ -2032,18 +2086,18 @@ function detectCollisions(app) {
             if (!orb) continue
             if (now < orb.enabledAt) continue
             if (distanceBetweenPoints(player.position, orb.position) > touchDistance) continue
-      
+
             player.orbs += 1
             player.points += orb.points
             player.points += config.pointsPerOrb
-      
+
             publishEvent('OnUpdatePickup', player.id, orb.id, 0)
-      
+
             removeOrb(orb.id)
 
             publishEvent('OnBroadcast', `${player.name} stole an orb (${orb.points})`, 0)
           }
-      
+
           const rewards = [currentReward]
 
           for (const reward of rewards) {
@@ -2051,10 +2105,10 @@ function detectCollisions(app) {
             if (now < reward.enabledAt) continue
             // log(distanceBetweenPoints(player.position, reward.position), player.position, reward.position, touchDistance)
             if (distanceBetweenPoints(player.position, reward.position) > touchDistance) continue
-      
+
             // player.rewards += 1
             // player.points += config.pointsPerReward
-      
+
             claimReward(player, reward)
             removeReward()
           }
@@ -2087,7 +2141,12 @@ function fastGameloop(app) {
       if (client.isJoining) continue
 
       const currentTime = Math.round(now / 1000)
-      const isInvincible = config.isGodParty || client.isSpectating || client.isGod || client.isInvincible || (client.invincibleUntil > currentTime)
+      const isInvincible =
+        config.isGodParty ||
+        client.isSpectating ||
+        client.isGod ||
+        client.isInvincible ||
+        client.invincibleUntil > currentTime
       const isPhased = client.isPhased ? true : now <= client.phasedUntil
 
       if (client.isPhased && now > client.phasedUntil) {
@@ -2110,67 +2169,70 @@ function fastGameloop(app) {
       // console.log('speed', client.name, client.avatar, client.speed)
 
       if (!config.isRoundPaused && config.gameMode !== 'Pandamonium') {
-        let decay = config.noDecay ? 0 : ((client.avatar + 1) / (1 / config.fastLoopSeconds) * ((config['avatarDecayPower' + client.avatar] || 1) * config.decayPower))
+        let decay = config.noDecay
+          ? 0
+          : ((client.avatar + 1) / (1 / config.fastLoopSeconds)) *
+            ((config['avatarDecayPower' + client.avatar] || 1) * config.decayPower)
 
         if (isMechanicEnabled(client, 1105) && isMechanicEnabled(client, 1104)) {
-          decay = decay * (1 + (client.character.meta[1105] - client.character.meta[1104])/100)
+          decay = decay * (1 + (client.character.meta[1105] - client.character.meta[1104]) / 100)
         }
-  
+
         if (client.xp > client.maxHp) {
           if (decay > 0) {
-            if (client.avatar < (config.maxEvolves - 1)) {
+            if (client.avatar < config.maxEvolves - 1) {
               client.xp = client.xp - client.maxHp
-              client.avatar = Math.max(Math.min(client.avatar + (1 * config.avatarDirection), config.maxEvolves - 1), 0)
+              client.avatar = Math.max(Math.min(client.avatar + 1 * config.avatarDirection, config.maxEvolves - 1), 0)
               client.evolves += 1
               client.points += config.pointsPerEvolve
-      
+
               if (config.leadercap && client.name === lastLeaderName) {
                 client.speed = client.speed * 0.8
               }
 
               if (isMechanicEnabled(client, 1223) && client.character.meta[1223] > 0) {
                 client.overrideSpeedUntil = getTime() + 1000
-                client.overrideSpeed = client.speed * (1 + (client.character.meta[1223] / 100))
+                client.overrideSpeed = client.speed * (1 + client.character.meta[1223] / 100)
 
                 if (isMechanicEnabled(client, 1030) && client.character.meta[1030] > 0) {
-                  client.overrideSpeed = client.overrideSpeed * (1 + client.character.meta[1030]/100)
+                  client.overrideSpeed = client.overrideSpeed * (1 + client.character.meta[1030] / 100)
                 }
                 // publishEvent('OnBroadcast', `${client.name} evolution speed bonus!`, 0)
               }
-      
+
               publishEvent('OnUpdateEvolution', client.id, client.avatar, client.overrideSpeed || client.speed)
             } else {
               client.xp = client.maxHp
             }
           } else {
-            if (client.avatar >= (config.maxEvolves - 1)) {
+            if (client.avatar >= config.maxEvolves - 1) {
               client.xp = client.maxHp
               // const currentTime = Math.round(now / 1000)
               // const isNew = client.joinedAt >= currentTime - config.immunitySeconds
-                
+
               // if (!config.noBoot && !isInvincible && !isNew) {
               //   disconnectPlayer(client)
               // }
             } else {
               client.xp = client.xp - client.maxHp
-              client.avatar = Math.max(Math.min(client.avatar + (1 * config.avatarDirection), config.maxEvolves - 1), 0)
+              client.avatar = Math.max(Math.min(client.avatar + 1 * config.avatarDirection, config.maxEvolves - 1), 0)
               client.evolves += 1
               client.points += config.pointsPerEvolve
-      
+
               if (config.leadercap && client.name === lastLeaderName) {
                 client.speed = client.speed * 0.8
               }
 
               if (isMechanicEnabled(client, 1223) && client.character.meta[1223] > 0) {
                 client.overrideSpeedUntil = getTime() + 1000
-                client.overrideSpeed = client.speed * (1 + (client.character.meta[1223] / 100))
+                client.overrideSpeed = client.speed * (1 + client.character.meta[1223] / 100)
 
                 if (isMechanicEnabled(client, 1030) && client.character.meta[1030] > 0) {
-                  client.overrideSpeed = client.overrideSpeed * (1 + client.character.meta[1030]/100)
+                  client.overrideSpeed = client.overrideSpeed * (1 + client.character.meta[1030] / 100)
                 }
                 // publishEvent('OnBroadcast', `${client.name} evolution speed bonus!`, 0)
               }
-      
+
               publishEvent('OnUpdateEvolution', client.id, client.avatar, client.overrideSpeed || client.speed)
             }
           }
@@ -2178,15 +2240,15 @@ function fastGameloop(app) {
           if (!isInvincible) {
             client.xp -= decay * client.decayPower
           }
-  
+
           if (client.xp <= 0) {
             client.xp = 0
-  
+
             if (decay > 0) {
               if (client.avatar === 0) {
                 const currentTime = Math.round(now / 1000)
                 const isNew = client.joinedAt >= currentTime - config.immunitySeconds
-                  
+
                 if (!config.noBoot && !isInvincible && !isNew && !config.isGodParty) {
                   client.log.ranOutOfHealth += 1
 
@@ -2198,12 +2260,12 @@ function fastGameloop(app) {
                 }
               } else {
                 client.xp = client.maxHp
-                client.avatar = Math.max(Math.min(client.avatar - (1 * config.avatarDirection), config.maxEvolves - 1), 0)
-  
+                client.avatar = Math.max(Math.min(client.avatar - 1 * config.avatarDirection, config.maxEvolves - 1), 0)
+
                 if (config.leadercap && client.name === lastLeaderName) {
                   client.speed = client.speed * 0.8
                 }
-        
+
                 publishEvent('OnUpdateRegression', client.id, client.avatar, client.overrideSpeed || client.speed)
               }
             } else {
@@ -2211,12 +2273,12 @@ function fastGameloop(app) {
                 client.xp = 0
               } else {
                 client.xp = client.maxHp
-                client.avatar = Math.max(Math.min(client.avatar - (1 * config.avatarDirection), config.maxEvolves - 1), 0)
-  
+                client.avatar = Math.max(Math.min(client.avatar - 1 * config.avatarDirection, config.maxEvolves - 1), 0)
+
                 if (config.leadercap && client.name === lastLeaderName) {
                   client.speed = client.speed * 0.8
                 }
-        
+
                 publishEvent('OnUpdateRegression', client.id, client.avatar, client.overrideSpeed || client.speed)
               }
             }
@@ -2224,48 +2286,48 @@ function fastGameloop(app) {
         }
       }
 
-      client.latency = ((now - client.lastReportedTime) / 2)// - (now - lastFastGameloopTime)
+      client.latency = (now - client.lastReportedTime) / 2 // - (now - lastFastGameloopTime)
 
       if (Number.isNaN(client.latency)) {
         client.latency = 0
       }
-  
+
       if (config.gameMode === 'Pandamonium' && pandas.includes(client.address)) {
         client.avatar = 2
       }
 
-      publishEvent('OnUpdatePlayer',
-        client.id, 
-        client.overrideSpeed || client.speed, 
-        client.overrideCameraSize || client.cameraSize, 
-        client.position.x, 
-        client.position.y, 
+      publishEvent(
+        'OnUpdatePlayer',
+        client.id,
+        client.overrideSpeed || client.speed,
+        client.overrideCameraSize || client.cameraSize,
+        client.position.x,
+        client.position.y,
         client.position.x, // target
         client.position.y, // target
-        Math.floor(client.xp), 
-        now, 
-        Math.round(client.latency), 
-        isInvincible ? '1' : '0', 
-        client.isStuck ? '1' : '0', 
+        Math.floor(client.xp),
+        now,
+        Math.round(client.latency),
+        isInvincible ? '1' : '0',
+        client.isStuck ? '1' : '0',
         isPhased && !isInvincible ? '1' : '0'
-       )
+      )
     }
 
     flushEventQueue(app)
 
     if (config.gameMode === 'Hayai') {
-      const timeStep = ((5*60)*(config.fastLoopSeconds * 1000)) // +5 base speed total, timestepped
+      const timeStep = 5 * 60 * (config.fastLoopSeconds * 1000) // +5 base speed total, timestepped
       const speedMultiplier = 0.25
 
-      config.baseSpeed += normalizeFloat((5*speedMultiplier) / timeStep)
+      config.baseSpeed += normalizeFloat((5 * speedMultiplier) / timeStep)
 
       // sharedConfig.checkPositionDistance += Math.round(6 / timeStep)
-      config.checkPositionDistance += normalizeFloat((6*speedMultiplier) / timeStep)
-      
-      // sharedConfig.checkInterval += Math.round(3 / timeStep)
-      config.checkInterval += normalizeFloat((3*speedMultiplier) / timeStep)
-    }
+      config.checkPositionDistance += normalizeFloat((6 * speedMultiplier) / timeStep)
 
+      // sharedConfig.checkInterval += Math.round(3 / timeStep)
+      config.checkInterval += normalizeFloat((3 * speedMultiplier) / timeStep)
+    }
 
     let totalAlivePlayers = []
 
@@ -2285,12 +2347,12 @@ function fastGameloop(app) {
     }
 
     lastFastGameloopTime = now
-  } catch(e) {
+  } catch (e) {
     log('Error:', e)
 
     disconnectAllPlayers(app)
 
-    setTimeout(function() {
+    setTimeout(function () {
       process.exit(1)
     }, 2 * 1000)
 
@@ -2301,12 +2363,14 @@ function fastGameloop(app) {
 }
 
 function getGameModeGuide(config) {
-  return config.guide || [
-    'Game Mode - ' + config.gameMode,
-    '1. Eat sprites to stay alive',
-    '2. Avoid bigger dragons',
-    '3. Eat smaller dragons'
-  ]
+  return (
+    config.guide || [
+      'Game Mode - ' + config.gameMode,
+      '1. Eat sprites to stay alive',
+      '2. Avoid bigger dragons',
+      '3. Eat smaller dragons',
+    ]
+  )
 }
 
 let eventFlushedAt = getTime()
@@ -2322,7 +2386,7 @@ function flushEventQueue(app) {
     if (recordDetailed) {
       eventFlushedAt = now
     }
-    
+
     const compiled = []
     for (const e of eventQueue) {
       const name = e[0]
@@ -2346,22 +2410,76 @@ function flushEventQueue(app) {
     emitAll(app, 'Events', getPayload(compiled))
 
     // round.events = round.events.concat(eventQueue)
-  
+
     eventQueue = null
     eventQueue = []
   }
 }
 
 function broadcastMechanics(client) {
-  if (isMechanicEnabled(client, 1150)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1150] - client.character.meta[1160])}% Rewards`, 0)
-  if (isMechanicEnabled(client, 1222)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1222])}% Movement Burst On Kill`, 0)
-  if (isMechanicEnabled(client, 1223)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1223])}% Movement Burst On Evolve`, 0)
-  if (isMechanicEnabled(client, 1030)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1030])}% Movement Burst Strength`, 0)
-  if (isMechanicEnabled(client, 1102)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1102])}% Avoid Death Penalty`, 0)
-  if (isMechanicEnabled(client, 1164)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1164])}% Double Pickup Chance`, 0)
-  if (isMechanicEnabled(client, 1219)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1219])}% Increased Health On Kill`, 0)
-  if (isMechanicEnabled(client, 1105)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1105] - client.character.meta[1104])}% Energy Decay`, 0)
-  if (isMechanicEnabled(client, 1117)) emitDirect(sockets[client.id], 'OnBroadcast', `${formatNumber(client.character.meta[1117] - client.character.meta[1118])}% Sprite Fuel`, 0)
+  if (isMechanicEnabled(client, 1150))
+    emitDirect(
+      sockets[client.id],
+      'OnBroadcast',
+      `${formatNumber(client.character.meta[1150] - client.character.meta[1160])}% Rewards`,
+      0
+    )
+  if (isMechanicEnabled(client, 1222))
+    emitDirect(
+      sockets[client.id],
+      'OnBroadcast',
+      `${formatNumber(client.character.meta[1222])}% Movement Burst On Kill`,
+      0
+    )
+  if (isMechanicEnabled(client, 1223))
+    emitDirect(
+      sockets[client.id],
+      'OnBroadcast',
+      `${formatNumber(client.character.meta[1223])}% Movement Burst On Evolve`,
+      0
+    )
+  if (isMechanicEnabled(client, 1030))
+    emitDirect(
+      sockets[client.id],
+      'OnBroadcast',
+      `${formatNumber(client.character.meta[1030])}% Movement Burst Strength`,
+      0
+    )
+  if (isMechanicEnabled(client, 1102))
+    emitDirect(
+      sockets[client.id],
+      'OnBroadcast',
+      `${formatNumber(client.character.meta[1102])}% Avoid Death Penalty`,
+      0
+    )
+  if (isMechanicEnabled(client, 1164))
+    emitDirect(
+      sockets[client.id],
+      'OnBroadcast',
+      `${formatNumber(client.character.meta[1164])}% Double Pickup Chance`,
+      0
+    )
+  if (isMechanicEnabled(client, 1219))
+    emitDirect(
+      sockets[client.id],
+      'OnBroadcast',
+      `${formatNumber(client.character.meta[1219])}% Increased Health On Kill`,
+      0
+    )
+  if (isMechanicEnabled(client, 1105))
+    emitDirect(
+      sockets[client.id],
+      'OnBroadcast',
+      `${formatNumber(client.character.meta[1105] - client.character.meta[1104])}% Energy Decay`,
+      0
+    )
+  if (isMechanicEnabled(client, 1117))
+    emitDirect(
+      sockets[client.id],
+      'OnBroadcast',
+      `${formatNumber(client.character.meta[1117] - client.character.meta[1118])}% Sprite Fuel`,
+      0
+    )
 }
 
 function clearSprites() {
@@ -2371,18 +2489,18 @@ function clearSprites() {
 function initEventHandler(app) {
   log('Starting event handler')
 
-  app.io.on('connection', function(socket) {
+  app.io.on('connection', function (socket) {
     try {
       log('Connection', socket.id)
 
-      const ip = socket.handshake.headers['x-forwarded-for']?.split(',')[0] || socket.conn.remoteAddress?.split(":")[3]
+      const ip = socket.handshake.headers['x-forwarded-for']?.split(',')[0] || socket.conn.remoteAddress?.split(':')[3]
       // socket.request.connection.remoteAddress ::ffff:127.0.0.1
       // socket.conn.remoteAddress ::ffff:127.0.0.1
       // socket.conn.transport.socket._socket.remoteAddress ::ffff:127.0.0.1
-      let hash = ip ? sha256(ip.slice(ip.length/2)) : ''
+      let hash = ip ? sha256(ip.slice(ip.length / 2)) : ''
       hash = ip ? hash.slice(hash.length - 10, hash.length - 1) : ''
 
-      const spawnPoint = playerSpawnPoints[(Math.floor(Math.random() * playerSpawnPoints.length))]
+      const spawnPoint = playerSpawnPoints[Math.floor(Math.random() * playerSpawnPoints.length)]
 
       let currentPlayer = {
         name: 'Unknown' + Math.floor(Math.random() * 999),
@@ -2460,7 +2578,7 @@ function initEventHandler(app) {
             // DoublePickupChance: 0,
             // LeaderMovementSpeedDecrease: 0,
             // IncreaseMovementSpeedOnKill: 0
-          }
+          },
         },
         log: {
           kills: [],
@@ -2494,7 +2612,7 @@ function initEventHandler(app) {
           signinProblem: 0,
           versionProblem: 0,
           failedRealmCheck: 0,
-        }
+        },
       }
 
       log('User connected from hash ' + hash)
@@ -2506,7 +2624,7 @@ function initEventHandler(app) {
         //   client.log.sameNetworkDisconnect += 1
         //   disconnectPlayer(app, client, 'same network')
         // }
-        const sameNetworkClient = clients.find(r => r.hash === currentPlayer.hash && r.id !== currentPlayer.id)
+        const sameNetworkClient = clients.find((r) => r.hash === currentPlayer.hash && r.id !== currentPlayer.id)
 
         if (sameNetworkClient) {
           currentPlayer.log.sameNetworkDisconnect += 1
@@ -2522,26 +2640,26 @@ function initEventHandler(app) {
         currentPlayer.isMasterClient = true // first client to join the game
       }
 
-      clients = clients.filter(c => c.hash !== currentPlayer.hash) // if we allow same network, this needs to be fixed
+      clients = clients.filter((c) => c.hash !== currentPlayer.hash) // if we allow same network, this needs to be fixed
       clients.push(currentPlayer)
 
-      socket.on('RS_Connected', async function(req) {
+      socket.on('RS_Connected', async function (req) {
         log('RS_Connected', req)
 
         try {
           // Assume first connection for now but verify
           realmServer.socket = socket
 
-          if (!await isValidAdminRequest(req)) throw new Error('Not admin')
+          if (!(await isValidAdminRequest(req))) throw new Error('Not admin')
 
-          const sameNetworkObservers = observers.filter(r => r.hash === currentPlayer.hash)
+          const sameNetworkObservers = observers.filter((r) => r.hash === currentPlayer.hash)
 
           for (const observer of sameNetworkObservers) {
             disconnectPlayer(app, observer, 'same network observer')
           }
 
           const observer = {
-            socket
+            socket,
           }
 
           observers.push(observer)
@@ -2552,10 +2670,10 @@ function initEventHandler(app) {
 
           publishEventDirect(socket, 'RS_ConnectedResponse', {
             id: req.id,
-            data: { status: 1 }
+            data: { status: 1 },
           })
 
-          const initRes = await rsCall('GS_InitRequest', { status: 1 }) as any
+          const initRes = (await rsCall('GS_InitRequest', { status: 1 })) as any
 
           log('GS_InitRequest', initRes)
 
@@ -2574,40 +2692,40 @@ function initEventHandler(app) {
 
           publishEventDirect(socket, 'RS_ConnectedResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
 
           await rsCall('GS_InitRequest', { status: 0 })
         }
       })
 
-      socket.on('RS_ApiConnected', async function(req) {
+      socket.on('RS_ApiConnected', async function (req) {
         log('RS_ApiConnected', req)
 
-        if (!await isValidAdminRequest(req)) {
+        if (!(await isValidAdminRequest(req))) {
           publishEventDirect(socket, 'RS_ApiConnectedResponse', {
             id: req.id,
-            data: { status: 0 }
-          }) 
+            data: { status: 0 },
+          })
           return
         }
-      
+
         publishEvent('OnBroadcast', `API connected`, 0)
 
         publishEventDirect(socket, 'RS_ApiConnectedResponse', {
           id: req.id,
-          data: { status: 1 }
+          data: { status: 1 },
         })
       })
 
-      socket.on('RS_ApiDisconnected', async function(req) {
+      socket.on('RS_ApiDisconnected', async function (req) {
         log('RS_ApiDisconnected', req)
 
-        if (!await isValidAdminRequest(req)) {
+        if (!(await isValidAdminRequest(req))) {
           publishEventDirect(socket, 'RS_ApiDisconnectedResponse', {
             id: req.id,
-            data: { status: 0 }
-          }) 
+            data: { status: 0 },
+          })
           return
         }
 
@@ -2615,24 +2733,24 @@ function initEventHandler(app) {
 
         publishEventDirect(socket, 'RS_ApiDisconnectedResponse', {
           id: req.id,
-          data: { status: 1 }
+          data: { status: 1 },
         })
       })
 
-      socket.on('RS_SetPlayerCharacterRequest', async function(req) {
+      socket.on('RS_SetPlayerCharacterRequest', async function (req) {
         log('RS_SetPlayerCharacterRequest', req, req.data.character.meta)
 
         try {
           if (currentPlayer.isRealm) {
-            const client = clients.find(c => c.address === req.data.address)
+            const client = clients.find((c) => c.address === req.data.address)
 
             if (client) {
               client.character = {
                 ...req.data.character,
                 meta: {
                   ...client.character.meta,
-                  ...req.data.character.meta
-                }
+                  ...req.data.character.meta,
+                },
               }
 
               if (sockets[client.id]) {
@@ -2641,7 +2759,7 @@ function initEventHandler(app) {
 
               publishEventDirect(socket, 'RS_SetPlayerCharacterResponse', {
                 id: req.id,
-                data: { status: 1 }
+                data: { status: 1 },
               })
 
               return
@@ -2653,11 +2771,11 @@ function initEventHandler(app) {
 
         publishEventDirect(socket, 'RS_SetPlayerCharacterResponse', {
           id: req.id,
-          data: { status: 0 }
+          data: { status: 0 },
         })
       })
 
-      socket.on('RS_SetConfigRequest', async function(req) {
+      socket.on('RS_SetConfigRequest', async function (req) {
         log('RS_SetConfigRequest', req)
 
         try {
@@ -2667,31 +2785,33 @@ function initEventHandler(app) {
             for (const key of Object.keys(req.data.config)) {
               const value = req.data.config[key]
 
-              const val = value === "true" ? true : (value === "false" ? false : (isNumeric(value) ? parseFloat(value) : value))
-              if (baseConfig.hasOwnProperty(key)) 
-                baseConfig[key] = val
-  
-              if (sharedConfig.hasOwnProperty(key))
-                sharedConfig[key] = val
-  
+              const val =
+                value === 'true' ? true : value === 'false' ? false : isNumeric(value) ? parseFloat(value) : value
+              if (baseConfig.hasOwnProperty(key)) baseConfig[key] = val
+
+              if (sharedConfig.hasOwnProperty(key)) sharedConfig[key] = val
+
               config[key] = val
 
               if (!req.data.isReset) publishEvent('OnBroadcast', `${key} = ${val}`, 1)
             }
 
             if (originalRewardAmount === 0 && config.rewardWinnerAmount !== 0) {
-              const roundTimer = (round.startedAt + config.roundLoopSeconds) - Math.round(getTime() / 1000)
-              publishEvent('OnSetRoundInfo', roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'))
+              const roundTimer = round.startedAt + config.roundLoopSeconds - Math.round(getTime() / 1000)
+              publishEvent(
+                'OnSetRoundInfo',
+                roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':')
+              )
             }
 
             publishEventDirect(socket, 'RS_SetConfigResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_SetConfigResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
@@ -2699,36 +2819,36 @@ function initEventHandler(app) {
 
           publishEventDirect(socket, 'RS_SetConfigResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_GetConfigRequest', function(req) {
+      socket.on('RS_GetConfigRequest', function (req) {
         log('RS_GetConfigRequest', req)
 
         publishEventDirect(socket, 'RS_GetConfigResponse', {
           id: req.id,
           data: {
             status: 1,
-            data: config
-          }
+            data: config,
+          },
         })
       })
 
-      socket.on('Load', function() {
+      socket.on('Load', function () {
         log('Load', currentPlayer.hash)
 
         emitDirect(socket, 'OnLoaded', 1)
       })
 
-      socket.on('Spectate', function() {
+      socket.on('Spectate', function () {
         log('Spectate', currentPlayer.address)
 
         spectate(currentPlayer)
       })
-      
-      socket.on('SetInfo', async function(msg) {
+
+      socket.on('SetInfo', async function (msg) {
         log('SetInfo', msg)
 
         try {
@@ -2750,7 +2870,9 @@ function initEventHandler(app) {
 
           log('SetInfo normalizeAddress', pack.address, address)
 
-          if (!await isValidSignatureRequest({ signature: { data: 'evolution', hash: pack.signature.trim(), address } })) {
+          if (
+            !(await isValidSignatureRequest({ signature: { data: 'evolution', hash: pack.signature.trim(), address } }))
+          ) {
             currentPlayer.log.signatureProblem += 1
             disconnectPlayer(app, currentPlayer, 'signature problem')
             return
@@ -2776,7 +2898,7 @@ function initEventHandler(app) {
 
             if (!name) {
               currentPlayer.isGuest = true
-              name = guestNames[random(0, guestNames.length-1)] + ' ' + Math.floor(Math.random() * 99)
+              name = guestNames[random(0, guestNames.length - 1)] + ' ' + Math.floor(Math.random() * 99)
               // currentPlayer.log.usernameProblem += 1
               // disconnectPlayer(app, currentPlayer, 'no name')
               // return
@@ -2799,10 +2921,10 @@ function initEventHandler(app) {
             currentPlayer.network = pack.network
             currentPlayer.device = pack.device
 
-            const recentPlayer = round.players.find(r => r.address === address)
+            const recentPlayer = round.players.find((r) => r.address === address)
 
             if (recentPlayer) {
-              if ((now - recentPlayer.lastUpdate) < 3000) {
+              if (now - recentPlayer.lastUpdate < 3000) {
                 currentPlayer.log.recentJoinProblem += 1
                 disconnectPlayer(app, currentPlayer, 'joined too soon', true)
                 return
@@ -2822,27 +2944,34 @@ function initEventHandler(app) {
 
               currentPlayer.log.connects += 1
             }
-        
-            publishEvent('OnSetInfo', currentPlayer.id, currentPlayer.name, currentPlayer.network, currentPlayer.address, currentPlayer.device)
+
+            publishEvent(
+              'OnSetInfo',
+              currentPlayer.id,
+              currentPlayer.name,
+              currentPlayer.network,
+              currentPlayer.address,
+              currentPlayer.device
+            )
 
             if (config.log.connections) {
               log('Connected', {
                 hash,
                 address: currentPlayer.address,
-                name: currentPlayer.name
+                name: currentPlayer.name,
               })
             }
           }
-        } catch(e) {
+        } catch (e) {
           log('Error:', e)
         }
       })
 
-      socket.on('JoinRoom', async function() {
+      socket.on('JoinRoom', async function () {
         log('JoinRoom', currentPlayer.id, currentPlayer.hash)
 
         try {
-          const confirmUser = await rsCall('GS_ConfirmUserRequest', { address: currentPlayer.address }) as any
+          const confirmUser = (await rsCall('GS_ConfirmUserRequest', { address: currentPlayer.address })) as any
 
           if (confirmUser?.status !== 1) {
             currentPlayer.log.failedRealmCheck += 1
@@ -2856,9 +2985,9 @@ function initEventHandler(app) {
 
           // const pack = decodePayload(msg)
           const now = getTime()
-          const recentPlayer = round.players.find(r => r.address === currentPlayer.address)
+          const recentPlayer = round.players.find((r) => r.address === currentPlayer.address)
 
-          if (recentPlayer && (now - recentPlayer.lastUpdate) < 3000) {
+          if (recentPlayer && now - recentPlayer.lastUpdate < 3000) {
             currentPlayer.log.connectedTooSoon += 1
             disconnectPlayer(app, currentPlayer, 'connected too soon')
             return
@@ -2878,13 +3007,31 @@ function initEventHandler(app) {
             currentPlayer.avatar = 2
             emitDirect(socket, 'OnUpdateEvolution', currentPlayer.id, currentPlayer.avatar, currentPlayer.speed)
           }
-          
-          log("[INFO] player " + currentPlayer.id + ": logged!")
-          log("[INFO] Total players: " + Object.keys(clientLookup).length)
 
-          const roundTimer = (round.startedAt + config.roundLoopSeconds) - Math.round(getTime() / 1000)
-          emitDirect(socket, 'OnSetPositionMonitor', Math.round(config.checkPositionDistance) + ':' + Math.round(config.checkInterval) + ':' + Math.round(config.resetInterval))
-          emitDirect(socket, 'OnJoinGame', currentPlayer.id, currentPlayer.name, currentPlayer.avatar, currentPlayer.isMasterClient ? 'true' : 'false', roundTimer, currentPlayer.position.x, currentPlayer.position.y)
+          log('[INFO] player ' + currentPlayer.id + ': logged!')
+          log('[INFO] Total players: ' + Object.keys(clientLookup).length)
+
+          const roundTimer = round.startedAt + config.roundLoopSeconds - Math.round(getTime() / 1000)
+          emitDirect(
+            socket,
+            'OnSetPositionMonitor',
+            Math.round(config.checkPositionDistance) +
+              ':' +
+              Math.round(config.checkInterval) +
+              ':' +
+              Math.round(config.resetInterval)
+          )
+          emitDirect(
+            socket,
+            'OnJoinGame',
+            currentPlayer.id,
+            currentPlayer.name,
+            currentPlayer.avatar,
+            currentPlayer.isMasterClient ? 'true' : 'false',
+            roundTimer,
+            currentPlayer.position.x,
+            currentPlayer.position.y
+          )
           // emitDirect(socket, 'OnSetInfo', currentPlayer.id, currentPlayer.name, currentPlayer.address, currentPlayer.network, currentPlayer.device)
 
           if (observers.length === 0) {
@@ -2894,7 +3041,11 @@ function initEventHandler(app) {
           }
 
           if (!config.isRoundPaused) {
-            emitDirect(socket, 'OnSetRoundInfo', roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':'))
+            emitDirect(
+              socket,
+              'OnSetRoundInfo',
+              roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(config).join(':')
+            )
             emitDirect(socket, 'OnBroadcast', `Game Mode - ${config.gameMode} (Round ${config.roundId})`, 0)
           }
 
@@ -2916,24 +3067,60 @@ function initEventHandler(app) {
           //   broadcastMechanics(currentPlayer)
           // }
 
-          // spawn all connected clients for currentUser client 
+          // spawn all connected clients for currentUser client
           for (const client of clients) {
             if (client.id === currentPlayer.id) continue
             if (client.isDisconnected || client.isDead || client.isSpectating || client.isJoining) continue
 
-            emitDirect(socket, 'OnSpawnPlayer', client.id, client.name, client.speed, client.avatar, client.position.x, client.position.y, client.position.x, client.position.y)
+            emitDirect(
+              socket,
+              'OnSpawnPlayer',
+              client.id,
+              client.name,
+              client.speed,
+              client.avatar,
+              client.position.x,
+              client.position.y,
+              client.position.x,
+              client.position.y
+            )
           }
 
           for (let c = 0; c < powerups.length; c++) {
-            emitDirect(socket, 'OnSpawnPowerUp', powerups[c].id, powerups[c].type, powerups[c].position.x, powerups[c].position.y, powerups[c].scale) // spawn power up in unity scene
+            emitDirect(
+              socket,
+              'OnSpawnPowerUp',
+              powerups[c].id,
+              powerups[c].type,
+              powerups[c].position.x,
+              powerups[c].position.y,
+              powerups[c].scale
+            ) // spawn power up in unity scene
           }
 
           for (let c = 0; c < orbs.length; c++) {
-            emitDirect(socket, 'OnSpawnPowerUp', orbs[c].id, orbs[c].type, orbs[c].position.x, orbs[c].position.y, orbs[c].scale) // spawn power up in unity scene
+            emitDirect(
+              socket,
+              'OnSpawnPowerUp',
+              orbs[c].id,
+              orbs[c].type,
+              orbs[c].position.x,
+              orbs[c].position.y,
+              orbs[c].scale
+            ) // spawn power up in unity scene
           }
 
           if (currentReward) {
-            emitDirect(socket, 'OnSpawnReward', currentReward.id, currentReward.rewardItemType, currentReward.rewardItemName, currentReward.quantity, currentReward.position.x, currentReward.position.y)
+            emitDirect(
+              socket,
+              'OnSpawnReward',
+              currentReward.id,
+              currentReward.rewardItemType,
+              currentReward.rewardItemName,
+              currentReward.quantity,
+              currentReward.position.x,
+              currentReward.position.y
+            )
           }
 
           currentPlayer.lastUpdate = getTime()
@@ -2943,7 +3130,7 @@ function initEventHandler(app) {
         }
       })
 
-      socket.on('UpdateMyself', function(msg) {
+      socket.on('UpdateMyself', function (msg) {
         try {
           if (currentPlayer.isDead && !currentPlayer.isJoining) return
           if (currentPlayer.isSpectating) return
@@ -2974,8 +3161,18 @@ function initEventHandler(app) {
             addToRecentPlayers(currentPlayer)
 
             // spawn currentPlayer client on clients in broadcast
-            publishEvent('OnSpawnPlayer', currentPlayer.id, currentPlayer.name, currentPlayer.overrideSpeed || currentPlayer.speed, currentPlayer.avatar, currentPlayer.position.x, currentPlayer.position.y, currentPlayer.position.x, currentPlayer.position.y)
-    
+            publishEvent(
+              'OnSpawnPlayer',
+              currentPlayer.id,
+              currentPlayer.name,
+              currentPlayer.overrideSpeed || currentPlayer.speed,
+              currentPlayer.avatar,
+              currentPlayer.position.x,
+              currentPlayer.position.y,
+              currentPlayer.position.x,
+              currentPlayer.position.y
+            )
+
             if (config.isRoundPaused) {
               emitDirect(socket, 'OnRoundPaused')
               return
@@ -2990,13 +3187,22 @@ function initEventHandler(app) {
           const targetX = parseFloat(parseFloat(pack.target.split(':')[0].replace(',', '.')).toFixed(3))
           const targetY = parseFloat(parseFloat(pack.target.split(':')[1].replace(',', '.')).toFixed(3))
 
-          if (!Number.isFinite(positionX) || !Number.isFinite(positionY) || !Number.isFinite(targetX) || !Number.isFinite(targetY)) return
+          if (
+            !Number.isFinite(positionX) ||
+            !Number.isFinite(positionY) ||
+            !Number.isFinite(targetX) ||
+            !Number.isFinite(targetY)
+          )
+            return
           if (positionX < mapBoundary.x.min) return
           if (positionX > mapBoundary.x.max) return
           if (positionY < mapBoundary.y.min) return
           if (positionY > mapBoundary.y.max) return
-        
-          if (config.anticheat.disconnectPositionJumps && distanceBetweenPoints(currentPlayer.position, { x: positionY, y: positionY }) > 5) {
+
+          if (
+            config.anticheat.disconnectPositionJumps &&
+            distanceBetweenPoints(currentPlayer.position, { x: positionY, y: positionY }) > 5
+          ) {
             currentPlayer.log.positionJump += 1
             disconnectPlayer(app, currentPlayer, 'position jumped')
             return
@@ -3004,110 +3210,110 @@ function initEventHandler(app) {
 
           currentPlayer.clientPosition = { x: normalizeFloat(positionX, 4), y: normalizeFloat(positionY, 4) }
           currentPlayer.clientTarget = { x: normalizeFloat(targetX, 4), y: normalizeFloat(targetY, 4) }
-          currentPlayer.lastReportedTime = currentPlayer.name === 'Testman' ? parseFloat(pack.time) - 300 : parseFloat(pack.time)
+          currentPlayer.lastReportedTime =
+            currentPlayer.name === 'Testman' ? parseFloat(pack.time) - 300 : parseFloat(pack.time)
           currentPlayer.lastUpdate = now
-        } catch(e) {
+        } catch (e) {
           log('Error:', e)
         }
       })
 
-      socket.on('RS_RestartRequest', async function(req) {
+      socket.on('RS_RestartRequest', async function (req) {
         try {
           log('RS_RestartRequest', req)
 
           if (await isValidAdminRequest(req)) {
             publishEventDirect(socket, 'RS_RestartResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
 
             publishEvent('OnBroadcast', `Server is rebooting in 10 seconds`, 3)
-            
-            setTimeout(function() {
+
+            setTimeout(function () {
               process.exit(1)
             }, 10 * 1000)
           } else {
             publishEventDirect(socket, 'RS_RestartResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           log('Error:', e)
-          
+
           publishEventDirect(socket, 'RS_RestartResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_MaintenanceRequest', async function(req) {
+      socket.on('RS_MaintenanceRequest', async function (req) {
         try {
           log('RS_MaintenanceRequest', req)
 
           if (await isValidAdminRequest(req)) {
             sharedConfig.isMaintenance = true
             config.isMaintenance = true
-        
+
             publishEvent('OnMaintenance', config.isMaintenance)
 
             publishEventDirect(socket, 'RS_MaintenanceResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_MaintenanceResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           log('Error:', e)
-          
+
           publishEventDirect(socket, 'RS_MaintenanceResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_UnmaintenanceRequest', async function(req) {
+      socket.on('RS_UnmaintenanceRequest', async function (req) {
         try {
           log('RS_UnmaintenanceRequest', req)
 
           if (await isValidAdminRequest(req)) {
             sharedConfig.isMaintenance = false
             config.isMaintenance = false
-        
+
             publishEvent('OnUnmaintenance', config.isMaintenance)
 
             publishEventDirect(socket, 'RS_UnmaintenanceResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_UnmaintenanceResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           log('Error:', e)
-          
+
           publishEventDirect(socket, 'RS_UnmaintenanceResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_StartBattleRoyaleRequest', async function(req) {
+      socket.on('RS_StartBattleRoyaleRequest', async function (req) {
         try {
           log('RS_StartBattleRoyaleRequest', req)
 
           if (await isValidAdminRequest(req)) {
-
             publishEvent('OnBroadcast', `Battle Royale in 3...`, 1)
 
             setTimeout(() => {
@@ -3115,14 +3321,14 @@ function initEventHandler(app) {
 
               setTimeout(() => {
                 publishEvent('OnBroadcast', `Battle Royale in 1...`, 1)
-  
+
                 setTimeout(() => {
                   baseConfig.isBattleRoyale = true
                   config.isBattleRoyale = true
 
                   baseConfig.isGodParty = false
                   config.isGodParty = false
-      
+
                   publishEvent('OnBroadcast', `Battle Royale Started`, 3)
                   publishEvent('OnBroadcast', `God Party Stopped`, 3)
                 }, 1000)
@@ -3131,25 +3337,25 @@ function initEventHandler(app) {
 
             publishEventDirect(socket, 'RS_StartBattleRoyaleResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_StartBattleRoyaleResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           log('Error:', e)
-          
+
           publishEventDirect(socket, 'RS_StartBattleRoyaleResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_StopBattleRoyaleRequest', async function(req) {
+      socket.on('RS_StopBattleRoyaleRequest', async function (req) {
         try {
           log('RS_StopBattleRoyaleRequest', req)
 
@@ -3158,28 +3364,28 @@ function initEventHandler(app) {
             config.isBattleRoyale = false
 
             publishEvent('OnBroadcast', `Battle Royale Stopped`, 0)
-        
+
             publishEventDirect(socket, 'RS_StopBattleRoyaleResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_StopBattleRoyaleResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           log('Error:', e)
-          
+
           publishEventDirect(socket, 'RS_StopBattleRoyaleResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_PauseRoundRequest', async function(req) {
+      socket.on('RS_PauseRoundRequest', async function (req) {
         try {
           log('RS_PauseRoundRequest', req)
 
@@ -3191,28 +3397,28 @@ function initEventHandler(app) {
 
             publishEvent('OnRoundPaused')
             publishEvent('OnBroadcast', `Round Paused`, 0)
-        
+
             publishEventDirect(socket, 'RS_PauseRoundResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_PauseRoundResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           log('Error:', e)
-          
+
           publishEventDirect(socket, 'RS_PauseRoundResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_StartRoundRequest', async function(req) {
+      socket.on('RS_StartRoundRequest', async function (req) {
         try {
           log('RS_StartRoundRequest', req)
 
@@ -3224,16 +3430,16 @@ function initEventHandler(app) {
               config.isRoundPaused = false
             }
 
-            resetLeaderboard(presets.find(p => p.gameMode === req.data.gameMode))
+            resetLeaderboard(presets.find((p) => p.gameMode === req.data.gameMode))
 
             publishEventDirect(socket, 'RS_StartRoundResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_StartRoundResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
@@ -3241,27 +3447,27 @@ function initEventHandler(app) {
 
           publishEventDirect(socket, 'RS_StartRoundResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_EnableForceLevel2Request', async function(req) {
+      socket.on('RS_EnableForceLevel2Request', async function (req) {
         try {
           log('RS_EnableForceLevel2Request', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.level2forced = true
             config.level2forced = true
-            
+
             publishEventDirect(socket, 'RS_EnableForceLevel2Response', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_EnableForceLevel2Response', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
@@ -3269,27 +3475,27 @@ function initEventHandler(app) {
 
           publishEventDirect(socket, 'RS_EnableForceLevel2Response', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_DisableForceLevel2Request', async function(req) {
+      socket.on('RS_DisableForceLevel2Request', async function (req) {
         try {
           log('RS_DisableForceLevel2Request', req)
 
           if (await isValidAdminRequest(req)) {
             baseConfig.level2forced = false
             config.level2forced = false
-            
+
             publishEventDirect(socket, 'RS_DisableForceLevel2Response', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_DisableForceLevel2Response', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
@@ -3297,12 +3503,12 @@ function initEventHandler(app) {
 
           publishEventDirect(socket, 'RS_DisableForceLevel2Response', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_StartGodPartyRequest', async function(req) {
+      socket.on('RS_StartGodPartyRequest', async function (req) {
         try {
           log('RS_StartGodPartyRequest', req)
 
@@ -3311,28 +3517,28 @@ function initEventHandler(app) {
             config.isGodParty = true
 
             publishEvent('OnBroadcast', `God Party Started`, 0)
-            
+
             publishEventDirect(socket, 'RS_StartGodPartyResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_StartGodPartyResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           log('Error:', e)
-          
+
           publishEventDirect(socket, 'RS_StartGodPartyResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_StopGodPartyRequest', async function(req) {
+      socket.on('RS_StopGodPartyRequest', async function (req) {
         try {
           log('RS_StopGodPartyRequest', req)
 
@@ -3347,28 +3553,28 @@ function initEventHandler(app) {
             }
 
             publishEvent('OnBroadcast', `God Party Stopped`, 2)
-            
+
             publishEventDirect(socket, 'RS_StopGodPartyResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_StopGodPartyResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           log('Error:', e)
-          
+
           publishEventDirect(socket, 'RS_StopGodPartyResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_StartRuneRoyaleRequest', async function(req) {
+      socket.on('RS_StartRuneRoyaleRequest', async function (req) {
         try {
           log('RS_StartRuneRoyaleRequest', req)
 
@@ -3377,82 +3583,82 @@ function initEventHandler(app) {
             config.isRuneRoyale = true
 
             publishEvent('OnBroadcast', `Rune Royale Started`, 0)
-            
+
             publishEventDirect(socket, 'RS_StartRuneRoyaleResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_StartRuneRoyaleResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           log('Error:', e)
-          
+
           publishEventDirect(socket, 'RS_StartRuneRoyaleResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_PauseRuneRoyaleRequest', async function(req) {
+      socket.on('RS_PauseRuneRoyaleRequest', async function (req) {
         try {
           log('RS_PauseRuneRoyaleRequest', req)
 
           if (await isValidAdminRequest(req)) {
             publishEvent('OnBroadcast', `Rune Royale Paused`, 2)
-            
+
             publishEventDirect(socket, 'RS_PauseRuneRoyaleResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_PauseRuneRoyaleResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           log('Error:', e)
-          
+
           publishEventDirect(socket, 'RS_PauseRuneRoyaleResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_UnpauseRuneRoyaleRequest', async function(req) {
+      socket.on('RS_UnpauseRuneRoyaleRequest', async function (req) {
         try {
           log('RS_UnpauseRuneRoyaleRequest', req)
 
           if (await isValidAdminRequest(req)) {
             publishEvent('OnBroadcast', `Rune Royale Unpaused`, 2)
-            
+
             publishEventDirect(socket, 'RS_UnpauseRuneRoyaleResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_UnpauseRuneRoyaleResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           log('Error:', e)
-          
+
           publishEventDirect(socket, 'RS_UnpauseRuneRoyaleResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_StopRuneRoyaleRequest', async function(req) {
+      socket.on('RS_StopRuneRoyaleRequest', async function (req) {
         try {
           log('RS_StopRuneRoyaleRequest', req)
 
@@ -3461,28 +3667,28 @@ function initEventHandler(app) {
             config.isRuneRoyale = false
 
             publishEvent('OnBroadcast', `Rune Royale Stopped`, 2)
-            
+
             publishEventDirect(socket, 'RS_StopRuneRoyaleResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_StopRuneRoyaleResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           log('Error:', e)
-          
+
           publishEventDirect(socket, 'RS_StopRuneRoyaleResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_MakeBattleHarderRequest', async function(req) {
+      socket.on('RS_MakeBattleHarderRequest', async function (req) {
         try {
           log('RS_MakeBattleHarderRequest', req)
 
@@ -3498,39 +3704,42 @@ function initEventHandler(app) {
 
             sharedConfig.checkPositionDistance += 1
             config.checkPositionDistance += 1
-            
+
             sharedConfig.checkInterval += 1
             config.checkInterval += 1
-            
+
             sharedConfig.spritesStartCount -= 10
             config.spritesStartCount -= 10
 
-            publishEvent('OnSetPositionMonitor', config.checkPositionDistance + ':' + config.checkInterval + ':' + config.resetInterval)
+            publishEvent(
+              'OnSetPositionMonitor',
+              config.checkPositionDistance + ':' + config.checkInterval + ':' + config.resetInterval
+            )
             publishEvent('OnBroadcast', `Difficulty Increased!`, 2)
 
             syncSprites()
-            
+
             publishEventDirect(socket, 'RS_MakeBattleHarderResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_MakeBattleHarderResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           log('Error:', e)
-          
+
           publishEventDirect(socket, 'RS_MakeBattleHarderResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_MakeBattleEasierRequest', async function(req) {
+      socket.on('RS_MakeBattleEasierRequest', async function (req) {
         try {
           log('RS_MakeBattleEasierRequest', req)
 
@@ -3546,37 +3755,40 @@ function initEventHandler(app) {
 
             sharedConfig.checkPositionDistance -= 1
             config.checkPositionDistance -= 1
-            
+
             sharedConfig.checkInterval -= 1
             config.checkInterval -= 1
-            
+
             sharedConfig.spritesStartCount += 10
             config.spritesStartCount += 10
 
-            publishEvent('OnSetPositionMonitor', config.checkPositionDistance + ':' + config.checkInterval + ':' + config.resetInterval)
+            publishEvent(
+              'OnSetPositionMonitor',
+              config.checkPositionDistance + ':' + config.checkInterval + ':' + config.resetInterval
+            )
             publishEvent('OnBroadcast', `Difficulty Decreased!`, 0)
 
             syncSprites()
-        
+
             publishEventDirect(socket, 'RS_MakeBattleEasierResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_MakeBattleEasierResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           publishEventDirect(socket, 'RS_MakeBattleEasierResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_ResetBattleDifficultyRequest', async function(req) {
+      socket.on('RS_ResetBattleDifficultyRequest', async function (req) {
         try {
           log('RS_ResetBattleDifficultyRequest', req)
 
@@ -3592,27 +3804,30 @@ function initEventHandler(app) {
 
             sharedConfig.checkPositionDistance = 2
             config.checkPositionDistance = 2
-            
+
             sharedConfig.checkInterval = 1
             config.checkInterval = 1
 
-            publishEvent('OnSetPositionMonitor', config.checkPositionDistance + ':' + config.checkInterval + ':' + config.resetInterval)
+            publishEvent(
+              'OnSetPositionMonitor',
+              config.checkPositionDistance + ':' + config.checkInterval + ':' + config.resetInterval
+            )
             publishEvent('OnBroadcast', `Difficulty Reset!`, 0)
-        
+
             publishEventDirect(socket, 'RS_ResetBattleDifficultyResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_ResetBattleDifficultyResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           publishEventDirect(socket, 'RS_ResetBattleDifficultyResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
@@ -3623,16 +3838,16 @@ function initEventHandler(app) {
 
       //     if (await isValidAdminRequest(req)) {
       //       const val = isNumeric(req.data.value) ? parseFloat(req.data.value) : req.data.value
-      //       if (baseConfig.hasOwnProperty(req.data.key)) 
+      //       if (baseConfig.hasOwnProperty(req.data.key))
       //         baseConfig[req.data.key] = val
 
-      //       if (sharedConfig.hasOwnProperty(req.data.key)) 
+      //       if (sharedConfig.hasOwnProperty(req.data.key))
       //         sharedConfig[req.data.key] = val
 
       //       config[req.data.key] = val
 
       //       publishEvent('OnBroadcast', `${req.data.key} = ${val}`, 1)
-            
+
       //       publishEventDirect(socket, 'RS_SetConfigResponse', {
       //         id: req.id,
       //         data: { status: 1 }
@@ -3645,7 +3860,7 @@ function initEventHandler(app) {
       //     }
       //   } catch (e) {
       //     log('Error:', e)
-          
+
       //     publishEventDirect(socket, 'RS_SetConfigResponse', {
       //       id: req.id,
       //       data: { status: 0 }
@@ -3653,104 +3868,107 @@ function initEventHandler(app) {
       //   }
       // })
 
-      socket.on('RS_MessageUserRequest', async function(req) {
+      socket.on('RS_MessageUserRequest', async function (req) {
         try {
           log('RS_MessageUserRequest', req)
 
           if (await isValidAdminRequest(req)) {
-            const socket = sockets[clients.find(c => c.address === req.data.target).id]
+            const socket = sockets[clients.find((c) => c.address === req.data.target).id]
 
             emitDirect(socket, 'OnBroadcast', req.data.message.replace(/:/gi, ''), 0)
-            
+
             publishEventDirect(socket, 'RS_MessageUserResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_MessageUserResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           publishEventDirect(socket, 'RS_MessageUserResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_ChangeUserRequest', async function(req) {
+      socket.on('RS_ChangeUserRequest', async function (req) {
         try {
           log('RS_ChangeUserRequest', req)
 
           if (await isValidAdminRequest(req)) {
-            const client = clients.find(c => c.address === req.data.target)
+            const client = clients.find((c) => c.address === req.data.target)
 
             for (const key of Object.keys(req.data.config)) {
               const value = req.data.config[key]
-              const val = value === "true" ? true : (value === "false" ? false : (isNumeric(value) ? parseFloat(value) : value))
-              if (client.hasOwnProperty(key))
-                client[key] = val
-              else
-                throw new Error('User doesnt have that option')
+              const val =
+                value === 'true' ? true : value === 'false' ? false : isNumeric(value) ? parseFloat(value) : value
+              if (client.hasOwnProperty(key)) client[key] = val
+              else throw new Error('User doesnt have that option')
             }
 
             publishEventDirect(socket, 'RS_ChangeUserResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_ChangeUserResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           publishEventDirect(socket, 'RS_ChangeUserResponse', {
             id: req.id,
-            data: { status: 0, message: e.toString() }
+            data: { status: 0, message: e.toString() },
           })
         }
       })
 
-      socket.on('RS_BroadcastRequest', async function(req) {
+      socket.on('RS_BroadcastRequest', async function (req) {
         try {
           log('RS_BroadcastRequest', {
             caller: req.address,
-            message: req.data.message
+            message: req.data.message,
           })
 
           if (await isValidAdminRequest(req)) {
             publishEvent('OnBroadcast', req.data.message.replace(/:/gi, ''), 0)
-            
+
             publishEventDirect(socket, 'RS_BroadcastResponse', {
               id: req.id,
-              data: { status: 1 }
+              data: { status: 1 },
             })
           } else {
             publishEventDirect(socket, 'RS_BroadcastResponse', {
               id: req.id,
-              data: { status: 0 }
+              data: { status: 0 },
             })
           }
         } catch (e) {
           log('Error:', e)
-          
+
           publishEventDirect(socket, 'RS_BroadcastResponse', {
             id: req.id,
-            data: { status: 0 }
+            data: { status: 0 },
           })
         }
       })
 
-      socket.on('RS_KickUser', async function(req) {
-        if (await isValidAdminRequest(req) && clients.find(c => c.address === req.data.target)) {
-          disconnectPlayer(app, clients.find(c => c.address === req.data.target), 'kicked')
+      socket.on('RS_KickUser', async function (req) {
+        if ((await isValidAdminRequest(req)) && clients.find((c) => c.address === req.data.target)) {
+          disconnectPlayer(
+            app,
+            clients.find((c) => c.address === req.data.target),
+            'kicked'
+          )
         }
       })
 
-      socket.on('RS_InfoRequest', function(req) {
+      socket.on('RS_InfoRequest', function (req) {
         publishEventDirect(socket, 'RS_InfoResponse', {
           id: req.id,
           data: {
@@ -3761,22 +3979,22 @@ function initEventHandler(app) {
               port: app.state.spawnPort,
               round: { id: config.roundId, startedAt: round.startedAt },
               clientCount: clients.length,
-              playerCount: clients.filter(c => !c.isDead && !c.isSpectating).length,
-              spectatorCount: clients.filter(c => c.isSpectating).length,
+              playerCount: clients.filter((c) => !c.isDead && !c.isSpectating).length,
+              spectatorCount: clients.filter((c) => c.isSpectating).length,
               recentPlayersCount: round.players.length,
               spritesCount: config.spritesTotal,
-              connectedPlayers: clients.filter(c => !!c.address).map(c => c.address),
+              connectedPlayers: clients.filter((c) => !!c.address).map((c) => c.address),
               rewardItemAmount: config.rewardItemAmount,
               rewardWinnerAmount: config.rewardWinnerAmount,
               gameMode: config.gameMode,
               orbs: orbs,
-              currentReward
-            }
-          }
+              currentReward,
+            },
+          },
         })
       })
 
-      socket.onAny(function(eventName, res) {
+      socket.onAny(function (eventName, res) {
         if (!res || !res.id) return
         // log('onAny', eventName, res)
 
@@ -3790,13 +4008,13 @@ function initEventHandler(app) {
           clearTimeout(ioCallbacks[res.id].timeout)
 
           ioCallbacks[res.id].resolve(res.data)
-    
+
           delete ioCallbacks[res.id]
         }
       })
 
-      socket.on('disconnect', function() {
-        log("User has disconnected")
+      socket.on('disconnect', function () {
+        log('User has disconnected')
 
         currentPlayer.log.clientDisconnected += 1
 
@@ -3806,7 +4024,7 @@ function initEventHandler(app) {
           publishEvent('OnBroadcast', `Realm disconnected`, 0)
         }
       })
-    } catch(e) {
+    } catch (e) {
       log('Error:', e)
     }
   })

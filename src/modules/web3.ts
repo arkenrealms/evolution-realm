@@ -4,7 +4,7 @@ import { log } from '@rune-backend-sdk/util'
 import { getAddress, getRandomProvider } from '@rune-backend-sdk/util/web3'
 import contractInfo from '@rune-backend-sdk/contractInfo'
 import BEP20Contract from '@rune-backend-sdk/contracts/BEP20.json'
-import secrets from "../../secrets.json"
+import secrets from '../../secrets.json'
 
 function _initProvider(app) {
   try {
@@ -22,8 +22,12 @@ function _initProvider(app) {
     app.signers.write = app.ethersProvider.getSigner()
 
     app.contracts = {}
-    app.contracts.wbnb = new ethers.Contract(getAddress(app.contractInfo.wbnb), app.contractMetadata.BEP20.abi, app.signers.read)
-  } catch(e) {
+    app.contracts.wbnb = new ethers.Contract(
+      getAddress(app.contractInfo.wbnb),
+      app.contractMetadata.BEP20.abi,
+      app.signers.read
+    )
+  } catch (e) {
     log(`Couldn't setup provider.`, e)
 
     setTimeout(() => _initProvider(app), 60 * 1000)
@@ -48,7 +52,7 @@ export function initWeb3(app) {
 
   app.signers = {
     read: undefined,
-    write: undefined
+    write: undefined,
   }
 
   initProvider(app)

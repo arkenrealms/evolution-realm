@@ -63,9 +63,6 @@
     "ts-node": "^8.3.0",
     "tscpaths": "^0.0.9"
   },
-  "engines": {
-    "node": "14.*.*"
-  },
   "scripts": {
     "dev": "RUNE_ENV=local RS_PORT=7832 RS_SSL_PORT=7833 GS_PORT=7842 GS_SSL_PORT=7843 PROVIDER_URI=wss://autumn-blue-meadow.bsc.quiknode.pro/6b0e7864e252135989a5346630683db90691012a/ LOG=1 LOG_PREFIX=[RERS] tsnd --respawn -r tsconfig-paths/register ./src/index.ts",
     "inspect": "NODE_ENV=development yarn build && PORT=3001 NODE_ENV=production node --inspect build/index.js",

@@ -37,14 +37,15 @@ function startGameServer(app) {
 
     const env = {
       ...process.env,
-      LOG_PREFIX: '[REGS]'
+      LOG_PREFIX: '[REGS]',
     }
 
     // Start the server
-    app.gameBridge.process = spawn('node',
-      ['-r', 'tsconfig-paths/register', 'build/index.js'], 
-      {cwd: path.resolve('./game-server'), env, stdio: ['ignore', 'pipe', 'pipe']}
-    )
+    app.gameBridge.process = spawn('node', ['-r', 'tsconfig-paths/register', 'build/index.js'], {
+      cwd: path.resolve('./game-server'),
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
 
     app.gameBridge.process.stdout.pipe(process.stdout)
     app.gameBridge.process.stderr.pipe(process.stderr)
@@ -60,7 +61,7 @@ function startGameServer(app) {
 
     app.subProcesses.push(app.gameBridge.process)
 
-    process.env.GS_PORT = app.gameBridge.state.spawnPort+1 + ''
+    process.env.GS_PORT = app.gameBridge.state.spawnPort + 1 + ''
   } catch (e) {
     log('startGameServer error', e)
   }
@@ -74,8 +75,8 @@ async function callGameServer(app, name, signature, data = {}) {
 
   return new Promise((resolve, reject) => {
     const id = shortId()
-    
-    const timeout = setTimeout(function() {
+
+    const timeout = setTimeout(function () {
       resolve({ status: 0, message: 'Request timeout' })
 
       delete app.gameBridge.ioCallbacks[id]
@@ -99,21 +100,21 @@ function connectGameServer(app) {
 
   const server = {
     endpoint: 'local.runeevolution.com:' + app.gameBridge.state.spawnPort, // local.runeevolution.com
-    key: 'local1'
+    key: 'local1',
   }
 
-  const socket = app.gameBridge.socket = getSocket(app, (app.isHttps ? 'https://' : 'http://') + server.endpoint)
+  const socket = (app.gameBridge.socket = getSocket(app, (app.isHttps ? 'https://' : 'http://') + server.endpoint))
 
   const serverState = {
     id: shortId(), // TODO: fix it so GS uses this
     info: undefined,
-    isAuthed: false
+    isAuthed: false,
   }
 
   app.gameBridge.state.servers.push(serverState) // TODO: check this gets updated by GS so it sends correct info to DB
 
   async function fetchInfo() {
-    const res = await app.gameBridge.call('RS_InfoRequest') as any
+    const res = (await app.gameBridge.call('RS_InfoRequest')) as any
 
     log('fetchInfo res', res)
 
@@ -124,7 +125,7 @@ function connectGameServer(app) {
     // setTimeout(fetchInfo, 10 * 1000)
   }
 
-  socket.on('connect', async function() {
+  socket.on('connect', async function () {
     log('Connected: ' + server.key)
 
     const id = shortId()
@@ -134,26 +135,26 @@ function connectGameServer(app) {
     socket.emit('RS_Connected', { id, signature, data })
   })
 
-  socket.on('disconnect', function() {
+  socket.on('disconnect', function () {
     log('Disconnected: ' + server.key)
   })
 
-  socket.on('GS_Ping', function(msg) {
+  socket.on('GS_Ping', function (msg) {
     log('GS_Ping', msg)
   })
 
-  socket.on('GS_InitRequest', async function(req) {
+  socket.on('GS_InitRequest', async function (req) {
     try {
       if (req.data.status !== 1) {
         logError('Could not init')
-        
+
         emitDirect(socket, 'GS_InitResponse', {
           id: req.id,
           data: {
-            status: 0
-          }
+            status: 0,
+          },
         })
-        
+
         return
       }
 
@@ -163,12 +164,12 @@ function connectGameServer(app) {
 
       if (!info) {
         logError('Couldnt fetch info')
-  
+
         emitDirect(socket, 'GS_InitResponse', {
           id: req.id,
           data: {
-            status: 0
-          }
+            status: 0,
+          },
         })
         return
       }
@@ -186,12 +187,12 @@ function connectGameServer(app) {
           status: 1,
           data: {
             id: shortId(),
-            roundId: app.gameBridge.state.config.roundId
-          }
-        }
+            roundId: app.gameBridge.state.config.roundId,
+          },
+        },
       })
 
-      const infoRequestFunc = async function() {
+      const infoRequestFunc = async function () {
         const info = await fetchInfo()
 
         if (info) {
@@ -206,15 +207,14 @@ function connectGameServer(app) {
       }
 
       app.gameBridge.infoRequestTimeout = setTimeout(infoRequestFunc, 20 * 1000)
-
-    } catch(e) {
+    } catch (e) {
       logError(e)
 
       emitDirect(socket, 'GS_InitResponse', {
         id: req.id,
         data: {
-          status: 0
-        }
+          status: 0,
+        },
       })
     }
   })
@@ -224,7 +224,7 @@ function connectGameServer(app) {
   //   emitDirect(socket, 'OnConnected')
   // })
 
-  socket.on('GS_ConfigureRequest', function(req) {
+  socket.on('GS_ConfigureRequest', function (req) {
     try {
       log('GS_ConfigureRequest', req)
 
@@ -238,7 +238,13 @@ function connectGameServer(app) {
         if (client.isGuest) continue
 
         try {
-          if ((client.powerups > 100 && client.kills > 1) || (client.evolves > 20 && client.powerups > 200) || (client.rewards > 3 && client.powerups > 200) || (client.evolves > 100) || (client.points > 1000)) {
+          if (
+            (client.powerups > 100 && client.kills > 1) ||
+            (client.evolves > 20 && client.powerups > 200) ||
+            (client.rewards > 3 && client.powerups > 200) ||
+            client.evolves > 100 ||
+            client.points > 1000
+          ) {
             config.totalLegitPlayers += 1
           }
         } catch (e) {
@@ -248,8 +254,22 @@ function connectGameServer(app) {
 
       if (config.totalLegitPlayers === 0) config.totalLegitPlayers = 1
 
-      config.rewardItemAmount = parseFloat((Math.round(Math.min(config.totalLegitPlayers * config.rewardItemAmountPerLegitPlayer, config.rewardItemAmountMax) * 1000) / 1000).toFixed(3))
-      config.rewardWinnerAmount = parseFloat((Math.round(Math.min(config.totalLegitPlayers * config.rewardWinnerAmountPerLegitPlayer, config.rewardWinnerAmountMax) * 1000) / 1000).toFixed(3))
+      config.rewardItemAmount = parseFloat(
+        (
+          Math.round(
+            Math.min(config.totalLegitPlayers * config.rewardItemAmountPerLegitPlayer, config.rewardItemAmountMax) *
+              1000
+          ) / 1000
+        ).toFixed(3)
+      )
+      config.rewardWinnerAmount = parseFloat(
+        (
+          Math.round(
+            Math.min(config.totalLegitPlayers * config.rewardWinnerAmountPerLegitPlayer, config.rewardWinnerAmountMax) *
+              1000
+          ) / 1000
+        ).toFixed(3)
+      )
 
       emitDirect(socket, 'GS_ConfigureResponse', {
         id: req.id,
@@ -257,21 +277,24 @@ function connectGameServer(app) {
           status: 1,
           data: {
             rewardWinnerAmount: config.rewardWinnerAmount,
-            rewardItemAmount: config.rewardItemAmount
-          }
-        }
+            rewardItemAmount: config.rewardItemAmount,
+          },
+        },
       })
     } catch (e) {
       logError(e)
 
       emitDirect(socket, 'GS_ConfigureResponse', {
         id: req.id,
-        data: { status: 0, data: { rewardWinnerAmount: 0, rewardItemAmount: 0 } }
+        data: {
+          status: 0,
+          data: { rewardWinnerAmount: 0, rewardItemAmount: 0 },
+        },
       })
     }
   })
 
-  socket.on('GS_SaveRoundRequest', async function(req) {
+  socket.on('GS_SaveRoundRequest', async function (req) {
     const { config } = app.gameBridge.state
 
     let failed = false
@@ -280,12 +303,18 @@ function connectGameServer(app) {
       log('GS_SaveRoundRequest', req)
 
       // Update player stat DB
-      const res = await app.realm.call('SaveRoundRequest', { gsid: serverState.id, roundId: config.roundId, round: req.data, rewardWinnerAmount: config.rewardWinnerAmount, lastClients: app.gameBridge.state.clients })
+      const res = await app.realm.call('SaveRoundRequest', {
+        gsid: serverState.id,
+        roundId: config.roundId,
+        round: req.data,
+        rewardWinnerAmount: config.rewardWinnerAmount,
+        lastClients: app.gameBridge.state.clients,
+      })
 
       if (res.status === 1) {
         emitDirect(socket, 'GS_SaveRoundResponse', {
           id: req.id,
-          data: res
+          data: res,
         })
       } else {
         failed = true
@@ -301,11 +330,16 @@ function connectGameServer(app) {
       if (failed) {
         const { config } = app.gameBridge.state
 
-        app.state.unsavedGames.push({ gsid: serverState.id, roundId: config.roundId, round: req.data, rewardWinnerAmount: config.rewardWinnerAmount })
+        app.state.unsavedGames.push({
+          gsid: serverState.id,
+          roundId: config.roundId,
+          round: req.data,
+          rewardWinnerAmount: config.rewardWinnerAmount,
+        })
 
         emitDirect(socket, 'GS_SaveRoundResponse', {
           id: req.id,
-          data: { status: 0 }
+          data: { status: 0 },
         })
 
         // config.rewardItemAmount = 0
@@ -313,21 +347,24 @@ function connectGameServer(app) {
         // config.rewardWinnerAmount = 0
         // config.rewardWinnerAmountPerLegitPlayer = 0
       } else {
-        for (const game of app.state.unsavedGames.filter(g => g.status === undefined)) {
+        for (const game of app.state.unsavedGames.filter((g) => g.status === undefined)) {
           const res = await app.realm.call('SaveRoundRequest', game)
 
           game.status = res.status
         }
 
-        app.state.unsavedGames = app.state.unsavedGames.filter(g => g.status !== 1)
+        app.state.unsavedGames = app.state.unsavedGames.filter((g) => g.status !== 1)
       }
 
-      await jetpack.writeAsync(path.resolve('./public/data/unsavedGames.json'), JSON.stringify(app.state.unsavedGames, null, 2))
+      await jetpack.writeAsync(
+        path.resolve('./public/data/unsavedGames.json'),
+        JSON.stringify(app.state.unsavedGames, null, 2)
+      )
       await jetpack.writeAsync(path.resolve('./public/data/config.json'), JSON.stringify(config, null, 2))
-    } catch(e) {
+    } catch (e) {
       emitDirect(socket, 'GS_SaveRoundResponse', {
         id: req.id,
-        data: { status: 0 }
+        data: { status: 0 },
       })
 
       logError(e)
@@ -336,46 +373,75 @@ function connectGameServer(app) {
     app.gameBridge.state.config.roundId++
   })
 
-  socket.on('GS_ConfirmUserRequest', async function(req) {
+  const isTournamentActive = false
+  const allowedTournamentUsers = ['Pandamonium', 'Maiev', 'RuneGiveaways', 'Botter']
+
+  socket.on('GS_ConfirmUserRequest', async function (req) {
     try {
       log('GS_ConfirmUserRequest', req)
 
       let overview = app.gameBridge.userCache[req.data.address]
-      
+
       if (!overview) {
         try {
-          overview = (await (await fetch(`https://cache.rune.game/users/${req.data.address}/overview.json`)).json()) as any
+          overview = (await (
+            await fetch(`https://cache.rune.game/users/${req.data.address}/overview.json`)
+          ).json()) as any
 
           app.gameBridge.userCache[req.data.address] = overview
-        } catch(e) {
+        } catch (e) {
           // No user exists, but they can play as guest
           emitDirect(socket, 'GS_ConfirmUserResponse', {
             id: req.id,
-            data: { status: 1 }
+            data: { status: 1 },
           })
           return
         }
       }
 
-      const now = (new Date()).getTime() / 1000
+      if (isTournamentActive && !allowedTournamentUsers.includes(overview.username)) {
+        console.log('Not approved for tournament. Disconnecting.')
+        emitDirect(socket, 'GS_ConfirmUserResponse', {
+          id: req.id,
+          data: { status: 0 },
+        })
+        return
+      }
+
+      if (app.gameBridge.state.clients.length > 50) {
+        console.log('Too many players. Disconnecting.')
+        emitDirect(socket, 'GS_ConfirmUserResponse', {
+          id: req.id,
+          data: { status: 0 },
+        })
+        return
+      }
+
+      const now = new Date().getTime() / 1000
 
       if (overview.isBanned && overview.bannedUntil > now) {
         emitDirect(socket, 'GS_ConfirmUserResponse', {
           id: req.id,
-          data: { status: 0 }
+          data: { status: 0 },
         })
         return
       }
 
       emitDirect(socket, 'GS_ConfirmUserResponse', {
         id: req.id,
-        data: { status: 1, isMod: app.realm.state.modList.includes(req.data.address) || app.realm.state.adminList.includes(req.data.address) }
+        data: {
+          status: 1,
+          isMod:
+            app.realm.state.modList.includes(req.data.address) || app.realm.state.adminList.includes(req.data.address),
+        },
       })
 
       let character = app.gameBridge.characterCache[req.data.address]
 
       if (!character) {
-        const res = await app.realm.call('GetCharacterRequest', { address: req.data.address })
+        const res = await app.realm.call('GetCharacterRequest', {
+          address: req.data.address,
+        })
 
         log('GetCharacterResponse', res)
 
@@ -393,14 +459,14 @@ function connectGameServer(app) {
           id: shortId.generate(),
           data: {
             address: req.data.address,
-            character
-          }
+            character,
+          },
         })
       }
     } catch (e) {
       emitDirect(socket, 'GS_ConfirmUserResponse', {
         id: req.id,
-        data: { status: 0 }
+        data: { status: 0 },
       })
 
       logError(e)
@@ -425,7 +491,7 @@ function connectGameServer(app) {
   //     }
   //   } catch (e) {
   //     logError(e)
-      
+
   //     emitDirect(socket, 'GS_ReportUserResponse', {
   //       id: req.id,
   //       data: { status: 0 }
@@ -433,60 +499,81 @@ function connectGameServer(app) {
   //   }
   // })
 
-  socket.on('GS_VerifySignatureRequest', function(req) {
+  socket.on('GS_VerifySignatureRequest', function (req) {
     try {
       emitDirect(socket, 'GS_VerifySignatureResponse', {
         id: req.id,
         data: {
           status: 1,
-          verified: req.data.signature.data === 'evolution' && req.data.signature.hash.startsWith('0x') && req.data.signature.hash.length === 132 && app.web3.eth.accounts.recover(req.data.signature.data, req.data.signature.hash).toLowerCase() === req.data.signature.address.toLowerCase()
-        }
+          verified:
+            req.data.signature.data === 'evolution' &&
+            req.data.signature.hash.startsWith('0x') &&
+            req.data.signature.hash.length === 132 &&
+            app.web3.eth.accounts.recover(req.data.signature.data, req.data.signature.hash).toLowerCase() ===
+              req.data.signature.address.toLowerCase(),
+        },
       })
-    } catch(e) {
+    } catch (e) {
       emitDirect(socket, 'GS_VerifySignatureResponse', {
         id: req.id,
         data: {
           status: 0,
-          verified: false
-        }
+          verified: false,
+        },
       })
       logError(e)
     }
   })
 
-  socket.on('GS_VerifyAdminSignatureRequest', function(req) {
+  socket.on('GS_VerifyAdminSignatureRequest', function (req) {
     // log('GS_VerifyAdminSignatureRequest', req)
     const originalReq = req.data
 
     try {
       const normalizedAddress = app.web3.utils.toChecksumAddress(originalReq.signature.address.trim())
       const hashedData = md5(JSON.stringify(originalReq.data))
-      const isValid = app.web3.eth.accounts.recover(originalReq.signature.data, originalReq.signature.hash).toLowerCase() === originalReq.signature.address.toLowerCase() && hashedData === originalReq.signature.data && (app.realm.state.adminList.includes(normalizedAddress) || app.realm.state.modList.includes(normalizedAddress))
+      const isValid =
+        app.web3.eth.accounts.recover(originalReq.signature.data, originalReq.signature.hash).toLowerCase() ===
+          originalReq.signature.address.toLowerCase() &&
+        hashedData === originalReq.signature.data &&
+        (app.realm.state.adminList.includes(normalizedAddress) || app.realm.state.modList.includes(normalizedAddress))
 
       log('Hashed data', hashedData, originalReq.signature.data, originalReq.data)
-      log('Address ' + normalizedAddress + ' is in admin list = ' + (app.realm.state.adminList.includes(normalizedAddress) ? 'YES' : 'NO'), app.realm.state.modList)
-      log('Address ' + normalizedAddress + ' is in mod list = ' + (app.realm.state.modList.includes(normalizedAddress) ? 'YES' : 'NO'), app.realm.state.modList)
+      log(
+        'Address ' +
+          normalizedAddress +
+          ' is in admin list = ' +
+          (app.realm.state.adminList.includes(normalizedAddress) ? 'YES' : 'NO'),
+        app.realm.state.modList
+      )
+      log(
+        'Address ' +
+          normalizedAddress +
+          ' is in mod list = ' +
+          (app.realm.state.modList.includes(normalizedAddress) ? 'YES' : 'NO'),
+        app.realm.state.modList
+      )
 
       emitDirect(socket, 'GS_VerifyAdminSignatureResponse', {
         id: req.id,
         data: {
           status: isValid ? 1 : 0,
-          address: normalizedAddress
-        }
+          address: normalizedAddress,
+        },
       })
-    } catch(e) {
+    } catch (e) {
       emitDirect(socket, 'GS_VerifyAdminSignatureResponse', {
         id: req.id,
         data: {
           status: 0,
-          address: originalReq.signature.address
-        }
+          address: originalReq.signature.address,
+        },
       })
       logError(e)
     }
   })
 
-  socket.on('GS_NormalizeAddressRequest', function(req) {
+  socket.on('GS_NormalizeAddressRequest', function (req) {
     try {
       log('GS_NormalizeAddressRequest', req)
 
@@ -496,16 +583,16 @@ function connectGameServer(app) {
         id: req.id,
         data: {
           status: 1,
-          address: app.web3.utils.toChecksumAddress(req.data.address.trim())
-        }
+          address: app.web3.utils.toChecksumAddress(req.data.address.trim()),
+        },
       })
-    } catch(e) {
+    } catch (e) {
       emitDirect(socket, 'GS_NormalizeAddressResponse', {
         id: req.id,
         data: {
           status: 0,
-          address: req.data.address
-        }
+          address: req.data.address,
+        },
       })
       logError(e)
     }
@@ -524,7 +611,7 @@ function connectGameServer(app) {
   //         if (!playerRewards[currentPlayer.address].pending[reward.symbol]) playerRewards[currentPlayer.address].pending[reward.symbol] = 0
 
   //         playerRewards[currentPlayer.address].pending[reward.symbol] = Math.round((playerRewards[currentPlayer.address].pending[reward.symbol] + reward.quantity) * 1000) / 1000
-          
+
   //         rewards.runes.find(r => r.symbol === reward.symbol).quantity -= reward.quantity
   //       } else {
   //         if (!playerRewards[currentPlayer.address]) playerRewards[currentPlayer.address] = {}
@@ -538,7 +625,7 @@ function connectGameServer(app) {
   //   }
   // })
 
-  socket.on('GS_GetRandomRewardRequest', function(req) {
+  socket.on('GS_GetRandomRewardRequest', function (req) {
     try {
       const now = getTime()
 
@@ -552,164 +639,380 @@ function connectGameServer(app) {
       if (!config.drops.runeword) config.drops.runeword = 1633043139000
       if (!config.drops.runeToken) config.drops.runeToken = 1633043139000
 
-      const timesPer10Mins = Math.round(10 * 60 / config.rewardSpawnLoopSeconds)
+      const timesPer10Mins = Math.round((10 * 60) / config.rewardSpawnLoopSeconds)
       const randPer10Mins = random(0, timesPer10Mins)
-      const timesPerDay = Math.round(40 * 60 * 60 / config.rewardSpawnLoopSeconds)
+      const timesPerDay = Math.round((40 * 60 * 60) / config.rewardSpawnLoopSeconds)
       const randPerDay = random(0, timesPerDay)
-      const timesPerWeek = Math.round(10 * 24 * 60 * 60 / config.rewardSpawnLoopSeconds)
+      const timesPerWeek = Math.round((10 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds)
       const randPerWeek = random(0, timesPerWeek)
-      const timesPerBiweekly = Math.round(20 * 24 * 60 * 60 / config.rewardSpawnLoopSeconds)
+      const timesPerBiweekly = Math.round((20 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds)
       const randPerBiweekly = random(0, timesPerBiweekly)
-      const timesPerMonth = Math.round(31 * 24 * 60 * 60 / config.rewardSpawnLoopSeconds)
+      const timesPerMonth = Math.round((31 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds)
       const randPerMonth = random(0, timesPerMonth)
 
       let tempReward
       const dropItems = false
 
-      if (dropItems && (now - config.drops.guardian) > 48 * 60 * 60 * 1000 && randPerDay === Math.round(timesPerDay / 2)) { // (now - config.drops.guardian) > 12 * 60 * 60 * 1000) {
+      if (
+        dropItems &&
+        now - config.drops.guardian > 48 * 60 * 60 * 1000 &&
+        randPerDay === Math.round(timesPerDay / 2)
+      ) {
+        // (now - config.drops.guardian) > 12 * 60 * 60 * 1000) {
         tempReward = {
           id: shortId.generate(),
-          position: config.level2open ? app.gameBridge.state.rewardSpawnPoints2[random(0, app.gameBridge.state.rewardSpawnPoints2.length-1)] : app.gameBridge.state.rewardSpawnPoints[random(0, app.gameBridge.state.rewardSpawnPoints.length-1)],
+          position: config.level2open
+            ? app.gameBridge.state.rewardSpawnPoints2[random(0, app.gameBridge.state.rewardSpawnPoints2.length - 1)]
+            : app.gameBridge.state.rewardSpawnPoints[random(0, app.gameBridge.state.rewardSpawnPoints.length - 1)],
           enabledAt: now,
           name: 'Guardian Egg',
           rarity: 'Magical',
           quantity: 1,
-          rewardItemType: 2
+          rewardItemType: 2,
         }
 
         const rand = random(0, 1000)
-        
-        if (rand === 1000)
-          tempReward.rarity = 'Mythic'
-        else if (rand > 950)
-          tempReward.rarity = 'Epic'
-        else if (rand > 850)
-          tempReward.rarity = 'Rare'
+
+        if (rand === 1000) tempReward.rarity = 'Mythic'
+        else if (rand > 950) tempReward.rarity = 'Epic'
+        else if (rand > 850) tempReward.rarity = 'Rare'
 
         tempReward.rewardItemName = tempReward.rarity + ' ' + tempReward.name
 
         config.drops.guardian = now
-      } else if (dropItems && (now - config.drops.earlyAccess) > 30 * 24 * 60 * 60 * 1000 && randPerMonth === Math.round(timesPerMonth / 2)) { // (now - config.drops.earlyAccess) > 7 * 24 * 60 * 60 * 1000
+      } else if (
+        dropItems &&
+        now - config.drops.earlyAccess > 30 * 24 * 60 * 60 * 1000 &&
+        randPerMonth === Math.round(timesPerMonth / 2)
+      ) {
+        // (now - config.drops.earlyAccess) > 7 * 24 * 60 * 60 * 1000
         tempReward = {
           id: shortId.generate(),
-          position: config.level2open ? app.gameBridge.state.rewardSpawnPoints2[random(0, app.gameBridge.state.rewardSpawnPoints2.length-1)] : app.gameBridge.state.rewardSpawnPoints[random(0, app.gameBridge.state.rewardSpawnPoints.length-1)],
+          position: config.level2open
+            ? app.gameBridge.state.rewardSpawnPoints2[random(0, app.gameBridge.state.rewardSpawnPoints2.length - 1)]
+            : app.gameBridge.state.rewardSpawnPoints[random(0, app.gameBridge.state.rewardSpawnPoints.length - 1)],
           enabledAt: now,
           name: `Early Access Founder's Cube`,
           rarity: 'Unique',
           quantity: 1,
-          rewardItemType: 3
+          rewardItemType: 3,
         }
 
         tempReward.rewardItemName = tempReward.name
 
         config.drops.earlyAccess = now
-      // } else if (randPer10Mins === Math.round(timesPer10Mins / 2)) { // (now - config.drops.earlyAccess) > 7 * 24 * 60 * 60 * 1000
-      //   tempReward = {
-      //     id: shortId.generate(),
-      //     position: config.level2open ? rewardSpawnPoints2[random(0, rewardSpawnPoints2.length-1)] : rewardSpawnPoints[random(0, rewardSpawnPoints.length-1)],
-      //     enabledAt: now,
-      //     name: `Santa Christmas 2021 Ticket`,
-      //     rarity: 'Normal',
-      //     quantity: 1
-      //   }
+        // } else if (randPer10Mins === Math.round(timesPer10Mins / 2)) { // (now - config.drops.earlyAccess) > 7 * 24 * 60 * 60 * 1000
+        //   tempReward = {
+        //     id: shortId.generate(),
+        //     position: config.level2open ? rewardSpawnPoints2[random(0, rewardSpawnPoints2.length-1)] : rewardSpawnPoints[random(0, rewardSpawnPoints.length-1)],
+        //     enabledAt: now,
+        //     name: `Santa Christmas 2021 Ticket`,
+        //     rarity: 'Normal',
+        //     quantity: 1
+        //   }
 
-      //   sharedConfig.rewardItemName = tempReward.name
-      //   sharedConfig.rewardItemType = 6
-      //   config.rewardItemName = sharedConfig.rewardItemName
-      //   config.rewardItemType = sharedConfig.rewardItemType
+        //   sharedConfig.rewardItemName = tempReward.name
+        //   sharedConfig.rewardItemType = 6
+        //   config.rewardItemName = sharedConfig.rewardItemName
+        //   config.rewardItemType = sharedConfig.rewardItemType
 
-      //   config.drops.santa = now
-      } else if (dropItems && (now - config.drops.trinket) > 24 * 60 * 60 * 1000 && randPerDay === Math.round(timesPerDay / 4)) { // (now - config.drops.trinket) > 12 * 60 * 60 * 1000
+        //   config.drops.santa = now
+      } else if (
+        dropItems &&
+        now - config.drops.trinket > 24 * 60 * 60 * 1000 &&
+        randPerDay === Math.round(timesPerDay / 4)
+      ) {
+        // (now - config.drops.trinket) > 12 * 60 * 60 * 1000
         tempReward = {
           id: shortId.generate(),
-          position: config.level2open ? app.gameBridge.state.rewardSpawnPoints2[random(0, app.gameBridge.state.rewardSpawnPoints2.length-1)] : app.gameBridge.state.rewardSpawnPoints[random(0, app.gameBridge.state.rewardSpawnPoints.length-1)],
+          position: config.level2open
+            ? app.gameBridge.state.rewardSpawnPoints2[random(0, app.gameBridge.state.rewardSpawnPoints2.length - 1)]
+            : app.gameBridge.state.rewardSpawnPoints[random(0, app.gameBridge.state.rewardSpawnPoints.length - 1)],
           enabledAt: now,
           name: 'Trinket',
           rarity: 'Magical',
           quantity: 1,
-          rewardItemType: 4
+          rewardItemType: 4,
         }
 
         const rand = random(0, 1000)
-        
-        if (rand === 1000)
-          tempReward.rarity = 'Mythic'
-        else if (rand > 950)
-          tempReward.rarity = 'Epic'
-        else if (rand > 850)
-          tempReward.rarity = 'Rare'
+
+        if (rand === 1000) tempReward.rarity = 'Mythic'
+        else if (rand > 950) tempReward.rarity = 'Epic'
+        else if (rand > 850) tempReward.rarity = 'Rare'
 
         tempReward.rewardItemName = tempReward.rarity + ' ' + tempReward.name
 
         config.drops.trinket = now
-      } else if (dropItems && (now - config.drops.runeword) > 12 * 60 * 60 * 1000 && randPerDay === Math.round(timesPerDay / 5)) { // (now - config.drops.runeword) > 24 * 60 * 60 * 1000
+      } else if (
+        dropItems &&
+        now - config.drops.runeword > 12 * 60 * 60 * 1000 &&
+        randPerDay === Math.round(timesPerDay / 5)
+      ) {
+        // (now - config.drops.runeword) > 24 * 60 * 60 * 1000
         config.drops.runeword = now
-      } else if (dropItems && (now - config.drops.runeToken) > 31 * 24 * 60 * 60 * 1000 && randPerMonth === timesPerMonth / 3) { // (now - config.drops.runeToken) > 7 * 24 * 60 * 60 * 1000
+      } else if (
+        dropItems &&
+        now - config.drops.runeToken > 31 * 24 * 60 * 60 * 1000 &&
+        randPerMonth === timesPerMonth / 3
+      ) {
+        // (now - config.drops.runeToken) > 7 * 24 * 60 * 60 * 1000
         tempReward = {
           id: shortId.generate(),
-          position: config.level2open ? app.gameBridge.state.rewardSpawnPoints2[random(0, app.gameBridge.state.rewardSpawnPoints2.length-1)] : app.gameBridge.state.rewardSpawnPoints[random(0, app.gameBridge.state.rewardSpawnPoints.length-1)],
+          position: config.level2open
+            ? app.gameBridge.state.rewardSpawnPoints2[random(0, app.gameBridge.state.rewardSpawnPoints2.length - 1)]
+            : app.gameBridge.state.rewardSpawnPoints[random(0, app.gameBridge.state.rewardSpawnPoints.length - 1)],
           enabledAt: now,
           name: 'RUNE',
           rarity: 'Normal',
           quantity: 1,
-          rewardItemType: 5
+          rewardItemType: 5,
         }
 
         const rand = random(0, 1000)
-        
-        if (rand === 1000)
-          tempReward.quantity = 10
-        else if (rand > 990)
-          tempReward.quantity = 3
-        else if (rand > 950)
-          tempReward.quantity = 2
+
+        if (rand === 1000) tempReward.quantity = 10
+        else if (rand > 990) tempReward.quantity = 3
+        else if (rand > 950) tempReward.quantity = 2
 
         tempReward.rewardItemName = tempReward.quantity + ' ' + tempReward.name
 
         config.drops.runeToken = now
       } else {
         const odds = [
-          'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes',
-          'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes',
-          'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes',
-          'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes',
-          'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes',
-          'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes',
-          'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes',
-          'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes',
-          'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes',
-          'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes', 'runes',
-          'runes'
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
+          'runes',
         ]
-      
-        const rewardType = app.gameBridge.state.rewards[odds[random(0, odds.length-1)]]
-      
+
+        const rewardType = app.gameBridge.state.rewards[odds[random(0, odds.length - 1)]]
+
         if (!rewardType || rewardType.length === 0) {
           emitDirect(socket, 'GS_GetRandomRewardResponse', {
             id: req.id,
-            data: null
+            data: null,
           })
           return
         }
-      
-        const reward = rewardType[random(0, rewardType.length-1)]
-      
+
+        const reward = rewardType[random(0, rewardType.length - 1)]
+
         if (reward.type === 'rune' && reward.quantity <= 0) {
           emitDirect(socket, 'GS_GetRandomRewardResponse', {
             id: req.id,
-            data: null
+            data: null,
           })
           return
         }
-      
+
         const now = getTime()
-      
+
         tempReward = JSON.parse(JSON.stringify(reward))
         tempReward.id = shortId.generate()
-        tempReward.position = config.level2open ? app.gameBridge.state.rewardSpawnPoints2[random(0, app.gameBridge.state.rewardSpawnPoints2.length-1)] : app.gameBridge.state.rewardSpawnPoints[random(0, app.gameBridge.state.rewardSpawnPoints.length-1)]
+        tempReward.position = config.level2open
+          ? app.gameBridge.state.rewardSpawnPoints2[random(0, app.gameBridge.state.rewardSpawnPoints2.length - 1)]
+          : app.gameBridge.state.rewardSpawnPoints[random(0, app.gameBridge.state.rewardSpawnPoints.length - 1)]
         tempReward.enabledAt = now
         tempReward.quantity = config.rewardItemAmount
-        
+
         if (tempReward.type === 'rune') {
           tempReward.rewardItemType = 0
           tempReward.rewardItemName = tempReward.symbol.toUpperCase()
@@ -720,21 +1023,21 @@ function connectGameServer(app) {
         id: req.id,
         data: {
           status: 1,
-          reward: tempReward
-        }
+          reward: tempReward,
+        },
       })
-    } catch(e) {
+    } catch (e) {
       emitDirect(socket, 'GS_GetRandomRewardResponse', {
         id: req.id,
         data: {
-          status: 0
-        }
+          status: 0,
+        },
       })
       logError(e)
     }
   })
 
-  socket.onAny(function(eventName, res) {
+  socket.onAny(function (eventName, res) {
     try {
       if (eventName === 'Events') return
 
@@ -751,7 +1054,7 @@ function connectGameServer(app) {
 
         delete app.gameBridge.ioCallbacks[id]
       }
-    } catch(e) {
+    } catch (e) {
       logError(e)
     }
   })
@@ -760,7 +1063,7 @@ function connectGameServer(app) {
 
   clearTimeout(app.gameBridge.connectTimeout)
 
-  app.gameBridge.connectTimeout = setTimeout(function() {
+  app.gameBridge.connectTimeout = setTimeout(function () {
     logError('Could not connect to GS on ' + server.endpoint)
 
     socket.close()
@@ -783,84 +1086,84 @@ export function initGameBridge(app) {
   app.gameBridge.state.clients = []
 
   app.gameBridge.state.rewards = {
-    "runes": [
+    runes: [
       {
-        "type": "rune",
-        "symbol": "sol",
-        "quantity": 100
+        type: 'rune',
+        symbol: 'sol',
+        quantity: 100,
       },
       {
-        "type": "rune",
-        "symbol": "tir",
-        "quantity": 100
+        type: 'rune',
+        symbol: 'tir',
+        quantity: 100,
       },
       {
-        "type": "rune",
-        "symbol": "nef",
-        "quantity": 100
+        type: 'rune',
+        symbol: 'nef',
+        quantity: 100,
       },
       {
-        "type": "rune",
-        "symbol": "ith",
-        "quantity": 10000
+        type: 'rune',
+        symbol: 'ith',
+        quantity: 10000,
       },
       {
-        "type": "rune",
-        "symbol": "hel",
-        "quantity": 100
+        type: 'rune',
+        symbol: 'hel',
+        quantity: 100,
       },
       {
-        "type": "rune",
-        "symbol": "ral",
-        "quantity": 10000
+        type: 'rune',
+        symbol: 'ral',
+        quantity: 10000,
       },
       {
-        "type": "rune",
-        "symbol": "thul",
-        "quantity": 10000
+        type: 'rune',
+        symbol: 'thul',
+        quantity: 10000,
       },
       {
-        "type": "rune",
-        "symbol": "amn",
-        "quantity": 10000
+        type: 'rune',
+        symbol: 'amn',
+        quantity: 10000,
       },
       {
-        "type": "rune",
-        "symbol": "ort",
-        "quantity": 10000
+        type: 'rune',
+        symbol: 'ort',
+        quantity: 10000,
       },
       {
-        "type": "rune",
-        "symbol": "shael",
-        "quantity": 100
+        type: 'rune',
+        symbol: 'shael',
+        quantity: 100,
       },
       {
-        "type": "rune",
-        "symbol": "tal",
-        "quantity": 10000
+        type: 'rune',
+        symbol: 'tal',
+        quantity: 10000,
       },
       {
-        "type": "rune",
-        "symbol": "dol",
-        "quantity": 100
+        type: 'rune',
+        symbol: 'dol',
+        quantity: 100,
       },
       {
-        "type": "rune",
-        "symbol": "zod",
-        "quantity": 0
-      }
+        type: 'rune',
+        symbol: 'zod',
+        quantity: 0,
+      },
     ],
-    "items": [],
-    "characters": [
+    items: [],
+    characters: [
       {
-        "type": "character",
-        "tokenId": "1"
-      }
-    ]
+        type: 'character',
+        tokenId: '1',
+      },
+    ],
   } as any
 
   app.gameBridge.userCache = {}
-  
+
   app.gameBridge.state.config = jetpack.read(path.resolve('./public/data/config.json'), 'json') || {
     roundId: 1,
     rewardItemAmountPerLegitPlayer: 0,
@@ -875,55 +1178,55 @@ export function initGameBridge(app) {
       trinket: 1641251240764,
       santa: 1633043139000,
       runeword: 1641303263018,
-      runeToken: 1633043139000
-    }
+      runeToken: 1633043139000,
+    },
   }
 
   // Override because we didnt get response from RS yet
   app.gameBridge.state.config.rewardItemAmount = 0
   app.gameBridge.state.config.rewardWinnerAmount = 0
-  
+
   app.gameBridge.state.rewardSpawnPoints = [
-    {x: -16.32, y: -15.7774},
-    {x: -9.420004, y: -6.517404},
-    {x: -3.130003, y: -7.537404},
-    {x: -7.290003, y: -12.9074},
-    {x: -16.09, y: -2.867404},
-    {x: -5.39, y: -3.76},
-    {x: -7.28, y: -15.36},
-    {x: -13.46, y: -13.92},
-    {x: -12.66, y: -1.527404},
+    { x: -16.32, y: -15.7774 },
+    { x: -9.420004, y: -6.517404 },
+    { x: -3.130003, y: -7.537404 },
+    { x: -7.290003, y: -12.9074 },
+    { x: -16.09, y: -2.867404 },
+    { x: -5.39, y: -3.76 },
+    { x: -7.28, y: -15.36 },
+    { x: -13.46, y: -13.92 },
+    { x: -12.66, y: -1.527404 },
   ]
-  
+
   app.gameBridge.state.rewardSpawnPoints2 = [
-    {x: -16.32, y: -15.7774},
-    {x: -9.420004, y: -6.517404},
-    {x: -3.130003, y: -7.537404},
-    {x: -7.290003, y: -12.9074},
-    {x: -16.09, y: -2.867404},
-    {x: -5.39, y: -3.76},
-    {x: -12.66, y: -1.527404},
-  
-    {x: -24.21, y: -7.58},
-    {x: -30.62, y: -7.58},
-    {x: -30.8, y: -14.52},
-    {x: -20.04, y: -15.11},
-    {x: -29.21, y: -3.76},
-    {x: -18.16, y: 0.06},
-    {x: -22.98, y: -3.35},
-    {x: -25.92, y: -7.64},
-    {x: -20.1, y: -6.93},
-    {x: -26.74, y: 0},
-    {x: -32.74, y: -5.17},
-    {x: -25.74, y: -15.28},
-    {x: -22.62, y: -11.69},
-    {x: -26.44, y: -4.05},
+    { x: -16.32, y: -15.7774 },
+    { x: -9.420004, y: -6.517404 },
+    { x: -3.130003, y: -7.537404 },
+    { x: -7.290003, y: -12.9074 },
+    { x: -16.09, y: -2.867404 },
+    { x: -5.39, y: -3.76 },
+    { x: -12.66, y: -1.527404 },
+
+    { x: -24.21, y: -7.58 },
+    { x: -30.62, y: -7.58 },
+    { x: -30.8, y: -14.52 },
+    { x: -20.04, y: -15.11 },
+    { x: -29.21, y: -3.76 },
+    { x: -18.16, y: 0.06 },
+    { x: -22.98, y: -3.35 },
+    { x: -25.92, y: -7.64 },
+    { x: -20.1, y: -6.93 },
+    { x: -26.74, y: 0 },
+    { x: -32.74, y: -5.17 },
+    { x: -25.74, y: -15.28 },
+    { x: -22.62, y: -11.69 },
+    { x: -26.44, y: -4.05 },
   ]
 
   app.gameBridge.state.servers = []
 
   app.gameBridge.process = null
-  
+
   app.gameBridge.call = callGameServer.bind(null, app)
 
   app.gameBridge.start = startGameServer.bind(null, app)
@@ -937,10 +1240,9 @@ export function initGameBridge(app) {
   app.gameBridge.characterCache = {}
 
   // Clear equipment cache every 10 mins
-  setInterval(function() {
+  setInterval(function () {
     app.gameBridge.characterCache = {}
   }, 10 * 60 * 1000)
-
 
   setTimeout(() => {
     if (process.env.RUNE_ENV !== 'local') {

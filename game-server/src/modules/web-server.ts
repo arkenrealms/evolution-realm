@@ -8,8 +8,10 @@ const path = require('path')
 
 function initRoutes(server) {
   try {
-    server.get('/.well-known/acme-challenge/M8BaoHsFi7co0BQAuCAq2mI7YrL6OS69HvIQrbyFlC8', (req, res) => res.end('M8BaoHsFi7co0BQAuCAq2mI7YrL6OS69HvIQrbyFlC8.vuboczA32qq2liEOxQ8-eyB18eE2jCWY64W5dIEm4S8'))
-  } catch(e) {
+    server.get('/.well-known/acme-challenge/M8BaoHsFi7co0BQAuCAq2mI7YrL6OS69HvIQrbyFlC8', (req, res) =>
+      res.end('M8BaoHsFi7co0BQAuCAq2mI7YrL6OS69HvIQrbyFlC8.vuboczA32qq2liEOxQ8-eyB18eE2jCWY64W5dIEm4S8')
+    )
+  } catch (e) {
     logError(e)
   }
 }
