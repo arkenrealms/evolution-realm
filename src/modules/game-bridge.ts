@@ -401,7 +401,6 @@ function connectGameServer(app) {
       log('GS_ConfirmUserRequest', req)
 
       let overview = app.gameBridge.userCache[req.data.address]
-      console.log('zzz', overview?.username, !allowedTournamentUsers.includes(overview?.username))
 
       if (!overview) {
         try {
@@ -419,6 +418,8 @@ function connectGameServer(app) {
           return
         }
       }
+
+      console.log('zzz', overview, !allowedTournamentUsers.includes(overview?.username))
 
       if (isTournamentActive && !allowedTournamentUsers.includes(overview?.username)) {
         console.log('Not approved for tournament. Disconnecting.')
