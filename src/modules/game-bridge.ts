@@ -402,6 +402,15 @@ function connectGameServer(app) {
 
       let overview = app.gameBridge.userCache[req.data.address]
 
+      if (isTournamentActive && !allowedTournamentUsers.includes(overview?.username)) {
+        console.log('Not approved for tournament. Disconnecting.')
+        emitDirect(socket, 'GS_ConfirmUserResponse', {
+          id: req.id,
+          data: { status: 0 },
+        })
+        return
+      }
+
       if (!overview) {
         try {
           overview = (await (
@@ -417,15 +426,6 @@ function connectGameServer(app) {
           })
           return
         }
-      }
-
-      if (isTournamentActive && !allowedTournamentUsers.includes(overview.username)) {
-        console.log('Not approved for tournament. Disconnecting.')
-        emitDirect(socket, 'GS_ConfirmUserResponse', {
-          id: req.id,
-          data: { status: 0 },
-        })
-        return
       }
 
       if (app.gameBridge.state.clients.length > 50) {
