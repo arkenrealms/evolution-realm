@@ -373,8 +373,28 @@ function connectGameServer(app) {
     app.gameBridge.state.config.roundId++
   })
 
-  const isTournamentActive = false
-  const allowedTournamentUsers = ['Pandamonium', 'Maiev', 'RuneGiveaways', 'Botter']
+  const isTournamentActive = true
+  const allowedTournamentUsers = [
+    'Pandamonium',
+    'Maiev',
+    'Astraunnass',
+    'Sonreilly',
+    'Iqbalomen',
+    'Ekkeharta',
+    'Chaos★Myth',
+    'muholib',
+    'KRamz',
+    'Oreki',
+    'sassyboy',
+    'RuneGiveaways',
+    'Botter',
+    'LINKI-CG',
+    'Snakebite24-CG',
+    'plexbrahial',
+    'Mr buggins',
+    'Gamel',
+    'Mantrascesis',
+  ]
 
   socket.on('GS_ConfirmUserRequest', async function (req) {
     try {
