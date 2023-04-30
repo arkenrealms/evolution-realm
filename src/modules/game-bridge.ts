@@ -384,6 +384,7 @@ function connectGameServer(app) {
     'Chaos★Myth',
     'muholib',
     'KRamz',
+    'Discomonk',
     'HOUTAROU',
     'Oreki',
     'sassyboy',
