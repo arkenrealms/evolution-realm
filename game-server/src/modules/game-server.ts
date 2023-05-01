@@ -447,6 +447,7 @@ const presets = [
   {
     gameMode: 'Leadercap',
     leadercap: true,
+    weight: 1,
     guide: ['Game Mode - Leadercap', 'Kill the last round leader', 'Leader -20% Speed', 'Leader 75% Death Orb'],
   },
   {
@@ -921,9 +922,8 @@ function disconnectPlayer(app, player, reason = 'Unknown', immediate = false) {
 
 function weightedRandom(items) {
   // @ts-ignore
-  let table = items.flatMap((item) => Array(item).fill(item.weight))
-
-  return items[table[Math.floor(Math.random() * table.length)]]
+  let table = items.flatMap((item) => Array(item.weight).fill(item))
+  return table[Math.floor(Math.random() * table.length)]
 }
 // function weightedRandom(items, weights) {
 //   let i
