@@ -373,7 +373,7 @@ function connectGameServer(app) {
     app.gameBridge.state.config.roundId++
   })
 
-  const isTournamentActive = true
+  const isTournamentActive = false
   const allowedTournamentUsers = [
     'Pandamonium',
     'Maiev',
@@ -420,8 +420,6 @@ function connectGameServer(app) {
           return
         }
       }
-
-      console.log('zzz', overview, !allowedTournamentUsers.includes(overview?.username))
 
       if (isTournamentActive && !allowedTournamentUsers.includes(overview?.username)) {
         console.log('Not approved for tournament. Disconnecting.')
