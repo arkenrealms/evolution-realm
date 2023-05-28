@@ -356,11 +356,7 @@ function connectGameServer(app) {
         app.state.unsavedGames = app.state.unsavedGames.filter((g) => g.status !== 1)
       }
 
-      await jetpack.writeAsync(
-        path.resolve('./public/data/unsavedGames.json'),
-        JSON.stringify(app.state.unsavedGames, null, 2)
-      )
-      await jetpack.writeAsync(path.resolve('./public/data/config.json'), JSON.stringify(config, null, 2))
+      await jetpack.writeAsync(path.resolve('./public/data/unsavedGames.json'), JSON.stringify(app.state.unsavedGames))
     } catch (e) {
       emitDirect(socket, 'GS_SaveRoundResponse', {
         id: req.id,
@@ -371,6 +367,8 @@ function connectGameServer(app) {
     }
 
     app.gameBridge.state.config.roundId++
+
+    await jetpack.writeAsync(path.resolve('./public/data/config.json'), JSON.stringify(app.gameBridge.state.config))
   })
 
   const isTournamentActive = false
@@ -458,32 +456,34 @@ function connectGameServer(app) {
         },
       })
 
-      let character = app.gameBridge.characterCache[req.data.address]
+      if (!isTournamentActive) {
+        let character = app.gameBridge.characterCache[req.data.address]
 
-      if (!character) {
-        const res = await app.realm.call('GetCharacterRequest', {
-          address: req.data.address,
-        })
-
-        log('GetCharacterResponse', res)
-
-        if (res.status === 1) {
-          character = res.character
-
-          app.gameBridge.characterCache[req.data.address] = character
-        }
-      }
-
-      log('Player character', character)
-
-      if (character) {
-        emitDirect(socket, 'RS_SetPlayerCharacterRequest', {
-          id: shortId.generate(),
-          data: {
+        if (!character) {
+          const res = await app.realm.call('GetCharacterRequest', {
             address: req.data.address,
-            character,
-          },
-        })
+          })
+
+          log('GetCharacterResponse', res)
+
+          if (res.status === 1) {
+            character = res.character
+
+            app.gameBridge.characterCache[req.data.address] = character
+          }
+        }
+
+        log('Player character', character)
+
+        if (character) {
+          emitDirect(socket, 'RS_SetPlayerCharacterRequest', {
+            id: shortId.generate(),
+            data: {
+              address: req.data.address,
+              character,
+            },
+          })
+        }
       }
     } catch (e) {
       emitDirect(socket, 'GS_ConfirmUserResponse', {
