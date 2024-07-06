@@ -17,6 +17,8 @@ function initRoutes(server) {
 }
 
 export async function initWebServer(server) {
+  console.log('Init web server')
+
   // @ts-ignore
   const rateLimiter = new RateLimit({
     windowMs: 2,
