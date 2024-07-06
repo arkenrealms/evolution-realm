@@ -68,7 +68,7 @@
     "inspect": "NODE_ENV=development yarn build && PORT=3001 NODE_ENV=production node --inspect build/index.js",
     "prod": "NODE_ENV=production yarn run nodemon --config nodemon.production.json",
     "build": "NODE_ENV=production tsc && tsc-alias",
-    "start": "RS_PORT=4010 RS_SSL_PORT=4011 GS_PORT=4020 GS_SSL_PORT=4021 PROVIDER_URI=wss://spring-practical-market.bsc.quiknode.pro/89275f246ac3cd3b9dacd017b931805deca236c0/ LOG=1 LOG_PREFIX=[RERS] NODE_ENV=production node -r tsconfig-paths/register --max_semi_space_size=30000 --max-old-space-size=30000 --initial-old-space-size=8000 --optimize-for-size --experimental-modules --experimental-json-modules build/src/index.js",
+    "start": "RUNE_ENV=local RS_PORT=4010 RS_SSL_PORT=4011 GS_PORT=4020 GS_SSL_PORT=4021 PROVIDER_URI=wss://spring-practical-market.bsc.quiknode.pro/89275f246ac3cd3b9dacd017b931805deca236c0/ LOG=1 LOG_PREFIX=[RERS] NODE_ENV=production node -r tsconfig-paths/register --max_semi_space_size=30000 --max-old-space-size=30000 --initial-old-space-size=8000 --optimize-for-size --experimental-modules --experimental-json-modules build/src/index.js",
     "forever": "NODE_ENV=production yarn build && sudo nohup forever start forever-config.json &",
     "release": "NODE_ENV=production tsc && gcloud app deploy app.yaml --project evident-ethos-317302",
     "config": "sudo /opt/bitnami/ctlscript.sh stop apache",
