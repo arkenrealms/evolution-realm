@@ -1267,9 +1267,9 @@ export function initGameBridge(app) {
   }, 10 * 60 * 1000)
 
   setTimeout(() => {
-    if (process.env.RUNE_ENV !== 'local') {
-      app.gameBridge.start()
-    }
+    // if (process.env.RUNE_ENV !== 'local') {
+    app.gameBridge.start()
+    // }
 
     setTimeout(() => {
       app.gameBridge.connect()
