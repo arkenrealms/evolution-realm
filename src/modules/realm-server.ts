@@ -498,7 +498,7 @@ async function sendEventToObservers(app, name, data = undefined) {
       const id = shortId()
 
       const timeout = setTimeout(function () {
-        log('Request timeout')
+        log('Request timeout', name)
 
         resolve({ status: 0, message: 'Request timeout' })
 

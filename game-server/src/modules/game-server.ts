@@ -648,7 +648,7 @@ async function rsCall(name, data = {}) {
     const id = shortId()
 
     const timeout = setTimeout(function () {
-      resolve({ status: 0, message: 'Request timeout' })
+      resolve({ status: 0, message: 'Request timeout: ' + name })
 
       delete ioCallbacks[id]
     }, 15 * 1000)
