@@ -1,6 +1,9 @@
 FROM node:14
 
 WORKDIR /usr/src/app
+RUN apt-get update
+RUN apt-get install nano
+
 COPY . .
 
 COPY id_ed25519 /root/.ssh/id_ed25519
@@ -14,7 +17,8 @@ RUN yarn install
 RUN cd game-server
 RUN yarn install
 RUN cd ..
+RUN chmod +x ./start-servers.sh
 
 EXPOSE 4010 4020
 
-CMD ["./start.sh"]
+CMD ["sleep infinity"]
