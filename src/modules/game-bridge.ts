@@ -226,7 +226,7 @@ function connectGameServer(app) {
 
   socket.on('GS_ConfigureRequest', function (req) {
     try {
-      log('GS_ConfigureRequest', req)
+      log('GS_ConfigureRequest')
 
       const { config } = app.gameBridge.state
 
@@ -311,15 +311,21 @@ function connectGameServer(app) {
         lastClients: app.gameBridge.state.clients,
       })
 
-      if (res.status === 1) {
-        emitDirect(socket, 'GS_SaveRoundResponse', {
-          id: req.id,
-          data: res,
-        })
-      } else {
-        failed = true
-        log('Save round failed', res)
-      }
+      // ZENO: temp fix
+      emitDirect(socket, 'GS_SaveRoundResponse', {
+        id: req.id,
+        data: res,
+      })
+
+      // if (res.status === 1) {
+      //   emitDirect(socket, 'GS_SaveRoundResponse', {
+      //     id: req.id,
+      //     data: res,
+      //   })
+      // } else {
+      //   failed = true
+      //   log('Save round failed', res)
+      // }
     } catch (e) {
       logError('Save round failed', e)
 

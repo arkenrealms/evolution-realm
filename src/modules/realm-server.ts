@@ -8,7 +8,7 @@ const shortId = require('shortid')
 
 function onRealmConnection(app, socket) {
   try {
-    const ip = socket.handshake.headers['x-forwarded-for']?.split(',')[0] || socket.conn.remoteAddress?.split(':')[3]
+    const ip = 'HIDDEN' // socket.handshake.headers['x-forwarded-for']?.split(',')[0] || socket.conn.remoteAddress?.split(':')[3]
 
     log('Client connected from ' + ip)
 
@@ -490,7 +490,7 @@ function onRealmConnection(app, socket) {
 
 async function sendEventToObservers(app, name, data = undefined) {
   try {
-    log('Emit Observers', name, data)
+    log('Emit Observers', name) // , data)
 
     const signature = await getSignedRequest(app.web3, app.secrets, data)
 
