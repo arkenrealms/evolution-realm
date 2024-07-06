@@ -1,6 +1,6 @@
 {
-    "watch": ["src/**/*.ts"],
-    "ignore": [],
-    "ext": "js json ts",
-    "exec": "PORT=3001 NODE_ENV=development ts-node ./src/index.ts"
+  "watch": ["src/**/*.ts"],
+  "ignore": [],
+  "ext": "js json ts",
+  "exec": "PORT=4010 NODE_ENV=development ts-node ./src/index.ts"
 }
