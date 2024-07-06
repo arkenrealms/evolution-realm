@@ -77,7 +77,7 @@ async function callGameServer(app, name, signature, data = {}) {
     const id = shortId()
 
     const timeout = setTimeout(function () {
-      resolve({ status: 0, message: 'Request timeout' })
+      resolve({ status: 0, message: 'Request timeout to GS' })
 
       delete app.gameBridge.ioCallbacks[id]
     }, 30 * 1000)
@@ -99,7 +99,7 @@ function connectGameServer(app) {
   }
 
   const server = {
-    endpoint: 'localhost:' + app.gameBridge.state.spawnPort, // local.runeevolution.com
+    endpoint: 'localhost:' + app.gameBridge.state.spawnPort, // local.secondwind.zeno.games
     key: 'local1',
   }
 
@@ -405,7 +405,7 @@ function connectGameServer(app) {
       if (!overview) {
         try {
           overview = (await (
-            await fetch(`https://cache.rune.game/users/${req.data.address}/overview.json`)
+            await fetch(`https://cache.zeno.games/users/${req.data.address}/overview.json`)
           ).json()) as any
 
           app.gameBridge.userCache[req.data.address] = overview

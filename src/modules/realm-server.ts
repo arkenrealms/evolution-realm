@@ -284,7 +284,7 @@ function onRealmConnection(app, socket) {
         if (!overview) {
           try {
             overview = (await (
-              await fetch(`https://cache.rune.game/users/${req.data.target}/overview.json`)
+              await fetch(`https://cache.zeno.games/users/${req.data.target}/overview.json`)
             ).json()) as any
           } catch (e) {}
         }
@@ -525,7 +525,7 @@ export function initRealmServer(app) {
 
   app.realm.version = '2.0.0'
 
-  app.realm.endpoint = 'ptr1.runeevolution.com'
+  app.realm.endpoint = 'ptr1.secondwind.zeno.games'
 
   app.realm.clients = [] // to storage clients
 
