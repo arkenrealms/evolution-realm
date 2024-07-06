@@ -1,0 +1,11 @@
+Host sdk
+HostName github.com
+IdentityFile ~/.ssh/id_ed25519_sdk
+ServerAliveInterval 60
+ServerAliveCountMax 30
+
+Host evors
+HostName github.com
+IdentityFile ~/.ssh/id_ed25519_evors
+ServerAliveInterval 60
+ServerAliveCountMax 30
