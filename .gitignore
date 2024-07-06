@@ -1,5 +1,4 @@
 build
-secrets.json
 nohup.out
 
 node_modules/
