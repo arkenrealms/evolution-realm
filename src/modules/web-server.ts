@@ -171,14 +171,16 @@ export async function initWebServer(app) {
 
   initRoutes(app)
 
-  // Finalize
-  const port = process.env.RS_PORT || 80
-  app.http.listen(port, function () {
-    log(`:: Backend ready and listening on *:${port} (http)`)
-  })
-
-  const sslPort = process.env.RS_SSL_PORT || 443
-  app.https.listen(sslPort, function () {
-    log(`:: Backend ready and listening on *:${sslPort} (https)`)
-  })
+  if (app.isHttps) {
+    const sslPort = process.env.RS_SSL_PORT || 443
+    app.https.listen(sslPort, function () {
+      log(`:: Backend ready and listening on *:${sslPort} (https)`)
+    })
+  } else {
+    // Finalize
+    const port = process.env.RS_PORT || 80
+    app.http.listen(port, function () {
+      log(`:: Backend ready and listening on *:${port} (http)`)
+    })
+  }
 }

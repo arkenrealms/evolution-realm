@@ -30,6 +30,6 @@ RUN cd ..
 RUN yarn install
 RUN yarn run build
 
-EXPOSE 4010 4020
+EXPOSE 4010 4011 4020 4021
 
 CMD ["yarn run start"]

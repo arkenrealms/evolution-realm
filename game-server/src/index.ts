@@ -5,6 +5,7 @@ import express from 'express'
 import { log, logError, isDebug } from '@rune-backend-sdk/util'
 import { catchExceptions } from '@rune-backend-sdk/util/process'
 import { initGameServer } from './modules/game-server'
+import { initWebServer } from './modules/web-server'
 import { initMonitor } from './modules/monitor'
 
 const path = require('path')
@@ -100,6 +101,7 @@ async function init() {
 
     initMonitor(app)
     initGameServer(app)
+    initWebServer(app)
 
     startServer(app)
   } catch (e) {
