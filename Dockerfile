@@ -17,4 +17,4 @@ RUN cd ..
 
 EXPOSE 4010 4020
 
-CMD ["./start-servers.sh"]
+CMD ["./start.sh"]
