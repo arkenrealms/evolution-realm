@@ -101,7 +101,7 @@ async function init() {
 
     initMonitor(app)
     initGameServer(app)
-    initWebServer(app.server)
+    // initWebServer(app.server)
 
     startServer(app)
   } catch (e) {
