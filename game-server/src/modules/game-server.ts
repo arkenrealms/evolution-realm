@@ -2973,12 +2973,12 @@ function initEventHandler(app) {
         try {
           const confirmUser = (await rsCall('GS_ConfirmUserRequest', { address: currentPlayer.address })) as any
 
-          // ZENO: put back
-          if (confirmUser?.status !== 1) {
-            currentPlayer.log.failedRealmCheck += 1
-            disconnectPlayer(app, currentPlayer, 'failed realm check')
-            return
-          }
+          // // ZENO: put back
+          // if (confirmUser?.status !== 1) {
+          //   currentPlayer.log.failedRealmCheck += 1
+          //   disconnectPlayer(app, currentPlayer, 'failed realm check')
+          //   return
+          // }
 
           if (confirmUser.isMod) {
             currentPlayer.isMod = true
