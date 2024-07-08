@@ -1,9 +1,9 @@
 import * as ethers from 'ethers'
 import Web3 from 'web3'
-import { log } from '@rune-backend-sdk/util'
-import { getAddress, getRandomProvider } from '@rune-backend-sdk/util/web3'
-import contractInfo from '@rune-backend-sdk/contractInfo'
-import BEP20Contract from '@rune-backend-sdk/contracts/BEP20.json'
+import { log } from '@zeno.network/web-sdk/util'
+import { getAddress, getRandomProvider } from '@zeno.network/web-sdk/util/web3'
+import contractInfo from '@zeno.network/web-sdk/contractInfo'
+import BEP20Contract from '@zeno.network/web-sdk/contracts/BEP20.json'
 import secrets from '../../secrets.json'
 
 function _initProvider(app) {

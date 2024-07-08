@@ -3,10 +3,10 @@ import md5 from 'js-md5'
 import jetpack from 'fs-jetpack'
 import { spawn } from 'child_process'
 import { io as ioClient } from 'socket.io-client'
-import { isValidRequest, getSignedRequest } from '@rune-backend-sdk/util/web3'
-import { log, logError, random, getTime } from '@rune-backend-sdk/util'
-import { emitDirect } from '@rune-backend-sdk/util/websocket'
-import { upgradeGsCodebase, cloneGsCodebase } from '@rune-backend-sdk/util/codebase'
+import { isValidRequest, getSignedRequest } from '@zeno.network/web-sdk/util/web3'
+import { log, logError, random, getTime } from '@zeno.network/web-sdk/util'
+import { emitDirect } from '@zeno.network/web-sdk/util/websocket'
+import { upgradeGsCodebase, cloneGsCodebase } from '@zeno.network/web-sdk/util/codebase'
 
 const path = require('path')
 const shortId = require('shortid')
@@ -312,20 +312,20 @@ function connectGameServer(app) {
       })
 
       // ZENO: temp fix
-      emitDirect(socket, 'GS_SaveRoundResponse', {
-        id: req.id,
-        data: res,
-      })
+      // emitDirect(socket, 'GS_SaveRoundResponse', {
+      //   id: req.id,
+      //   data: res,
+      // })
 
-      // if (res.status === 1) {
-      //   emitDirect(socket, 'GS_SaveRoundResponse', {
-      //     id: req.id,
-      //     data: res,
-      //   })
-      // } else {
-      //   failed = true
-      //   log('Save round failed', res)
-      // }
+      if (res.status === 1) {
+        emitDirect(socket, 'GS_SaveRoundResponse', {
+          id: req.id,
+          data: res,
+        })
+      } else {
+        failed = true
+        log('Save round failed', res)
+      }
     } catch (e) {
       logError('Save round failed', e)
 

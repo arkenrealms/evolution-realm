@@ -7,7 +7,7 @@
     "allowSyntheticDefaultImports": true,
     "baseUrl": "./",
     "paths": {
-      "@rune-backend-sdk/*": ["./node_modules/rune-backend-sdk/build/*"],
+      "@zeno.network/web-sdk/*": ["./node_modules/rune-backend-sdk/build/*"],
       "@": ["./src"]
     },
     "esModuleInterop": true,

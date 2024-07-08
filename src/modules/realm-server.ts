@@ -1,8 +1,8 @@
 import fetch from 'node-fetch'
-import { isValidRequest, getSignedRequest } from '@rune-backend-sdk/util/web3'
-import { log, logError, getTime } from '@rune-backend-sdk/util'
-import { emitDirect } from '@rune-backend-sdk/util/websocket'
-import { upgradeCodebase } from '@rune-backend-sdk/util/codebase'
+import { isValidRequest, getSignedRequest } from '@zeno.network/web-sdk/util/web3'
+import { log, logError, getTime } from '@zeno.network/web-sdk/util'
+import { emitDirect } from '@zeno.network/web-sdk/util/websocket'
+import { upgradeCodebase } from '@zeno.network/web-sdk/util/codebase'
 
 const shortId = require('shortid')
 

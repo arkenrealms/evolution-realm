@@ -1,4 +1,4 @@
-import { log, logError, getTime } from '@rune-backend-sdk/util'
+import { log, logError, getTime } from '@zeno.network/web-sdk/util'
 
 const os = require('os')
 const fs = require('fs')

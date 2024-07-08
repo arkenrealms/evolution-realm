@@ -9,7 +9,7 @@ import {
   sha256,
   decodePayload,
   isNumeric,
-} from '@rune-backend-sdk/util'
+} from '@zeno.network/web-sdk/util'
 
 const path = require('path')
 const shortId = require('shortid')
@@ -2974,11 +2974,11 @@ function initEventHandler(app) {
           const confirmUser = (await rsCall('GS_ConfirmUserRequest', { address: currentPlayer.address })) as any
 
           // ZENO: put back
-          // if (confirmUser?.status !== 1) {
-          //   currentPlayer.log.failedRealmCheck += 1
-          //   disconnectPlayer(app, currentPlayer, 'failed realm check')
-          //   return
-          // }
+          if (confirmUser?.status !== 1) {
+            currentPlayer.log.failedRealmCheck += 1
+            disconnectPlayer(app, currentPlayer, 'failed realm check')
+            return
+          }
 
           if (confirmUser.isMod) {
             currentPlayer.isMod = true
