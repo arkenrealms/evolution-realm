@@ -522,9 +522,9 @@ const presets = [
 const loggableEvents = ['OnMaintenance', 'GS_SaveRoundRequest', 'SaveRoundRequest']
 
 function log(...args) {
-  if (loggableEvents.includes(args[0])) {
-    logger(...args)
-  }
+  // if (loggableEvents.includes(args[0])) {
+  logger(...args)
+  // }
 }
 
 let currentPreset = presets[Math.floor(Math.random() * presets.length)]
