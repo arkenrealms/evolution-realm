@@ -8,6 +8,7 @@ import { wsLink, createWSClient } from '@trpc/client/links/wsLink';
 import { createTRPCProxyClient } from '@trpc/client';
 import { z } from 'zod';
 
+let app;
 const t = initTRPC.create();
 
 const shortId = require('shortid');
@@ -15,9 +16,8 @@ const shortId = require('shortid');
 export const appRouter = t.router({
   authRequest: t.procedure
     .input(z.object({ signature: z.object({ address: z.string() }) }))
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input, ctx: { socket } }) => {
       const { signature } = input;
-      const { app, socket } = ctx;
 
       if (await isValidRequest(app.web3, input)) {
         if (app.realm.state.adminList.includes(signature.address)) {
@@ -38,7 +38,6 @@ export const appRouter = t.router({
     .input(z.object({ data: z.object({ config: z.record(z.any()) }), signature: z.object({ address: z.string() }) }))
     .mutation(async ({ input, ctx }) => {
       const { data, signature } = input;
-      const { app } = ctx;
 
       if (!(await isValidRequest(app.web3, input)) && app.realm.state.modList.includes(signature.address)) {
         return { status: 0 };
@@ -61,7 +60,6 @@ export const appRouter = t.router({
     .input(z.object({ signature: z.object({ address: z.string() }) }))
     .mutation(async ({ input, ctx }) => {
       const { signature } = input;
-      const { app } = ctx;
 
       if (!(await isValidRequest(app.web3, input)) || !app.realm.state.modList.includes(signature.address)) {
         return { status: 0 };
@@ -91,7 +89,6 @@ export const appRouter = t.router({
     .input(z.object({ signature: z.object({ address: z.string() }), target: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const { target, signature } = input;
-      const { app } = ctx;
 
       if ((await isValidRequest(app.web3, input)) && app.realm.state.modList.includes(signature.address)) {
         app.realm.state.modList.push(target);
@@ -105,7 +102,6 @@ export const appRouter = t.router({
     .input(z.object({ signature: z.object({ address: z.string() }), target: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const { target, signature } = input;
-      const { app } = ctx;
 
       if ((await isValidRequest(app.web3, input)) && app.realm.state.modList.includes(signature.address)) {
         app.realm.state.modList = app.realm.state.modList.filter((addr) => addr !== target);
@@ -117,9 +113,8 @@ export const appRouter = t.router({
 
   banPlayerRequest: t.procedure
     .input(z.object({ data: z.object({ target: z.string() }) }))
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input, ctx: { socket } }) => {
       const { data } = input;
-      const { app, socket } = ctx;
 
       if (!socket.currentClient.isMod) {
         return { status: 2 };
@@ -136,9 +131,8 @@ export const appRouter = t.router({
         signature: z.object({ address: z.string() }),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input, ctx: { socket } }) => {
       const { data, signature } = input;
-      const { app } = ctx;
 
       if (!socket.currentClient.isAdmin) {
         return { status: 2 };
@@ -175,7 +169,6 @@ export const appRouter = t.router({
     .input(z.object({ data: z.object({ target: z.string() }) }))
     .mutation(async ({ input, ctx }) => {
       const { data } = input;
-      const { app } = ctx;
 
       if (!ctx.socket.currentClient.isMod) {
         return { status: 2 };
@@ -193,7 +186,6 @@ export const appRouter = t.router({
     .input(z.object({ data: z.object({ method: z.string(), signature: z.any(), data: z.any() }) }))
     .mutation(async ({ input, ctx }) => {
       const { data } = input;
-      const { app } = ctx;
 
       try {
         const result = await app.gameBridge.call(data.method, data.signature, data.data);

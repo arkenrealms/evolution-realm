@@ -1,6 +1,107 @@
+export type Config = {
+  id?: number;
+  roundId: number;
+  damagePerTouch: number;
+  periodicReboots: boolean;
+  startAvatar: number;
+  spriteXpMultiplier: number;
+  forcedLatency: number;
+  isRoundPaused: boolean;
+  level2forced: boolean;
+  level2allowed: boolean;
+  level2open: boolean;
+  level3open: boolean;
+  hideMap: boolean;
+  disconnectClientSeconds: number;
+  dynamicDecayPower: boolean;
+  decayPowerPerMaxEvolvedPlayers: number;
+  pickupCheckPositionDistance: number;
+  playersRequiredForLevel2: number;
+  preventBadKills: boolean;
+  colliderBuffer: number;
+  stickyIslands: boolean;
+  antifeed2: boolean;
+  antifeed3: boolean;
+  antifeed4: boolean;
+  isBattleRoyale: boolean;
+  isGodParty: boolean;
+  isRuneRoyale: boolean;
+  avatarDirection: number;
+  calcRoundRewards: boolean;
+  flushEventQueueSeconds: number;
+  mechanics: number[];
+  disabledMechanics: number[];
+  log: {
+    connections: boolean;
+  };
+  anticheat: {
+    enabled: boolean;
+    samePlayerCantClaimRewardTwiceInRow: boolean;
+    disconnectPositionJumps: boolean;
+  };
+  optimization: {
+    sendPlayerUpdateWithNoChanges: boolean;
+  };
+  antifeed1: boolean;
+  avatarDecayPower0: number;
+  avatarDecayPower1: number;
+  avatarDecayPower2: number;
+  avatarTouchDistance0: number;
+  avatarTouchDistance1: number;
+  avatarTouchDistance2: number;
+  avatarSpeedMultiplier0: number;
+  avatarSpeedMultiplier1: number;
+  avatarSpeedMultiplier2: number;
+  baseSpeed: number;
+  cameraSize: number;
+  checkConnectionLoopSeconds: number;
+  checkInterval: number;
+  checkPositionDistance: number;
+  claimingRewards: boolean;
+  decayPower: number;
+  disconnectPlayerSeconds: number;
+  disconnectPositionJumps: boolean;
+  fastestLoopSeconds: number;
+  fastLoopSeconds: number;
+  gameMode: string;
+  immunitySeconds: number;
+  isMaintenance: boolean;
+  leadercap: boolean;
+  maxEvolves: number;
+  noBoot: boolean;
+  noDecay: boolean;
+  orbCutoffSeconds: number;
+  orbOnDeathPercent: number;
+  orbTimeoutSeconds: number;
+  pickupDistance: number;
+  pointsPerEvolve: number;
+  pointsPerKill: number;
+  pointsPerOrb: number;
+  pointsPerPowerup: number;
+  pointsPerReward: number;
+  powerupXp0: number;
+  powerupXp1: number;
+  powerupXp2: number;
+  powerupXp3: number;
+  resetInterval: number;
+  rewardItemAmount: number;
+  rewardItemName: string;
+  rewardItemType: number;
+  rewardSpawnLoopSeconds: number;
+  rewardWinnerAmount: number;
+  rewardWinnerName: string;
+  roundLoopSeconds: number;
+  sendUpdateLoopSeconds: number;
+  slowLoopSeconds: number;
+  spritesPerPlayerCount: number;
+  spritesStartCount: number;
+  spritesTotal: number;
+  guide: string[];
+};
+
 export const testMode = false;
 
-export const baseConfig = {
+export const baseConfig: Partial<Config> = {
   id: undefined,
   roundId: 1,
   damagePerTouch: 10,
@@ -35,9 +136,11 @@ export const baseConfig = {
   log: { connections: false },
   anticheat: { enabled: false, samePlayerCantClaimRewardTwiceInRow: false, disconnectPositionJumps: false },
   optimization: { sendPlayerUpdateWithNoChanges: true },
+  disconnectClientSeconds: 60,
+  guide: [],,
 };
 
-export const sharedConfig = {
+export const sharedConfig: Partial<Config> = {
   antifeed1: true,
   avatarDecayPower0: 1.5,
   avatarDecayPower1: 2.5,
@@ -91,5 +194,5 @@ export const sharedConfig = {
   slowLoopSeconds: 1,
   spritesPerPlayerCount: 1,
   spritesStartCount: 50,
-  spritesTotal: 50,
+  spritesTotal: 50
 };
