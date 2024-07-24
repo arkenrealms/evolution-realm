@@ -1,548 +1,272 @@
-import fetch from 'node-fetch'
-import { isValidRequest, getSignedRequest } from '@arken/node/util/web3'
-import { log, logError, getTime } from '@arken/node/util'
-import { emitDirect } from '@arken/node/util/websocket'
-import { upgradeCodebase } from '@arken/node/util/codebase'
+import axios from 'axios';
+import { isValidRequest, getSignedRequest } from '@arken/node/util/web3';
+import { log, logError, getTime } from '@arken/node/util';
+import { emitDirect } from '@arken/node/util/websocket';
+import { upgradeCodebase } from '@arken/node/util/codebase';
+import { initTRPC } from '@trpc/server';
+import { wsLink, createWSClient } from '@trpc/client/links/wsLink';
+import { createTRPCProxyClient } from '@trpc/client';
+import { z } from 'zod';
 
-const shortId = require('shortid')
+const t = initTRPC.create();
 
-function onRealmConnection(app, socket) {
-  try {
-    const ip = 'HIDDEN' // socket.handshake.headers['x-forwarded-for']?.split(',')[0] || socket.conn.remoteAddress?.split(':')[3]
+const shortId = require('shortid');
+import { initTRPC } from '@trpc/server';
+import { z } from 'zod';
+import axios from 'axios';
+import { isValidRequest, getSignedRequest } from '@arken/node/util/web3';
 
-    log('Client connected from ' + ip)
+const t = initTRPC.create();
 
-    const currentClient = {
-      name: 'Unknown' + Math.floor(Math.random() * 999),
-      id: socket.id,
-      ip,
-      lastReportedTime: getTime(),
-      isMod: false,
-      isAdmin: false,
-      log: {
-        clientDisconnected: 0,
-      },
-    }
+export const appRouter = t.router({
+  authRequest: t.procedure
+    .input(z.object({ signature: z.object({ address: z.string() }) }))
+    .mutation(async ({ input, ctx }) => {
+      const { signature } = input;
+      const { app, socket } = ctx;
 
-    app.realm.sockets[currentClient.id] = socket
-
-    app.realm.clientLookup[currentClient.id] = currentClient
-
-    app.realm.clients.push(currentClient)
-
-    // Use by GS to tell DB it's connected
-    socket.on('AuthRequest', async function (req) {
-      try {
-        log('AuthRequest', req)
-        // if (req.data !== 'myverysexykey') {
-        //   log('Invalid observer creds:', req)
-        //   socket.disconnect()
-        //   return
-        // }
-
-        if (await isValidRequest(app.web3, req)) {
-          if (app.realm.state.adminList.includes(req.signature.address)) {
-            currentClient.isAdmin = true
-            currentClient.isMod = true
-
-            app.gameBridge.call('RS_ApiConnected', await getSignedRequest(app.web3, app.secrets, {}), {})
-          } else if (app.realm.state.modList.includes(req.signature.address)) {
-            currentClient.isMod = true
-          }
-
-          emitDirect(socket, 'AuthResponse', {
-            id: req.id,
-            data: { status: 1 },
-          })
-        } else {
-          emitDirect(socket, 'AuthResponse', {
-            id: req.id,
-            data: { status: 1 },
-          })
+      if (await isValidRequest(app.web3, input)) {
+        if (app.realm.state.adminList.includes(signature.address)) {
+          socket.currentClient.isAdmin = true;
+          socket.currentClient.isMod = true;
+          await app.gameBridge.RS_ApiConnected.mutate(await getSignedRequest(app.web3, app.secrets, {}), {});
+        } else if (app.realm.state.modList.includes(signature.address)) {
+          socket.currentClient.isMod = true;
         }
-      } catch (e) {
-        log('Error', e)
 
-        emitDirect(socket, 'AuthResponse', {
-          id: req.id,
-          data: { status: 1 },
-        })
+        return { status: 1 };
+      } else {
+        return { status: 0 };
       }
-    })
+    }),
 
-    // Use by GS to tell DB it's connected
-    socket.on('SetConfigRequest', async function (req) {
-      try {
-        log('SetConfigRequest', req)
+  setConfigRequest: t.procedure
+    .input(z.object({ data: z.object({ config: z.record(z.any()) }), signature: z.object({ address: z.string() }) }))
+    .mutation(async ({ input, ctx }) => {
+      const { data, signature } = input;
+      const { app } = ctx;
 
-        if (!(await isValidRequest(app.web3, req)) && app.realm.state.modList.includes(req.signature.address)) {
-          emitDirect(socket, 'SetConfigResponse', {
-            id: req.id,
-            data: {
-              status: 0,
-            },
-          })
-
-          logError('Invalid request signature')
-          return
-        }
-
-        app.gameBridge.state.config = {
-          ...app.gameBridge.state.config,
-          ...req.data.config,
-        }
-
-        const data = { config: app.gameBridge.state.config }
-
-        await app.gameBridge.call('RS_SetConfigRequest', await getSignedRequest(app.web3, app.secrets, data), data)
-
-        emitDirect(socket, 'SetConfigResponse', {
-          id: req.id,
-          data: {
-            status: 1,
-          },
-        })
-      } catch (e) {
-        emitDirect(socket, 'SetConfigResponse', {
-          id: req.id,
-          data: {
-            status: 0,
-          },
-        })
-
-        logError(e)
+      if (!(await isValidRequest(app.web3, input)) && app.realm.state.modList.includes(signature.address)) {
+        return { status: 0 };
       }
-    })
 
-    socket.on('PingRequest', function (req) {
-      // log('PingRequest', req)
+      app.gameBridge.state.config = {
+        ...app.gameBridge.state.config,
+        ...data.config,
+      };
 
-      emitDirect(socket, 'PingResponse', {
-        id: req.id,
+      await app.gameBridge.setConfigRequest.mutate(await getSignedRequest(app.web3, app.secrets, data), data);
+      return { status: 1 };
+    }),
+
+  pingRequest: t.procedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+    return { id: input.id };
+  }),
+
+  infoRequest: t.procedure
+    .input(z.object({ signature: z.object({ address: z.string() }) }))
+    .mutation(async ({ input, ctx }) => {
+      const { signature } = input;
+      const { app } = ctx;
+
+      if (!(await isValidRequest(app.web3, input)) || !app.realm.state.modList.includes(signature.address)) {
+        return { status: 0 };
+      }
+
+      const games = app.gameBridge.state.servers.map((s) => s.info).filter((i) => !!i);
+      app.gameBridge.state.config = {
+        ...app.gameBridge.state.config,
+        ...input.data.config,
+      };
+
+      const data = { isReset: true, config: app.gameBridge.state.config };
+      await app.gameBridge.setConfigRequest.mutate(await getSignedRequest(app.web3, app.secrets, data), data);
+
+      return {
+        status: 1,
+        data: {
+          playerCount: games.reduce((a, b) => a + b.playerCount, 0) || 0,
+          speculatorCount: games.reduce((a, b) => a + b.speculatorCount, 0) || 0,
+          version: '1.0.0',
+          games,
+        },
+      };
+    }),
+
+  addModRequest: t.procedure
+    .input(z.object({ signature: z.object({ address: z.string() }), target: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const { target, signature } = input;
+      const { app } = ctx;
+
+      if ((await isValidRequest(app.web3, input)) && app.realm.state.modList.includes(signature.address)) {
+        app.realm.state.modList.push(target);
+        return { status: 1 };
+      } else {
+        return { status: 0 };
+      }
+    }),
+
+  removeModRequest: t.procedure
+    .input(z.object({ signature: z.object({ address: z.string() }), target: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const { target, signature } = input;
+      const { app } = ctx;
+
+      if ((await isValidRequest(app.web3, input)) && app.realm.state.modList.includes(signature.address)) {
+        app.realm.state.modList = app.realm.state.modList.filter((addr) => addr !== target);
+        return { status: 1 };
+      } else {
+        return { status: 0 };
+      }
+    }),
+
+  banPlayerRequest: t.procedure
+    .input(z.object({ data: z.object({ target: z.string() }) }))
+    .mutation(async ({ input, ctx }) => {
+      const { data } = input;
+      const { app, socket } = ctx;
+
+      if (!socket.currentClient.isMod) {
+        return { status: 2 };
+      }
+
+      const res = await app.realm.BanPlayerRequest.mutate(data);
+      return { status: res.status };
+    }),
+
+  banUserRequest: t.procedure
+    .input(
+      z.object({
+        data: z.object({ target: z.string(), bannedReason: z.string(), bannedUntil: z.string() }),
+        signature: z.object({ address: z.string() }),
       })
-    })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { data, signature } = input;
+      const { app } = ctx;
 
-    // Use by GS to tell DB it's connected
-    socket.on('InfoRequest', async function (req) {
+      if (!socket.currentClient.isAdmin) {
+        return { status: 2 };
+      }
+
+      let overview = {};
+
       try {
-        log('InfoRequest', req)
+        overview = (await axios(`https://cache.arken.gg/users/${data.target}/overview.json`)).data;
+      } catch (e) {}
 
-        if (!(await isValidRequest(app.web3, req)) || !app.realm.state.modList.includes(req.signature.address)) {
-          emitDirect(socket, 'InfoResponse', {
-            id: req.id,
-            data: {
-              status: 0,
-            },
-          })
+      app.gameBridge.userCache[data.target] = {
+        ...overview,
+        isBanned: true,
+        bannedReason: data.bannedReason,
+        bannedUntil: data.bannedUntil,
+      };
 
-          logError('Invalid request signature')
-          return
-        }
+      await app.gameBridge.kickUser.mutate(await getSignedRequest(app.web3, app.secrets, data), data);
+      return { status: 1 };
+    }),
 
-        const games = app.gameBridge.state.servers.map((s) => s.info).filter((i) => !!i)
-
-        // app.realm.state.banList = req.data.banList
-        app.gameBridge.state.config = {
-          ...app.gameBridge.state.config,
-          ...req.data.config,
-        }
-
-        const data = { isReset: true, config: app.gameBridge.state.config }
-
-        await app.gameBridge.call('RS_SetConfigRequest', await getSignedRequest(app.web3, app.secrets, data), data)
-
-        emitDirect(socket, 'InfoResponse', {
-          id: req.id,
-          data: {
-            status: 1,
-            data: {
-              playerCount: games.reduce((a, b) => a + b.playerCount, 0) || 0,
-              speculatorCount: games.reduce((a, b) => a + b.speculatorCount, 0) || 0,
-              version: '1.0.0',
-              games,
-            },
-          },
-        })
-      } catch (e) {
-        logError('Error 39483', e)
-
-        emitDirect(socket, 'InfoResponse', {
-          id: req.id,
-          data: {
-            status: 0,
-          },
-        })
+  bridgeStateRequest: t.procedure
+    .input(z.object({ signature: z.object({ address: z.string() }) }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.socket.currentClient.isMod) {
+        return { status: 2 };
       }
-    })
 
-    socket.on('AddModRequest', async function (req) {
+      return { status: 1, state: ctx.app.gameBridge.state };
+    }),
+
+  unbanPlayerRequest: t.procedure
+    .input(z.object({ data: z.object({ target: z.string() }) }))
+    .mutation(async ({ input, ctx }) => {
+      const { data } = input;
+      const { app } = ctx;
+
+      if (!ctx.socket.currentClient.isMod) {
+        return { status: 2 };
+      }
+
+      const res = await app.realm.UnbanPlayerRequest.mutate(data);
+      return { status: res.status };
+    }),
+
+  findGameServer: t.procedure.input(z.void()).mutation(async ({ ctx }) => {
+    return { endpoint: ctx.app.realm.endpoint, port: 7777 };
+  }),
+
+  callRequest: t.procedure
+    .input(z.object({ data: z.object({ method: z.string(), signature: z.any(), data: z.any() }) }))
+    .mutation(async ({ input, ctx }) => {
+      const { data } = input;
+      const { app } = ctx;
+
       try {
-        log('AddMod', req)
-
-        if ((await isValidRequest(app.web3, req)) && app.realm.state.modList.includes(req.data.address)) {
-          app.realm.state.modList.push(req.params.address)
-
-          emitDirect(socket, 'AddModResponse', {
-            id: req.id,
-            data: { status: 1 },
-          })
-        } else {
-          emitDirect(socket, 'AddModResponse', {
-            id: req.id,
-            data: { status: 0 },
-          })
-        }
+        const result = await app.gameBridge.call(data.method, data.signature, data.data);
+        return result;
       } catch (e) {
-        logError(e)
-
-        emitDirect(socket, 'AddModResponse', {
-          id: req.id,
-          data: { status: 0 },
-        })
+        return { status: 0 };
       }
-    })
-
-    socket.on('RemoveModRequest', async function (req) {
-      try {
-        log('RemoveMod', req)
-
-        if ((await isValidRequest(app.web3, req)) && app.realm.state.modList.includes(req.data.address)) {
-          for (const client of app.realm.clients) {
-            if (client.isMod && client.address === req.data.target) {
-              client.isMod = false
-            }
-          }
-
-          emitDirect(socket, 'RemoveModResponse', {
-            id: req.id,
-            data: { status: 1 },
-          })
-        } else {
-          emitDirect(socket, 'RemoveModResponse', {
-            id: req.id,
-            data: { status: 0 },
-          })
-        }
-      } catch (e) {
-        logError(e)
-
-        emitDirect(socket, 'RemoveModResponse', {
-          id: req.id,
-          data: { status: 0 },
-        })
-      }
-    })
-
-    socket.on('BanPlayerRequest', async function (req) {
-      try {
-        log('BanPlayerRequest', req)
-
-        if (!currentClient.isMod) {
-          logError('Invalid permissions')
-
-          emitDirect(socket, 'BanPlayerResponse', {
-            id: req.id,
-            data: { status: 2 },
-          })
-
-          return
-        }
-
-        const res = await app.realm.call('BanPlayerRequest', req.data)
-
-        emitDirect(socket, 'BanPlayerResponse', {
-          id: req.id,
-          data: { status: res.status },
-        })
-      } catch (e) {
-        logError(e)
-
-        emitDirect(socket, 'BanPlayerResponse', {
-          id: req.id,
-          data: { status: 0 },
-        })
-      }
-    })
-
-    socket.on('BanUserRequest', async function (req) {
-      try {
-        log('BanUserRequest', req)
-
-        if (!currentClient.isAdmin) {
-          logError('Invalid permissions')
-
-          emitDirect(socket, 'BanUserResponse', {
-            id: req.id,
-            data: { status: 2 },
-          })
-
-          return
-        }
-
-        let overview = {}
-
-        if (!overview) {
-          try {
-            overview = (await (
-              await fetch(`https://cache.arken.gg/users/${req.data.target}/overview.json`)
-            ).json()) as any
-          } catch (e) {}
-        }
-
-        app.gameBridge.userCache[req.data.target] = {
-          ...overview,
-          isBanned: true,
-          bannedReason: req.data.bannedReason,
-          bannedUntil: req.data.bannedUntil,
-        }
-
-        await app.gameBridge.call('RS_KickUser', await getSignedRequest(app.web3, app.secrets, req.data), req.data)
-
-        emitDirect(socket, 'BanUserResponse', {
-          id: req.id,
-          data: { status: 1 },
-        })
-      } catch (e) {
-        logError(e)
-
-        emitDirect(socket, 'BanUserResponse', {
-          id: req.id,
-          data: { status: 0 },
-        })
-      }
-    })
-
-    // socket.on('BanListRequest', async function(req) {
-    //   try {
-    //     log('BanListRequest', req)
-
-    //     if (!currentClient.isMod) {
-    //       logError('Invalid permissions')
-
-    //       emitDirect(socket, 'BanListResponse', {
-    //         id: req.id,
-    //         data: { status: 2 }
-    //       })
-
-    //       return
-    //     }
-
-    //     emitDirect(socket, 'BanListResponse', {
-    //       id: req.id,
-    //       data: { status: 1, list: app.realm.state.banList }
-    //     })
-    //   } catch (e) {
-    //     logError(e)
-
-    //     emitDirect(socket, 'BanListResponse', {
-    //       id: req.id,
-    //       data: { status: 0 }
-    //     })
-    //   }
-    // })
-
-    socket.on('BridgeStateRequest', async function (req) {
-      try {
-        log('BridgeStateRequest', req)
-
-        if (!currentClient.isMod) {
-          logError('Invalid permissions')
-
-          emitDirect(socket, 'BridgeStateResponse', {
-            id: req.id,
-            data: { status: 2 },
-          })
-
-          return
-        }
-
-        emitDirect(socket, 'BridgeStateResponse', {
-          id: req.id,
-          data: { status: 1, state: app.gameBridge.state },
-        })
-      } catch (e) {
-        logError(e)
-
-        emitDirect(socket, 'BridgeStateResponse', {
-          id: req.id,
-          data: { status: 0 },
-        })
-      }
-    })
-
-    socket.on('UnbanPlayerRequest', async function (req) {
-      try {
-        log('UnbanPlayerRequest', req)
-
-        if (!currentClient.isMod) {
-          logError('Invalid permissions')
-
-          emitDirect(socket, 'UnbanPlayerResponse', {
-            id: req.id,
-            data: { status: 2 },
-          })
-
-          return
-        }
-
-        const res = await app.realm.call('UnbanPlayerRequest', req.data)
-
-        emitDirect(socket, 'UnbanPlayerResponse', {
-          id: req.id,
-          data: { status: res.status },
-        })
-      } catch (e) {
-        logError(e)
-
-        emitDirect(socket, 'UnbanPlayerResponse', {
-          id: req.id,
-          data: { status: 0 },
-        })
-      }
-    })
-
-    // socket.on('UnbanUserRequest', async function(req) {
-    //   try {
-    //     log('Unban', req)
-
-    //     if (await isValidRequest(app.web3, req) && app.realm.state.modList.includes(req.data.address)) {
-    //       // app.realm.state.banList = app.realm.state.banList.filter(u => u.address !== req.data.address) //.splice(app.realm.state.banList.indexOf(req.data.target), 1)
-
-    //       emitDirect(socket, 'UnbanUserResponse', {
-    //         id: req.id,
-    //         data: { status: 1 }
-    //       })
-    //     } else {
-    //       logError('Invalid request')
-
-    //       emitDirect(socket, 'UnbanUserResponse', {
-    //         id: req.id,
-    //         data: { status: 2 }
-    //       })
-    //     }
-    //   } catch (e) {
-    //     logError(e)
-
-    //     emitDirect(socket, 'UnbanUserResponse', {
-    //       id: req.id,
-    //       data: { status: 0 }
-    //     })
-    //   }
-    // })
-
-    socket.on('FindGameServer', function () {
-      emitDirect(socket, 'OnFoundGameServer', app.realm.endpoint, 7777)
-    })
-
-    socket.on('CallRequest', async function (req) {
-      try {
-        log('CallRequest', req)
-
-        const data = await app.gameBridge.call(req.data.method, req.data.signature, req.data.data)
-
-        emitDirect(socket, 'CallResponse', {
-          id: req.id,
-          data,
-        })
-      } catch (e) {
-        logError(e)
-
-        emitDirect(socket, 'CallResponse', {
-          id: req.id,
-          data: { status: 0 },
-        })
-      }
-    })
-
-    socket.onAny(function (eventName, res) {
-      // log('Event All', eventName, res)
-      if (!res || !res.id) return
-      // console.log(eventName, res)
-      if (app.realm.ioCallbacks[res.id]) {
-        log('Callback', eventName)
-
-        clearTimeout(app.realm.ioCallbacks[res.id].timeout)
-
-        app.realm.ioCallbacks[res.id].resolve(res.data)
-
-        delete app.realm.ioCallbacks[res.id]
-      }
-    })
-
-    socket.on('disconnect', async function () {
-      log('Observer has disconnected')
-
-      if (currentClient.isAdmin) {
-        await app.gameBridge.call('RS_ApiDisconnected', await getSignedRequest(app.web3, app.secrets, {}), {})
-      }
-
-      currentClient.log.clientDisconnected += 1
-
-      delete app.realm.sockets[currentClient.id]
-      delete app.realm.clientLookup[currentClient.id]
-
-      app.realm.clients = app.realm.clients.filter((c) => c.id !== currentClient.id)
-    })
-  } catch (e) {
-    logError(e)
-  }
-}
+    }),
+});
 
 async function sendEventToObservers(app, name, data = undefined) {
   try {
-    log('Emit Observers', name) // , data)
+    log('Emit Observers', name); // , data)
 
-    const signature = await getSignedRequest(app.web3, app.secrets, data)
+    const signature = await getSignedRequest(app.web3, app.secrets, data);
 
     return new Promise((resolve, reject) => {
-      const id = shortId()
+      const id = shortId();
 
       const timeout = setTimeout(function () {
-        log('Request timeout', name)
+        log('Request timeout', name);
 
-        resolve({ status: 0, message: 'Request timeout' })
+        resolve({ status: 0, message: 'Request timeout' });
 
-        delete app.realm.ioCallbacks[id]
-      }, 60 * 1000)
+        delete app.realm.ioCallbacks[id];
+      }, 60 * 1000);
 
-      app.realm.ioCallbacks[id] = { resolve, reject, timeout }
+      app.realm.ioCallbacks[id] = { resolve, reject, timeout };
 
       for (const socketId in app.realm.sockets) {
-        const socket = app.realm.sockets[socketId]
+        const socket = app.realm.sockets[socketId];
         // console.log(socket, name, id, data)
-        socket.emit(name, { id, signature, data })
+        socket.emit(name, { id, signature, data });
       }
-    })
+    });
   } catch (e) {
-    logError(e)
+    logError(e);
   }
 }
 
+export type AppRouter = typeof appRouter;
+
 export function initRealmServer(app) {
-  log('initRealmServer')
+  log('initRealmServer');
 
-  app.realm = {}
+  app.realm = {};
 
-  app.realm.version = '2.0.0'
+  app.realm.version = '2.0.0';
 
-  app.realm.endpoint = 'ptr1.isles.arken.gg'
+  app.realm.endpoint = 'ptr1.isles.arken.gg';
 
-  app.realm.clients = [] // to storage clients
+  app.realm.clients = []; // to storage clients
 
-  app.realm.clientLookup = {}
+  app.realm.clientLookup = {};
 
-  app.realm.ioCallbacks = {}
+  app.realm.ioCallbacks = {};
 
-  app.realm.sockets = {} // to storage sockets
+  app.realm.sockets = {}; // to storage sockets
 
-  app.realm.state = {}
+  app.realm.state = {};
 
   // app.realm.state.banList = []
 
   app.realm.state.adminList = [
     '0xDfA8f768d82D719DC68E12B199090bDc3691fFc7', // ourselves
     '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C', // realm server
-  ]
+  ];
 
   app.realm.state.modList = [
     '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C', // realm server
@@ -559,11 +283,65 @@ export function initRealmServer(app) {
     '0xeb3fCb993dDe8a2Cd081FbE36238E4d64C286AC0',
     // '0x2DF94b980FC880100D93072011675E6659C0ca21', // zavox
     // '0x9b229c01eEf692A780d8Fee2558AaEa9873C032f', // me
-  ]
+  ];
 
-  app.io.on('connection', onRealmConnection.bind(null, app))
+  // app.io.on('connection', onRealmConnection.bind(null, app));
 
-  app.realm.upgrade = upgradeCodebase
+  app.io.on('connection', (socket) => {
+    console.log('Client connected');
 
-  app.realm.call = sendEventToObservers.bind(null, app)
+    const ip = 'HIDDEN'; // socket.handshake.headers['x-forwarded-for']?.split(',')[0] || socket.conn.remoteAddress?.split(':')[3]
+
+    log('Client connected from ' + ip);
+
+    const currentClient = {
+      name: 'Unknown' + Math.floor(Math.random() * 999),
+      id: socket.id,
+      ip,
+      lastReportedTime: getTime(),
+      isMod: false,
+      isAdmin: false,
+      log: {
+        clientDisconnected: 0,
+      },
+    };
+
+    app.realm.sockets[currentClient.id] = socket;
+
+    app.realm.clientLookup[currentClient.id] = currentClient;
+
+    app.realm.clients.push(currentClient);
+
+    socket.on('trpc', async (message) => {
+      const { id, method, params } = message;
+
+      try {
+        const ctx = { app, socket }; // Your custom context, including `app` and `socket`
+        const result = await appRouter.createCaller(ctx)[method](params);
+
+        socket.emit('trpcResponse', { id, result });
+      } catch (error) {
+        socket.emit('trpcResponse', { id, error: error.message });
+      }
+    });
+
+    socket.on('disconnect', async () => {
+      log('Client has disconnected');
+
+      if (currentClient.isAdmin) {
+        await app.gameBridge.apiDisconnected.mutate(await getSignedRequest(app.web3, app.secrets, {}), {});
+      }
+
+      currentClient.log.clientDisconnected += 1;
+
+      delete app.realm.sockets[currentClient.id];
+      delete app.realm.clientLookup[currentClient.id];
+
+      app.realm.clients = app.realm.clients.filter((c) => c.id !== currentClient.id);
+    });
+  });
+
+  app.realm.upgrade = upgradeCodebase;
+
+  app.realm.call = sendEventToObservers.bind(null, app);
 }

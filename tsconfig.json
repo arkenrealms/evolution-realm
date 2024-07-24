@@ -1,18 +1,36 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "module": "commonjs",
-    "outDir": "build",
-    "strict": false,
-    "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
-    "baseUrl": "./",
-    "paths": {
-      "@": ["./src"]
-    },
     "esModuleInterop": true,
+    "module": "CommonJS",
+    "lib": ["ES2020"],
+    "noImplicitAny": false,
+    "outDir": "build",
+    "preserveSymlinks": false,
+    "preserveConstEnums": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "removeComments": true,
+    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "strict": false,
+    "checkJs": true,
+    "sourceMap": true,
+    "target": "ES2020",
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "types": ["jest", "node", "@trpc/server"],
+    "typeRoots": ["./node_modules/@types", "./types"],
+    "paths": {
+      "~/*": ["./src/*"]
+    },
+    "baseUrl": "./",
+    "allowJs": true,
+    "declaration": false,
+    "isolatedModules": true,
+    "noFallthroughCasesInSwitch": true,
+    "noEmit": true
   },
-  "include": ["./src"]
+  "include": ["./src"],
+  "exclude": ["node_modules", "build"]
 }

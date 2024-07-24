@@ -1,18 +1,18 @@
-import fetch from 'node-fetch'
-import md5 from 'js-md5'
-import jetpack from 'fs-jetpack'
-import { spawn } from 'child_process'
-import { io as ioClient } from 'socket.io-client'
-import { isValidRequest, getSignedRequest } from '@arken/node/util/web3'
-import { log, logError, random, getTime } from '@arken/node/util'
-import { emitDirect } from '@arken/node/util/websocket'
-import { upgradeGsCodebase, cloneGsCodebase } from '@arken/node/util/codebase'
+import axios from 'axios';
+import md5 from 'js-md5';
+import jetpack from 'fs-jetpack';
+import { spawn } from 'child_process';
+import { io as ioClient } from 'socket.io-client';
+import { isValidRequest, getSignedRequest } from '@arken/node/util/web3';
+import { log, logError, random, getTime } from '@arken/node/util';
+import { emitDirect } from '@arken/node/util/websocket';
+import { upgradeGsCodebase, cloneGsCodebase } from '@arken/node/util/codebase';
 
-const path = require('path')
-const shortId = require('shortid')
+const path = require('path');
+const shortId = require('shortid');
 
 function getSocket(app, endpoint) {
-  log('Connecting to', endpoint)
+  log('Connecting to', endpoint);
   return ioClient(endpoint, {
     transports: ['websocket'],
     upgrade: false,
@@ -22,7 +22,7 @@ function getSocket(app, endpoint) {
     // extraHeaders: {
     //   "my-custom-header": "1234"
     // }
-  })
+  });
 }
 
 function startGameServer(app) {
@@ -33,155 +33,155 @@ function startGameServer(app) {
     //   win32: ''
     // }[process.platform]
 
-    process.env.GS_PORT = app.gameBridge.state.spawnPort + ''
+    process.env.GS_PORT = app.gameBridge.state.spawnPort + '';
 
     const env = {
       ...process.env,
       LOG_PREFIX: '[REGS]',
-    }
+    };
 
     // Start the server
     app.gameBridge.process = spawn('node', ['-r', 'tsconfig-paths/register', 'build/index.js'], {
       cwd: path.resolve('./game-server'),
       env,
       stdio: ['ignore', 'pipe', 'pipe'],
-    })
+    });
 
-    app.gameBridge.process.stdout.pipe(process.stdout)
-    app.gameBridge.process.stderr.pipe(process.stderr)
+    app.gameBridge.process.stdout.pipe(process.stdout);
+    app.gameBridge.process.stderr.pipe(process.stderr);
 
     app.gameBridge.process.on('exit', (code, signal) => {
-      log(`Child process exited with code ${code} and signal ${signal}. Lets exit too.`)
+      log(`Child process exited with code ${code} and signal ${signal}. Lets exit too.`);
 
-      process.exit(1)
+      process.exit(1);
       // setTimeout(() => {
       //   startGameServer(app)
       // }, 1000)
-    })
+    });
 
-    app.subProcesses.push(app.gameBridge.process)
+    app.subProcesses.push(app.gameBridge.process);
 
-    process.env.GS_PORT = app.gameBridge.state.spawnPort + 1 + ''
+    process.env.GS_PORT = app.gameBridge.state.spawnPort + 1 + '';
   } catch (e) {
-    log('startGameServer error', e)
+    log('startGameServer error', e);
   }
 }
 
 async function callGameServer(app, name, signature, data = {}) {
   if (!app.gameBridge.socket?.connected) {
-    log(`Can't send GS message, not connected.`)
-    return Promise.reject()
+    log(`Can't send GS message, not connected.`);
+    return Promise.reject();
   }
 
   return new Promise((resolve, reject) => {
-    const id = shortId()
+    const id = shortId();
 
     const timeout = setTimeout(function () {
-      resolve({ status: 0, message: 'Request timeout to GS' })
+      resolve({ status: 0, message: 'Request timeout to GS' });
 
-      delete app.gameBridge.ioCallbacks[id]
-    }, 30 * 1000)
+      delete app.gameBridge.ioCallbacks[id];
+    }, 30 * 1000);
 
-    app.gameBridge.ioCallbacks[id] = { resolve, reject, timeout }
+    app.gameBridge.ioCallbacks[id] = { resolve, reject, timeout };
 
-    log('GS call: ', name, { id, data })
+    log('GS call: ', name, { id, data });
 
-    app.gameBridge.socket.emit(name, { id, signature, data })
-  })
+    app.gameBridge.socket.emit(name, { id, signature, data });
+  });
 }
 
 function connectGameServer(app) {
   if (app.gameBridge.socket) {
-    app.gameBridge.socket.close()
+    app.gameBridge.socket.close();
 
-    clearTimeout(app.gameBridge.infoRequestTimeout)
-    clearTimeout(app.gameBridge.connectTimeout)
+    clearTimeout(app.gameBridge.infoRequestTimeout);
+    clearTimeout(app.gameBridge.connectTimeout);
   }
 
   const server = {
     endpoint: 'localhost:' + app.gameBridge.state.spawnPort, // local.isles.arken.gg
     key: 'local1',
-  }
+  };
 
-  const socket = (app.gameBridge.socket = getSocket(app, (app.isHttps ? 'https://' : 'http://') + server.endpoint))
+  const socket = (app.gameBridge.socket = getSocket(app, (app.isHttps ? 'https://' : 'http://') + server.endpoint));
 
   const serverState = {
     id: shortId(), // TODO: fix it so GS uses this
     info: undefined,
     isAuthed: false,
-  }
+  };
 
-  app.gameBridge.state.servers.push(serverState) // TODO: check this gets updated by GS so it sends correct info to DB
+  app.gameBridge.state.servers.push(serverState); // TODO: check this gets updated by GS so it sends correct info to DB
 
   async function fetchInfo() {
-    const res = (await app.gameBridge.call('RS_InfoRequest')) as any
+    const res = (await app.gameBridge.call('RS_InfoRequest')) as any;
 
     // log('fetchInfo res', res)
 
     if (res?.status === 1) {
-      return res.data
+      return res.data;
     }
 
     // setTimeout(fetchInfo, 10 * 1000)
   }
 
   socket.on('connect', async function () {
-    log('Connected: ' + server.key)
+    log('Connected: ' + server.key);
 
-    const id = shortId()
-    const data = {}
-    const signature = await getSignedRequest(app.web3, app.secrets, data)
+    const id = shortId();
+    const data = {};
+    const signature = await getSignedRequest(app.web3, app.secrets, data);
 
-    socket.emit('RS_Connected', { id, signature, data })
-  })
+    socket.emit('RS_Connected', { id, signature, data });
+  });
 
   socket.on('disconnect', function () {
-    log('Disconnected: ' + server.key)
-  })
+    log('Disconnected: ' + server.key);
+  });
 
   socket.on('GS_Ping', function (msg) {
-    log('GS_Ping', msg)
-  })
+    log('GS_Ping', msg);
+  });
 
-  socket.on('GS_InitRequest', async function (req) {
+  socket.on('initRequest', async function (req) {
     try {
       if (req.data.status !== 1) {
-        logError('Could not init')
+        logError('Could not init');
 
-        emitDirect(socket, 'GS_InitResponse', {
+        emitDirect(socket, 'initResponse', {
           id: req.id,
           data: {
             status: 0,
           },
-        })
+        });
 
-        return
+        return;
       }
 
-      log('GS initialized')
+      log('GS initialized');
 
-      const info = await fetchInfo()
+      const info = await fetchInfo();
 
       if (!info) {
-        logError('Couldnt fetch info')
+        logError('Couldnt fetch info');
 
-        emitDirect(socket, 'GS_InitResponse', {
+        emitDirect(socket, 'initResponse', {
           id: req.id,
           data: {
             status: 0,
           },
-        })
-        return
+        });
+        return;
       }
 
-      serverState.info = info
+      serverState.info = info;
 
-      clearTimeout(app.gameBridge.connectTimeout)
+      clearTimeout(app.gameBridge.connectTimeout);
 
       // TODO: Validate GS key
-      serverState.isAuthed = true
+      serverState.isAuthed = true;
 
-      emitDirect(socket, 'GS_InitResponse', {
+      emitDirect(socket, 'initResponse', {
         id: req.id,
         data: {
           status: 1,
@@ -190,52 +190,52 @@ function connectGameServer(app) {
             roundId: app.gameBridge.state.config.roundId,
           },
         },
-      })
+      });
 
       const infoRequestFunc = async function () {
-        const info = await fetchInfo()
+        const info = await fetchInfo();
 
         if (info) {
-          serverState.info = info
+          serverState.info = info;
         }
 
-        clearTimeout(app.gameBridge.infoRequestTimeout)
+        clearTimeout(app.gameBridge.infoRequestTimeout);
 
         if (serverState.isAuthed) {
-          app.gameBridge.infoRequestTimeout = setTimeout(infoRequestFunc, 20 * 1000)
+          app.gameBridge.infoRequestTimeout = setTimeout(infoRequestFunc, 20 * 1000);
         }
-      }
+      };
 
-      app.gameBridge.infoRequestTimeout = setTimeout(infoRequestFunc, 20 * 1000)
+      app.gameBridge.infoRequestTimeout = setTimeout(infoRequestFunc, 20 * 1000);
     } catch (e) {
-      logError(e)
+      logError(e);
 
-      emitDirect(socket, 'GS_InitResponse', {
+      emitDirect(socket, 'initResponse', {
         id: req.id,
         data: {
           status: 0,
         },
-      })
+      });
     }
-  })
+  });
 
   // Use by GS to tell RS it's connected
   // socket.on('GS_Connect', async function() {
   //   emitDirect(socket, 'OnConnected')
   // })
 
-  socket.on('GS_ConfigureRequest', function (req) {
+  socket.on('configureRequest', function (req) {
     try {
-      log('GS_ConfigureRequest')
+      log('configureRequest');
 
-      const { config } = app.gameBridge.state
+      const { config } = app.gameBridge.state;
 
-      app.gameBridge.state.clients = req.data.clients
+      app.gameBridge.state.clients = req.data.clients;
 
-      config.totalLegitPlayers = 0
+      config.totalLegitPlayers = 0;
 
       for (const client of req.data.clients) {
-        if (client.isGuest) continue
+        if (client.isGuest) continue;
 
         try {
           if (
@@ -245,14 +245,14 @@ function connectGameServer(app) {
             client.evolves > 100 ||
             client.points > 1000
           ) {
-            config.totalLegitPlayers += 1
+            config.totalLegitPlayers += 1;
           }
         } catch (e) {
-          log('Error 9343', e)
+          log('Error 9343', e);
         }
       }
 
-      if (config.totalLegitPlayers === 0) config.totalLegitPlayers = 1
+      if (config.totalLegitPlayers === 0) config.totalLegitPlayers = 1;
 
       config.rewardItemAmount = parseFloat(
         (
@@ -261,7 +261,7 @@ function connectGameServer(app) {
               1000
           ) / 1000
         ).toFixed(3)
-      )
+      );
       config.rewardWinnerAmount = parseFloat(
         (
           Math.round(
@@ -269,9 +269,9 @@ function connectGameServer(app) {
               1000
           ) / 1000
         ).toFixed(3)
-      )
+      );
 
-      emitDirect(socket, 'GS_ConfigureResponse', {
+      emitDirect(socket, 'configureResponse', {
         id: req.id,
         data: {
           status: 1,
@@ -280,27 +280,27 @@ function connectGameServer(app) {
             rewardItemAmount: config.rewardItemAmount,
           },
         },
-      })
+      });
     } catch (e) {
-      logError(e)
+      logError(e);
 
-      emitDirect(socket, 'GS_ConfigureResponse', {
+      emitDirect(socket, 'configureResponse', {
         id: req.id,
         data: {
           status: 0,
           data: { rewardWinnerAmount: 0, rewardItemAmount: 0 },
         },
-      })
+      });
     }
-  })
+  });
 
-  socket.on('GS_SaveRoundRequest', async function (req) {
-    const { config } = app.gameBridge.state
+  socket.on('saveRoundRequest', async function (req) {
+    const { config } = app.gameBridge.state;
 
-    let failed = false
+    let failed = false;
 
     try {
-      log('GS_SaveRoundRequest', req)
+      log('saveRoundRequest', req);
 
       // Update player stat DB
       const res = await app.realm.call('SaveRoundRequest', {
@@ -309,44 +309,44 @@ function connectGameServer(app) {
         round: req.data,
         rewardWinnerAmount: config.rewardWinnerAmount,
         lastClients: app.gameBridge.state.clients,
-      })
+      });
 
       // ZENO: temp fix
-      // emitDirect(socket, 'GS_SaveRoundResponse', {
+      // emitDirect(socket, 'saveRoundResponse', {
       //   id: req.id,
       //   data: res,
       // })
 
       if (res.status === 1) {
-        emitDirect(socket, 'GS_SaveRoundResponse', {
+        emitDirect(socket, 'saveRoundResponse', {
           id: req.id,
           data: res,
-        })
+        });
       } else {
-        failed = true
-        log('Save round failed', res)
+        failed = true;
+        log('Save round failed', res);
       }
     } catch (e) {
-      logError('Save round failed', e)
+      logError('Save round failed', e);
 
-      failed = true
+      failed = true;
     }
 
     try {
       if (failed) {
-        const { config } = app.gameBridge.state
+        const { config } = app.gameBridge.state;
 
         app.state.unsavedGames.push({
           gsid: serverState.id,
           roundId: config.roundId,
           round: req.data,
           rewardWinnerAmount: config.rewardWinnerAmount,
-        })
+        });
 
-        emitDirect(socket, 'GS_SaveRoundResponse', {
+        emitDirect(socket, 'saveRoundResponse', {
           id: req.id,
           data: { status: 0 },
-        })
+        });
 
         // config.rewardItemAmount = 0
         // config.rewardItemAmountPerLegitPlayer = 0
@@ -354,30 +354,30 @@ function connectGameServer(app) {
         // config.rewardWinnerAmountPerLegitPlayer = 0
       } else {
         for (const game of app.state.unsavedGames.filter((g) => g.status === undefined)) {
-          const res = await app.realm.call('SaveRoundRequest', game)
+          const res = await app.realm.call('SaveRoundRequest', game);
 
-          game.status = res.status
+          game.status = res.status;
         }
 
-        app.state.unsavedGames = app.state.unsavedGames.filter((g) => g.status !== 1)
+        app.state.unsavedGames = app.state.unsavedGames.filter((g) => g.status !== 1);
       }
 
-      await jetpack.writeAsync(path.resolve('./public/data/unsavedGames.json'), JSON.stringify(app.state.unsavedGames))
+      await jetpack.writeAsync(path.resolve('./public/data/unsavedGames.json'), JSON.stringify(app.state.unsavedGames));
     } catch (e) {
-      emitDirect(socket, 'GS_SaveRoundResponse', {
+      emitDirect(socket, 'saveRoundResponse', {
         id: req.id,
         data: { status: 0 },
-      })
+      });
 
-      logError(e)
+      logError(e);
     }
 
-    app.gameBridge.state.config.roundId++
+    app.gameBridge.state.config.roundId++;
 
-    await jetpack.writeAsync(path.resolve('./public/data/config.json'), JSON.stringify(app.gameBridge.state.config))
-  })
+    await jetpack.writeAsync(path.resolve('./public/data/config.json'), JSON.stringify(app.gameBridge.state.config));
+  });
 
-  const isTournamentActive = false
+  const isTournamentActive = false;
   const allowedTournamentUsers = [
     'Pandamonium',
     'Maiev',
@@ -400,86 +400,84 @@ function connectGameServer(app) {
     'Mr buggins',
     'Gamel',
     'Mantrascesis',
-  ]
+  ];
 
   socket.on('GS_ConfirmUserRequest', async function (req) {
     try {
-      log('GS_ConfirmUserRequest', req)
+      log('GS_ConfirmUserRequest', req);
 
-      let overview = app.gameBridge.userCache[req.data.address]
+      let overview = app.gameBridge.userCache[req.data.address];
 
       if (!overview) {
         try {
-          overview = (await (
-            await fetch(`https://cache.arken.gg/users/${req.data.address}/overview.json`)
-          ).json()) as any
+          overview = (await axios(`https://cache.arken.gg/users/${req.data.address}/overview.json`)).data as any;
 
-          app.gameBridge.userCache[req.data.address] = overview
+          app.gameBridge.userCache[req.data.address] = overview;
         } catch (e) {
           // No user exists, but they can play as guest
-          emitDirect(socket, 'GS_ConfirmUserResponse', {
+          emitDirect(socket, 'confirmUserResponse', {
             id: req.id,
             data: { status: 0 },
-          })
-          return
+          });
+          return;
         }
       }
 
       if (isTournamentActive && !allowedTournamentUsers.includes(overview?.username)) {
-        console.log('Not approved for tournament. Disconnecting.')
-        emitDirect(socket, 'GS_ConfirmUserResponse', {
+        console.log('Not approved for tournament. Disconnecting.');
+        emitDirect(socket, 'confirmUserResponse', {
           id: req.id,
           data: { status: 0 },
-        })
-        return
+        });
+        return;
       }
 
       if (app.gameBridge.state.clients.length > 50) {
-        console.log('Too many players. Disconnecting.')
-        emitDirect(socket, 'GS_ConfirmUserResponse', {
+        console.log('Too many players. Disconnecting.');
+        emitDirect(socket, 'confirmUserResponse', {
           id: req.id,
           data: { status: 0 },
-        })
-        return
+        });
+        return;
       }
 
-      const now = new Date().getTime() / 1000
+      const now = new Date().getTime() / 1000;
 
       if (overview.isBanned && overview.bannedUntil > now) {
-        emitDirect(socket, 'GS_ConfirmUserResponse', {
+        emitDirect(socket, 'confirmUserResponse', {
           id: req.id,
           data: { status: 0 },
-        })
-        return
+        });
+        return;
       }
 
-      emitDirect(socket, 'GS_ConfirmUserResponse', {
+      emitDirect(socket, 'confirmUserResponse', {
         id: req.id,
         data: {
           status: 1,
           isMod:
             app.realm.state.modList.includes(req.data.address) || app.realm.state.adminList.includes(req.data.address),
         },
-      })
+      });
 
       if (!isTournamentActive) {
-        let character = app.gameBridge.characterCache[req.data.address]
+        let character = app.gameBridge.characterCache[req.data.address];
 
         if (!character) {
           const res = await app.realm.call('GetCharacterRequest', {
             address: req.data.address,
-          })
+          });
 
-          log('GetCharacterResponse', res)
+          log('GetCharacterResponse', res);
 
           if (res.status === 1) {
-            character = res.character
+            character = res.character;
 
-            app.gameBridge.characterCache[req.data.address] = character
+            app.gameBridge.characterCache[req.data.address] = character;
           }
         }
 
-        log('Player character', character)
+        log('Player character', character);
 
         if (character) {
           emitDirect(socket, 'RS_SetPlayerCharacterRequest', {
@@ -488,18 +486,18 @@ function connectGameServer(app) {
               address: req.data.address,
               character,
             },
-          })
+          });
         }
       }
     } catch (e) {
-      emitDirect(socket, 'GS_ConfirmUserResponse', {
+      emitDirect(socket, 'confirmUserResponse', {
         id: req.id,
         data: { status: 0 },
-      })
+      });
 
-      logError(e)
+      logError(e);
     }
-  })
+  });
 
   // socket.on('GS_ReportUserRequest', function (req) {
   //   // TODO: Validate is authed
@@ -527,9 +525,9 @@ function connectGameServer(app) {
   //   }
   // })
 
-  socket.on('GS_VerifySignatureRequest', function (req) {
+  socket.on('verifySignatureRequest', function (req) {
     try {
-      emitDirect(socket, 'GS_VerifySignatureResponse', {
+      emitDirect(socket, 'verifySignatureResponse', {
         id: req.id,
         data: {
           status: 1,
@@ -540,91 +538,91 @@ function connectGameServer(app) {
             app.web3.eth.accounts.recover(req.data.signature.data, req.data.signature.hash).toLowerCase() ===
               req.data.signature.address.toLowerCase(),
         },
-      })
+      });
     } catch (e) {
-      emitDirect(socket, 'GS_VerifySignatureResponse', {
+      emitDirect(socket, 'verifySignatureResponse', {
         id: req.id,
         data: {
           status: 0,
           verified: false,
         },
-      })
-      logError(e)
+      });
+      logError(e);
     }
-  })
+  });
 
-  socket.on('GS_VerifyAdminSignatureRequest', function (req) {
-    // log('GS_VerifyAdminSignatureRequest', req)
-    const originalReq = req.data
+  socket.on('verifyAdminSignatureRequest', function (req) {
+    // log('verifyAdminSignatureRequest', req)
+    const originalReq = req.data;
 
     try {
-      const normalizedAddress = app.web3.utils.toChecksumAddress(originalReq.signature.address.trim())
-      const hashedData = md5(JSON.stringify(originalReq.data))
+      const normalizedAddress = app.web3.utils.toChecksumAddress(originalReq.signature.address.trim());
+      const hashedData = md5(JSON.stringify(originalReq.data));
       const isValid =
         app.web3.eth.accounts.recover(originalReq.signature.data, originalReq.signature.hash).toLowerCase() ===
           originalReq.signature.address.toLowerCase() &&
         hashedData === originalReq.signature.data &&
-        (app.realm.state.adminList.includes(normalizedAddress) || app.realm.state.modList.includes(normalizedAddress))
+        (app.realm.state.adminList.includes(normalizedAddress) || app.realm.state.modList.includes(normalizedAddress));
 
-      log('Hashed data', hashedData, originalReq.signature.data, originalReq.data)
+      log('Hashed data', hashedData, originalReq.signature.data, originalReq.data);
       log(
         'Address ' +
           normalizedAddress +
           ' is in admin list = ' +
           (app.realm.state.adminList.includes(normalizedAddress) ? 'YES' : 'NO'),
         app.realm.state.modList
-      )
+      );
       log(
         'Address ' +
           normalizedAddress +
           ' is in mod list = ' +
           (app.realm.state.modList.includes(normalizedAddress) ? 'YES' : 'NO'),
         app.realm.state.modList
-      )
+      );
 
-      emitDirect(socket, 'GS_VerifyAdminSignatureResponse', {
+      emitDirect(socket, 'verifyAdminSignatureResponse', {
         id: req.id,
         data: {
           status: isValid ? 1 : 0,
           address: normalizedAddress,
         },
-      })
+      });
     } catch (e) {
-      emitDirect(socket, 'GS_VerifyAdminSignatureResponse', {
+      emitDirect(socket, 'verifyAdminSignatureResponse', {
         id: req.id,
         data: {
           status: 0,
           address: originalReq.signature.address,
         },
-      })
-      logError(e)
+      });
+      logError(e);
     }
-  })
+  });
 
-  socket.on('GS_NormalizeAddressRequest', function (req) {
+  socket.on('normalizeAddressRequest', function (req) {
     try {
-      log('GS_NormalizeAddressRequest', req)
+      log('normalizeAddressRequest', req);
 
       // TODO: Validate is authed
 
-      emitDirect(socket, 'GS_NormalizeAddressResponse', {
+      emitDirect(socket, 'normalizeAddressResponse', {
         id: req.id,
         data: {
           status: 1,
           address: app.web3.utils.toChecksumAddress(req.data.address.trim()),
         },
-      })
+      });
     } catch (e) {
-      emitDirect(socket, 'GS_NormalizeAddressResponse', {
+      emitDirect(socket, 'normalizeAddressResponse', {
         id: req.id,
         data: {
           status: 0,
           address: req.data.address,
         },
-      })
-      logError(e)
+      });
+      logError(e);
     }
-  })
+  });
 
   // socket.on('GS_ClaimRewardRequest', function(req) {
   //   // TODO: Validate is authed
@@ -653,33 +651,33 @@ function connectGameServer(app) {
   //   }
   // })
 
-  socket.on('GS_GetRandomRewardRequest', function (req) {
+  socket.on('getRandomRewardRequest', function (req) {
     try {
-      const now = getTime()
+      const now = getTime();
 
-      const { config } = app.gameBridge.state
+      const { config } = app.gameBridge.state;
 
-      if (!config.drops) config.drops = {}
-      if (!config.drops.guardian) config.drops.guardian = 1633043139000
-      if (!config.drops.earlyAccess) config.drops.earlyAccess = 1633043139000
-      if (!config.drops.trinket) config.drops.trinket = 1633043139000
-      if (!config.drops.santa) config.drops.santa = 1633043139000
-      if (!config.drops.runeword) config.drops.runeword = 1633043139000
-      if (!config.drops.runeToken) config.drops.runeToken = 1633043139000
+      if (!config.drops) config.drops = {};
+      if (!config.drops.guardian) config.drops.guardian = 1633043139000;
+      if (!config.drops.earlyAccess) config.drops.earlyAccess = 1633043139000;
+      if (!config.drops.trinket) config.drops.trinket = 1633043139000;
+      if (!config.drops.santa) config.drops.santa = 1633043139000;
+      if (!config.drops.runeword) config.drops.runeword = 1633043139000;
+      if (!config.drops.runeToken) config.drops.runeToken = 1633043139000;
 
-      const timesPer10Mins = Math.round((10 * 60) / config.rewardSpawnLoopSeconds)
-      const randPer10Mins = random(0, timesPer10Mins)
-      const timesPerDay = Math.round((40 * 60 * 60) / config.rewardSpawnLoopSeconds)
-      const randPerDay = random(0, timesPerDay)
-      const timesPerWeek = Math.round((10 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds)
-      const randPerWeek = random(0, timesPerWeek)
-      const timesPerBiweekly = Math.round((20 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds)
-      const randPerBiweekly = random(0, timesPerBiweekly)
-      const timesPerMonth = Math.round((31 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds)
-      const randPerMonth = random(0, timesPerMonth)
+      const timesPer10Mins = Math.round((10 * 60) / config.rewardSpawnLoopSeconds);
+      const randPer10Mins = random(0, timesPer10Mins);
+      const timesPerDay = Math.round((40 * 60 * 60) / config.rewardSpawnLoopSeconds);
+      const randPerDay = random(0, timesPerDay);
+      const timesPerWeek = Math.round((10 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds);
+      const randPerWeek = random(0, timesPerWeek);
+      const timesPerBiweekly = Math.round((20 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds);
+      const randPerBiweekly = random(0, timesPerBiweekly);
+      const timesPerMonth = Math.round((31 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds);
+      const randPerMonth = random(0, timesPerMonth);
 
-      let tempReward
-      const dropItems = false
+      let tempReward;
+      const dropItems = false;
 
       if (
         dropItems &&
@@ -697,17 +695,17 @@ function connectGameServer(app) {
           rarity: 'Magical',
           quantity: 1,
           rewardItemType: 2,
-        }
+        };
 
-        const rand = random(0, 1000)
+        const rand = random(0, 1000);
 
-        if (rand === 1000) tempReward.rarity = 'Mythic'
-        else if (rand > 950) tempReward.rarity = 'Epic'
-        else if (rand > 850) tempReward.rarity = 'Rare'
+        if (rand === 1000) tempReward.rarity = 'Mythic';
+        else if (rand > 950) tempReward.rarity = 'Epic';
+        else if (rand > 850) tempReward.rarity = 'Rare';
 
-        tempReward.rewardItemName = tempReward.rarity + ' ' + tempReward.name
+        tempReward.rewardItemName = tempReward.rarity + ' ' + tempReward.name;
 
-        config.drops.guardian = now
+        config.drops.guardian = now;
       } else if (
         dropItems &&
         now - config.drops.earlyAccess > 30 * 24 * 60 * 60 * 1000 &&
@@ -724,11 +722,11 @@ function connectGameServer(app) {
           rarity: 'Unique',
           quantity: 1,
           rewardItemType: 3,
-        }
+        };
 
-        tempReward.rewardItemName = tempReward.name
+        tempReward.rewardItemName = tempReward.name;
 
-        config.drops.earlyAccess = now
+        config.drops.earlyAccess = now;
         // } else if (randPer10Mins === Math.round(timesPer10Mins / 2)) { // (now - config.drops.earlyAccess) > 7 * 24 * 60 * 60 * 1000
         //   tempReward = {
         //     id: shortId.generate(),
@@ -761,24 +759,24 @@ function connectGameServer(app) {
           rarity: 'Magical',
           quantity: 1,
           rewardItemType: 4,
-        }
+        };
 
-        const rand = random(0, 1000)
+        const rand = random(0, 1000);
 
-        if (rand === 1000) tempReward.rarity = 'Mythic'
-        else if (rand > 950) tempReward.rarity = 'Epic'
-        else if (rand > 850) tempReward.rarity = 'Rare'
+        if (rand === 1000) tempReward.rarity = 'Mythic';
+        else if (rand > 950) tempReward.rarity = 'Epic';
+        else if (rand > 850) tempReward.rarity = 'Rare';
 
-        tempReward.rewardItemName = tempReward.rarity + ' ' + tempReward.name
+        tempReward.rewardItemName = tempReward.rarity + ' ' + tempReward.name;
 
-        config.drops.trinket = now
+        config.drops.trinket = now;
       } else if (
         dropItems &&
         now - config.drops.runeword > 12 * 60 * 60 * 1000 &&
         randPerDay === Math.round(timesPerDay / 5)
       ) {
         // (now - config.drops.runeword) > 24 * 60 * 60 * 1000
-        config.drops.runeword = now
+        config.drops.runeword = now;
       } else if (
         dropItems &&
         now - config.drops.runeToken > 31 * 24 * 60 * 60 * 1000 &&
@@ -795,17 +793,17 @@ function connectGameServer(app) {
           rarity: 'Normal',
           quantity: 1,
           rewardItemType: 5,
-        }
+        };
 
-        const rand = random(0, 1000)
+        const rand = random(0, 1000);
 
-        if (rand === 1000) tempReward.quantity = 10
-        else if (rand > 990) tempReward.quantity = 3
-        else if (rand > 950) tempReward.quantity = 2
+        if (rand === 1000) tempReward.quantity = 10;
+        else if (rand > 990) tempReward.quantity = 3;
+        else if (rand > 950) tempReward.quantity = 2;
 
-        tempReward.rewardItemName = tempReward.quantity + ' ' + tempReward.name
+        tempReward.rewardItemName = tempReward.quantity + ' ' + tempReward.name;
 
-        config.drops.runeToken = now
+        config.drops.runeToken = now;
       } else {
         const odds = [
           'runes',
@@ -1009,109 +1007,109 @@ function connectGameServer(app) {
           'runes',
           'runes',
           'runes',
-        ]
+        ];
 
-        const rewardType = app.gameBridge.state.rewards[odds[random(0, odds.length - 1)]]
+        const rewardType = app.gameBridge.state.rewards[odds[random(0, odds.length - 1)]];
 
         if (!rewardType || rewardType.length === 0) {
-          emitDirect(socket, 'GS_GetRandomRewardResponse', {
+          emitDirect(socket, 'getRandomRewardResponse', {
             id: req.id,
             data: null,
-          })
-          return
+          });
+          return;
         }
 
-        const reward = rewardType[random(0, rewardType.length - 1)]
+        const reward = rewardType[random(0, rewardType.length - 1)];
 
         if (reward.type === 'rune' && reward.quantity <= 0) {
-          emitDirect(socket, 'GS_GetRandomRewardResponse', {
+          emitDirect(socket, 'getRandomRewardResponse', {
             id: req.id,
             data: null,
-          })
-          return
+          });
+          return;
         }
 
-        const now = getTime()
+        const now = getTime();
 
-        tempReward = JSON.parse(JSON.stringify(reward))
-        tempReward.id = shortId.generate()
+        tempReward = JSON.parse(JSON.stringify(reward));
+        tempReward.id = shortId.generate();
         tempReward.position = config.level2open
           ? app.gameBridge.state.rewardSpawnPoints2[random(0, app.gameBridge.state.rewardSpawnPoints2.length - 1)]
-          : app.gameBridge.state.rewardSpawnPoints[random(0, app.gameBridge.state.rewardSpawnPoints.length - 1)]
-        tempReward.enabledAt = now
-        tempReward.quantity = config.rewardItemAmount
+          : app.gameBridge.state.rewardSpawnPoints[random(0, app.gameBridge.state.rewardSpawnPoints.length - 1)];
+        tempReward.enabledAt = now;
+        tempReward.quantity = config.rewardItemAmount;
 
         if (tempReward.type === 'rune') {
-          tempReward.rewardItemType = 0
-          tempReward.rewardItemName = tempReward.symbol.toUpperCase()
+          tempReward.rewardItemType = 0;
+          tempReward.rewardItemName = tempReward.symbol.toUpperCase();
         }
       }
 
-      emitDirect(socket, 'GS_GetRandomRewardResponse', {
+      emitDirect(socket, 'getRandomRewardResponse', {
         id: req.id,
         data: {
           status: 1,
           reward: tempReward,
         },
-      })
+      });
     } catch (e) {
-      emitDirect(socket, 'GS_GetRandomRewardResponse', {
+      emitDirect(socket, 'getRandomRewardResponse', {
         id: req.id,
         data: {
           status: 0,
         },
-      })
-      logError(e)
+      });
+      logError(e);
     }
-  })
+  });
 
   socket.onAny(function (eventName, res) {
     try {
-      if (eventName === 'Events') return
+      if (eventName === 'Events') return;
 
-      const { id, data } = res
+      const { id, data } = res;
 
       if (!app.gameBridge.ioCallbacks[id]) {
-        log(`Callback ${app.gameBridge.ioCallbacks[id] ? 'Exists' : 'Doesnt Exist'}`, eventName, id, data)
+        log(`Callback ${app.gameBridge.ioCallbacks[id] ? 'Exists' : 'Doesnt Exist'}`, eventName, id, data);
       }
 
       if (app.gameBridge.ioCallbacks[id]) {
-        clearTimeout(app.gameBridge.ioCallbacks[id].timeout)
+        clearTimeout(app.gameBridge.ioCallbacks[id].timeout);
 
-        app.gameBridge.ioCallbacks[id].resolve(data)
+        app.gameBridge.ioCallbacks[id].resolve(data);
 
-        delete app.gameBridge.ioCallbacks[id]
+        delete app.gameBridge.ioCallbacks[id];
       }
     } catch (e) {
-      logError(e)
+      logError(e);
     }
-  })
+  });
 
-  socket.connect()
+  socket.connect();
 
-  clearTimeout(app.gameBridge.connectTimeout)
+  clearTimeout(app.gameBridge.connectTimeout);
 
   app.gameBridge.connectTimeout = setTimeout(function () {
-    logError('Could not connect to GS on ' + server.endpoint)
+    logError('Could not connect to GS on ' + server.endpoint);
 
-    socket.close()
-  }, 60 * 1000)
+    socket.close();
+  }, 60 * 1000);
 }
 
 export function initGameBridge(app) {
-  app.gameBridge = {}
+  app.gameBridge = {};
 
-  app.gameBridge.ioCallbacks = {}
+  app.gameBridge.ioCallbacks = {};
 
-  app.gameBridge.state = {}
+  app.gameBridge.state = {};
 
-  app.gameBridge.socket = null
+  app.gameBridge.socket = null;
 
-  app.gameBridge.state.playerRewards = {} as any
+  app.gameBridge.state.playerRewards = {} as any;
 
-  app.gameBridge.state.spawnPort = app.isHttps ? process.env.GS_SSL_PORT || 8443 : process.env.GS_PORT || 8080
+  app.gameBridge.state.spawnPort = app.isHttps ? process.env.GS_SSL_PORT || 8443 : process.env.GS_PORT || 8080;
 
-  app.gameBridge.state.clients = []
+  app.gameBridge.state.clients = [];
 
   app.gameBridge.state.rewards = {
     runes: [
@@ -1188,9 +1186,9 @@ export function initGameBridge(app) {
         tokenId: '1',
       },
     ],
-  } as any
+  } as any;
 
-  app.gameBridge.userCache = {}
+  app.gameBridge.userCache = {};
 
   app.gameBridge.state.config = jetpack.read(path.resolve('./public/data/config.json'), 'json') || {
     roundId: 1,
@@ -1208,11 +1206,11 @@ export function initGameBridge(app) {
       runeword: 1641303263018,
       runeToken: 1633043139000,
     },
-  }
+  };
 
   // Override because we didnt get response from RS yet
-  app.gameBridge.state.config.rewardItemAmount = 0
-  app.gameBridge.state.config.rewardWinnerAmount = 0
+  app.gameBridge.state.config.rewardItemAmount = 0;
+  app.gameBridge.state.config.rewardWinnerAmount = 0;
 
   app.gameBridge.state.rewardSpawnPoints = [
     { x: -16.32, y: -15.7774 },
@@ -1224,7 +1222,7 @@ export function initGameBridge(app) {
     { x: -7.28, y: -15.36 },
     { x: -13.46, y: -13.92 },
     { x: -12.66, y: -1.527404 },
-  ]
+  ];
 
   app.gameBridge.state.rewardSpawnPoints2 = [
     { x: -16.32, y: -15.7774 },
@@ -1249,36 +1247,36 @@ export function initGameBridge(app) {
     { x: -25.74, y: -15.28 },
     { x: -22.62, y: -11.69 },
     { x: -26.44, y: -4.05 },
-  ]
+  ];
 
-  app.gameBridge.state.servers = []
+  app.gameBridge.state.servers = [];
 
-  app.gameBridge.process = null
+  app.gameBridge.process = null;
 
-  app.gameBridge.call = callGameServer.bind(null, app)
+  app.gameBridge.call = callGameServer.bind(null, app);
 
-  app.gameBridge.start = startGameServer.bind(null, app)
+  app.gameBridge.start = startGameServer.bind(null, app);
 
-  app.gameBridge.connect = connectGameServer.bind(null, app)
+  app.gameBridge.connect = connectGameServer.bind(null, app);
 
-  app.gameBridge.clone = cloneGsCodebase
+  app.gameBridge.clone = cloneGsCodebase;
 
-  app.gameBridge.upgrade = upgradeGsCodebase
+  app.gameBridge.upgrade = upgradeGsCodebase;
 
-  app.gameBridge.characterCache = {}
+  app.gameBridge.characterCache = {};
 
   // Clear equipment cache every 10 mins
   setInterval(function () {
-    app.gameBridge.characterCache = {}
-  }, 10 * 60 * 1000)
+    app.gameBridge.characterCache = {};
+  }, 10 * 60 * 1000);
 
   setTimeout(() => {
     // if (process.env.ARKEN_ENV !== 'local') {
-    app.gameBridge.start()
+    app.gameBridge.start();
     // }
 
     setTimeout(() => {
-      app.gameBridge.connect()
-    }, 10 * 1000)
-  }, 1000)
+      app.gameBridge.connect();
+    }, 10 * 1000);
+  }, 1000);
 }
