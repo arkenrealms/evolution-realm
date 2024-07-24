@@ -2705,8 +2705,8 @@ function initEventHandler(app) {
         }
       });
 
-      socket.on('RS_ApiConnected', async function (req) {
-        log('RS_ApiConnected', req);
+      socket.on('apiConnected', async function (req) {
+        log('apiConnected', req);
 
         if (!(await isValidAdminRequest(req))) {
           publishEventDirect(socket, 'apiConnectedResponse', {

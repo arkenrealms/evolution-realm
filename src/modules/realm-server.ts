@@ -11,12 +11,6 @@ import { z } from 'zod';
 const t = initTRPC.create();
 
 const shortId = require('shortid');
-import { initTRPC } from '@trpc/server';
-import { z } from 'zod';
-import axios from 'axios';
-import { isValidRequest, getSignedRequest } from '@arken/node/util/web3';
-
-const t = initTRPC.create();
 
 export const appRouter = t.router({
   authRequest: t.procedure
@@ -29,7 +23,7 @@ export const appRouter = t.router({
         if (app.realm.state.adminList.includes(signature.address)) {
           socket.currentClient.isAdmin = true;
           socket.currentClient.isMod = true;
-          await app.gameBridge.RS_ApiConnected.mutate(await getSignedRequest(app.web3, app.secrets, {}), {});
+          await app.gameBridge.apiConnected.mutate(await getSignedRequest(app.web3, app.secrets, {}), {});
         } else if (app.realm.state.modList.includes(signature.address)) {
           socket.currentClient.isMod = true;
         }

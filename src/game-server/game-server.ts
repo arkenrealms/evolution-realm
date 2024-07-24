@@ -491,7 +491,7 @@ const registerKill = (app, winner, loser) => {
   }
   let orbOnDeathPercent =
     app.config.orbOnDeathPercent > 0
-      ? app.config.leadercap && loser.name === lastLeaderName
+      ? app.config.leadercap && loser.name === app.lastLeaderName
         ? 50
         : app.config.orbOnDeathPercent
       : 0;
@@ -607,7 +607,7 @@ function getRoundInfo(app) {
 }
 
 async function calcRoundRewards(app) {
-  const calcRewardsRes = await app.realm.app.configureRequest.mutate({ clients });
+  const calcRewardsRes = await app.realm.configureRequest.mutate({ clients: app.clients });
   if (calcRewardsRes?.data) {
     sharedConfig.rewardWinnerAmount = calcRewardsRes.data.rewardWinnerAmount;
     app.config.rewardWinnerAmount = calcRewardsRes.data.rewardWinnerAmount;
@@ -622,9 +622,6 @@ async function calcRoundRewards(app) {
     }
   }
 }
-
-let lastFastGameloopTime = getTime();
-let lastFastestGameloopTime = getTime();
 
 async function resetLeaderboard(app, preset = null) {
   try {
@@ -847,7 +844,7 @@ async function detectCollisions(app) {
   try {
     const now = getTime();
     const currentTime = Math.round(now / 1000);
-    const deltaTime = (now - lastFastestGameloopTime) / 1000;
+    const deltaTime = (now - app.lastFastestGameloopTime) / 1000;
     const distanceMap = {
       0: app.config.avatarTouchDistance0,
       1: app.config.avatarTouchDistance0,
@@ -1151,7 +1148,7 @@ async function detectCollisions(app) {
         }
       }
     }
-    lastFastestGameloopTime = now;
+    app.lastFastestGameloopTime = now;
   } catch (e) {
     log('Error 342', e);
   }
@@ -2457,6 +2454,9 @@ export async function initGameServer(app) {
       { x: -7.08, y: -12.75 },
       { x: -7.32, y: -15.29 },
     ];
+
+    app.lastFastGameloopTime = getTime();
+    app.lastFastestGameloopTime = getTime();
 
     initEventHandler(app);
 
