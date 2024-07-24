@@ -1,5 +1,5 @@
-import { log, logError, getTime } from '@zeno.network/web-sdk/util'
-import { killSubProcesses } from '@zeno.network/web-sdk/util/process'
+import { log, logError, getTime } from '@arken/node/util'
+import { killSubProcesses } from '@arken/node/util/process'
 
 const os = require('os')
 const fs = require('fs')

@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Start the first server
-yarn run dev &
+rushx dev &
 
 # Start the second server
-cd game-server && yarn run dev &
+cd game-server && rushx dev &
 
 # Wait for all background processes to finish
 wait

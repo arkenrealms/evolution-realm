@@ -3,8 +3,8 @@ import fs from 'fs'
 import express from 'express'
 import helmet from 'helmet'
 import cors from 'cors'
-import { log, logError } from '@zeno.network/web-sdk/util'
-import { catchExceptions } from '@zeno.network/web-sdk/util/process'
+import { log, logError } from '@arken/node/util'
+import { catchExceptions } from '@arken/node/util/process'
 import { initWeb3 } from './modules/web3'
 import { initRealmServer } from './modules/realm-server'
 import { initWebServer } from './modules/web-server'
@@ -50,7 +50,7 @@ async function init() {
       })
     )
 
-    app.isHttps = process.env.RUNE_ENV !== 'local'
+    app.isHttps = process.env.ARKEN_ENV !== 'local'
 
     app.http = require('http').Server(app.server)
 
@@ -62,8 +62,8 @@ async function init() {
       app.server
     )
 
-    app.io = require('socket.io')(process.env.RUNE_ENV !== 'local' ? app.https : app.http, {
-      secure: process.env.RUNE_ENV !== 'local' ? true : false,
+    app.io = require('socket.io')(process.env.ARKEN_ENV !== 'local' ? app.https : app.http, {
+      secure: process.env.ARKEN_ENV !== 'local' ? true : false,
       port: app.isHttps ? process.env.RS_SSL_PORT || 7443 : process.env.RS_PORT || 7080,
       pingInterval: 30 * 1000,
       pingTimeout: 90 * 1000,

@@ -7,7 +7,7 @@ chmod 777 .
 sudo chmod 777 .
 mkdir projects
 cd projects
-ssh-keygen -t ed25519 -C "deploy@farm.zeno.games"
+ssh-keygen -t ed25519 -C "deploy@farm.arken.gg"
 cat ~/.ssh/id_ed25519
 cat ~/.ssh/id_ed25519.pub
 sudo apt update
@@ -23,8 +23,8 @@ git checkout na1
 sudo add-apt-repository ppa:certbot/certbot
 sudo apt-get install certbot
 sudo certbot certonly --manual
-sudo cat /etc/letsencrypt/live/na1.secondwind.zeno.games/fullchain.pem
-sudo cat /etc/letsencrypt/live/na1.secondwind.zeno.games/privkey.pem
+sudo cat /etc/letsencrypt/live/na1.isles.arken.gg/fullchain.pem
+sudo cat /etc/letsencrypt/live/na1.isles.arken.gg/privkey.pem
 git pull
 yarn build
 

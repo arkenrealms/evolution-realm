@@ -1,4 +1,4 @@
-import { log, logError, getTime } from '@zeno.network/web-sdk/util'
+import { log, logError, getTime } from '@arken/node/util'
 
 const os = require('os')
 const fs = require('fs')

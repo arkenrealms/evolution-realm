@@ -1,8 +1,8 @@
 import fetch from 'node-fetch'
-import { isValidRequest, getSignedRequest } from '@zeno.network/web-sdk/util/web3'
-import { log, logError, getTime } from '@zeno.network/web-sdk/util'
-import { emitDirect } from '@zeno.network/web-sdk/util/websocket'
-import { upgradeCodebase } from '@zeno.network/web-sdk/util/codebase'
+import { isValidRequest, getSignedRequest } from '@arken/node/util/web3'
+import { log, logError, getTime } from '@arken/node/util'
+import { emitDirect } from '@arken/node/util/websocket'
+import { upgradeCodebase } from '@arken/node/util/codebase'
 
 const shortId = require('shortid')
 
@@ -284,7 +284,7 @@ function onRealmConnection(app, socket) {
         if (!overview) {
           try {
             overview = (await (
-              await fetch(`https://cache.zeno.games/users/${req.data.target}/overview.json`)
+              await fetch(`https://cache.arken.gg/users/${req.data.target}/overview.json`)
             ).json()) as any
           } catch (e) {}
         }
@@ -525,7 +525,7 @@ export function initRealmServer(app) {
 
   app.realm.version = '2.0.0'
 
-  app.realm.endpoint = 'ptr1.secondwind.zeno.games'
+  app.realm.endpoint = 'ptr1.isles.arken.gg'
 
   app.realm.clients = [] // to storage clients
 

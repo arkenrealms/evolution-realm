@@ -2,9 +2,9 @@ import express from 'express'
 import RateLimit from 'express-rate-limit'
 import bodyParser from 'body-parser'
 import morgan from 'morgan'
-import { log, logError } from '@zeno.network/web-sdk/util'
-import { emitAll } from '@zeno.network/web-sdk/util/websocket'
-import { killSubProcesses } from '@zeno.network/web-sdk/util/process'
+import { log, logError } from '@arken/node/util'
+import { emitAll } from '@arken/node/util/websocket'
+import { killSubProcesses } from '@arken/node/util/process'
 
 const path = require('path')
 

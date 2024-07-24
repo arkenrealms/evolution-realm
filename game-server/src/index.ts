@@ -2,8 +2,8 @@ import fs from 'fs'
 import helmet from 'helmet'
 import cors from 'cors'
 import express from 'express'
-import { log, logError, isDebug } from '@zeno.network/web-sdk/util'
-import { catchExceptions } from '@zeno.network/web-sdk/util/process'
+import { log, logError, isDebug } from '@arken/node/util'
+import { catchExceptions } from '@arken/node/util/process'
 import { initGameServer } from './modules/game-server'
 import { initWebServer } from './modules/web-server'
 import { initMonitor } from './modules/monitor'
@@ -71,7 +71,7 @@ async function init() {
       })
     )
 
-    app.isHttps = process.env.RUNE_ENV !== 'local'
+    app.isHttps = process.env.ARKEN_ENV !== 'local'
 
     if (app.isHttps) {
       app.https = require('https').createServer(

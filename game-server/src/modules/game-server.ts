@@ -9,7 +9,7 @@ import {
   sha256,
   decodePayload,
   isNumeric,
-} from '@zeno.network/web-sdk/util'
+} from '@arken/node/util'
 
 const path = require('path')
 const shortId = require('shortid')
@@ -182,7 +182,7 @@ const sharedConfig = {
   rewardItemType: 0,
   rewardSpawnLoopSeconds: testMode ? 1 : (3 * 60) / 20,
   rewardWinnerAmount: 0,
-  rewardWinnerName: 'ZOD',
+  rewardWinnerName: 'EL',
   roundLoopSeconds: testMode ? 1 * 60 : 5 * 60,
   sendUpdateLoopSeconds: 3,
   slowLoopSeconds: 1,

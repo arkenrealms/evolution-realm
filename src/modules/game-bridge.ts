@@ -3,10 +3,10 @@ import md5 from 'js-md5'
 import jetpack from 'fs-jetpack'
 import { spawn } from 'child_process'
 import { io as ioClient } from 'socket.io-client'
-import { isValidRequest, getSignedRequest } from '@zeno.network/web-sdk/util/web3'
-import { log, logError, random, getTime } from '@zeno.network/web-sdk/util'
-import { emitDirect } from '@zeno.network/web-sdk/util/websocket'
-import { upgradeGsCodebase, cloneGsCodebase } from '@zeno.network/web-sdk/util/codebase'
+import { isValidRequest, getSignedRequest } from '@arken/node/util/web3'
+import { log, logError, random, getTime } from '@arken/node/util'
+import { emitDirect } from '@arken/node/util/websocket'
+import { upgradeGsCodebase, cloneGsCodebase } from '@arken/node/util/codebase'
 
 const path = require('path')
 const shortId = require('shortid')
@@ -99,7 +99,7 @@ function connectGameServer(app) {
   }
 
   const server = {
-    endpoint: 'localhost:' + app.gameBridge.state.spawnPort, // local.secondwind.zeno.games
+    endpoint: 'localhost:' + app.gameBridge.state.spawnPort, // local.isles.arken.gg
     key: 'local1',
   }
 
@@ -392,7 +392,7 @@ function connectGameServer(app) {
     'HOUTAROU',
     'Oreki',
     'sassyboy',
-    'RuneGiveaways',
+    'ArkenGiveaways',
     'Botter',
     'LINKI-CG',
     'Snakebite24-CG',
@@ -411,7 +411,7 @@ function connectGameServer(app) {
       if (!overview) {
         try {
           overview = (await (
-            await fetch(`https://cache.zeno.games/users/${req.data.address}/overview.json`)
+            await fetch(`https://cache.arken.gg/users/${req.data.address}/overview.json`)
           ).json()) as any
 
           app.gameBridge.userCache[req.data.address] = overview
@@ -1273,7 +1273,7 @@ export function initGameBridge(app) {
   }, 10 * 60 * 1000)
 
   setTimeout(() => {
-    // if (process.env.RUNE_ENV !== 'local') {
+    // if (process.env.ARKEN_ENV !== 'local') {
     app.gameBridge.start()
     // }
 
