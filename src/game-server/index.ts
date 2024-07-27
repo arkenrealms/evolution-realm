@@ -6,6 +6,7 @@ import { log, logError, isDebug } from '@arken/node/util';
 import { catchExceptions } from '@arken/node/util/process';
 import { initGameServer } from './game-server';
 import { initMonitor } from './monitor';
+export type { Router } from './game-server';
 
 const path = require('path');
 

@@ -10,6 +10,7 @@ import {
   sha256,
   decodePayload,
   isNumeric,
+  ipHashFromSocket,
 } from '@arken/node/util';
 import path from 'path';
 import shortId from 'shortid';
@@ -19,11 +20,17 @@ import mapData from './public/data/map.json';
 import { UnsavedGame } from '../models';
 import { z } from 'zod';
 import { disconnectClient, emit, spectate } from '@arken/node/util/player';
+import { customErrorFormatter } from '@arken/node/util/customErrorFormatter';
 import { testMode, baseConfig, sharedConfig, Config } from './config';
 import { presets } from './presets';
 
 let app: App;
-const t = initTRPC.create();
+const t = initTRPC
+  .context<{
+    socket: any;
+    client: Client;
+  }>()
+  .create();
 
 interface App {
   io: any;
@@ -200,7 +207,7 @@ function random(min: number, max: number): number {
 async function normalizeAddress(address: string): Promise<string | false> {
   if (!address) return false;
   try {
-    const res = await app.realm.normalizeAddressRequest.mutate({ address });
+    const res = await app.realm.normalizeAddress.mutate({ address });
     log('normalizeAddressResponse', res);
     return res.address;
   } catch (e) {
@@ -216,7 +223,7 @@ async function isValidSignatureRequest(req: {
   if (!req.signature.address) return false;
   if (req.signature.address.length !== 42 || req.signature.address.slice(0, 2) !== '0x') return false;
   try {
-    const res = await app.realm.verifySignatureRequest.mutate(req);
+    const res = await app.realm.verifySignature.mutate(req);
     return res.verified === true;
   } catch (e) {
     log('Error:', e);
@@ -266,13 +273,13 @@ function emit(client: Client, ...args: any[]) {
     compiled.push(`["${name}","${args.join(':')}"]`);
     app.round.events.push({ type: 'emitDirect', player: socket.id, name, args });
   }
-  emitDirect(socket, 'Events', getPayload(compiled));
+  emitDirect(socket, 'events', getPayload(compiled));
 }
 
 async function spawnRandomReward() {
   if (app.currentReward) return;
   removeReward();
-  const rewardRes = await app.realm.getRandomRewardRequest.query();
+  const rewardRes = await app.realm.getRandomReward.query();
   if (rewardRes?.status !== 1) return;
   const tempReward = rewardRes.reward;
   if (!tempReward) return;
@@ -558,7 +565,7 @@ async function isValidAdminRequest(req: { signature?: { address?: string } }): P
   }
 
   try {
-    const res = await app.realm.verifyAdminSignatureRequest.mutate(req);
+    const res = await app.realm.verifyAdminSignature.mutate(req);
     return res?.status === 1;
   } catch (e) {
     log('Error:', e);
@@ -758,7 +765,7 @@ function getRoundInfo(): any[] {
 }
 
 async function calcRoundRewards() {
-  const calcRewardsRes = await app.realm.configureRequest.mutate({ clients: app.clients });
+  const calcRewardsRes = await app.realm.configure.mutate({ clients: app.clients });
   if (calcRewardsRes?.data) {
     sharedConfig.rewardWinnerAmount = calcRewardsRes.data.rewardWinnerAmount;
     app.config.rewardWinnerAmount = calcRewardsRes.data.rewardWinnerAmount;
@@ -766,10 +773,7 @@ async function calcRoundRewards() {
     app.config.rewardItemAmount = calcRewardsRes.data.rewardItemAmount;
     if (app.config.rewardWinnerAmount === 0 && calcRewardsRes.data.rewardWinnerAmount !== 0) {
       const roundTimer = app.round.startedAt + app.config.roundLoopSeconds - Math.round(getTime() / 1000);
-      emitAll(
-        'onSetRoundInfo',
-        roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(app.config).join(':')
-      );
+      emitAll('onSetRoundInfo', roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide().join(':'));
     }
   }
 }
@@ -811,7 +815,7 @@ async function resetLeaderboard(preset: any = null) {
         );
       }
     }
-    const saveRoundReq = app.realm.saveRoundRequest.mutate({
+    const saveRoundReq = app.realm.saveRound.mutate({
       startedAt: app.round.startedAt,
       endedAt: app.round.endedAt,
       players: app.round.players,
@@ -914,20 +918,12 @@ async function resetLeaderboard(preset: any = null) {
     randomizeSpriteXp();
     syncSprites();
     const roundTimer = app.round.startedAt + app.config.roundLoopSeconds - Math.round(getTime() / 1000);
-    emitAll(
-      'onSetRoundInfo',
-      roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(app.config).join(':')
-    );
+    emitAll('onSetRoundInfo', roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide().join(':'));
     log(
       'roundInfo',
-      roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(app.config).join(':'),
-      (
-        app.config.roundLoopSeconds +
-        ':' +
-        getRoundInfo().join(':') +
-        ':' +
-        getGameModeGuide(app.config).join(':')
-      ).split(':').length
+      roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide().join(':'),
+      (app.config.roundLoopSeconds + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide().join(':')).split(':')
+        .length
     );
     emitAll('onClearLeaderboard');
     emitAll('onBroadcast', `Game Mode - ${app.config.gameMode} (Round ${app.config.roundId})`, 0);
@@ -1510,7 +1506,7 @@ function fastGameloop() {
   setTimeout(fastGameloop, app.config.fastLoopSeconds * 1000);
 }
 
-function getGameModeGuide(config: Config): string[] {
+function getGameModeGuide(): string[] {
   return (
     app.config.guide || [
       'Game Mode - ' + app.config.gameMode,
@@ -1547,7 +1543,7 @@ function flushEventQueue() {
         console.log(`Publish Event: ${name}`, args);
       }
     }
-    emitAllDirect('Events', getPayload(compiled));
+    emitAllDirect('events', getPayload(compiled));
     app.eventQueue = null as any;
     app.eventQueue = [];
   }
@@ -1593,16 +1589,16 @@ function clearSprites() {
   app.powerups.splice(0, app.powerups.length);
 }
 
-const customErrorFormatter = t.middleware(async ({ ctx, next }) => {
-  try {
-    return await next();
-  } catch (error) {
-    if (error instanceof TRPCError) {
-      return { status: 0, error: error.message };
-    }
-    return { status: 0, error: 'An unexpected error occurred' };
-  }
-});
+// const customErrorFormatter = t.middleware(async ({ ctx, next }) => {
+//   try {
+//     return await next();
+//   } catch (error) {
+//     if (error instanceof TRPCError) {
+//       return { status: 0, error: error.message };
+//     }
+//     return { status: 0, error: 'An unexpected error occurred' };
+//   }
+// });
 
 const validateMod = t.middleware(async ({ input, ctx, next }) => {
   const isValid = await isValidAdminRequest(input);
@@ -1613,7 +1609,7 @@ const validateMod = t.middleware(async ({ input, ctx, next }) => {
 export const appRouter = t.router({
   connected: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { socket, client } }) => {
       app.realmServer.socket = socket;
@@ -1638,7 +1634,7 @@ export const appRouter = t.router({
     }),
   apiConnected: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       emitAll('onBroadcast', 'API connected', 0);
@@ -1646,7 +1642,7 @@ export const appRouter = t.router({
     }),
   apiDisconnected: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       emitAll('onBroadcast', 'API disconnected', 0);
@@ -1654,7 +1650,7 @@ export const appRouter = t.router({
     }),
   setPlayerCharacter: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ data: z.any() }))
     .mutation(async ({ input, ctx: { client } }) => {
       if (!client.isRealm) return { status: 0 };
@@ -1668,14 +1664,14 @@ export const appRouter = t.router({
     }),
   setConfig: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ data: z.any() }))
     .mutation(async ({ input, ctx: { client } }) => {
       return { status: 1 };
     }),
   getConfig: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .mutation(async ({ input, ctx: { client } }) => {
       return { status: 1, data: app.config };
     }),
@@ -1690,7 +1686,7 @@ export const appRouter = t.router({
     return { status: 1 };
   }),
   setInfo: t.procedure
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ msg: z.any() }))
     .mutation(async ({ input, ctx: { socket, client } }) => {
       log('SetInfo', input.msg);
@@ -1822,7 +1818,7 @@ export const appRouter = t.router({
         emit(
           client,
           'onSetRoundInfo',
-          roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide(app.config).join(':')
+          roundTimer + ':' + getRoundInfo().join(':') + ':' + getGameModeGuide().join(':')
         );
         emit(client, 'onBroadcast', `Game Mode - ${app.config.gameMode} (Round ${app.config.roundId})`, 0);
       }
@@ -1976,7 +1972,7 @@ export const appRouter = t.router({
   }),
   restart: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       emitAll('onBroadcast', `Server is rebooting in 10 seconds`, 3);
@@ -1986,7 +1982,7 @@ export const appRouter = t.router({
     }),
   maintenance: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       app.sharedConfig.isMaintenance = true;
@@ -1996,7 +1992,7 @@ export const appRouter = t.router({
     }),
   unmaintenance: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       app.sharedConfig.isMaintenance = false;
@@ -2006,7 +2002,7 @@ export const appRouter = t.router({
     }),
   startBattleRoyale: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       emitAll('onBroadcast', `Battle Royale in 3...`, 1);
@@ -2025,7 +2021,7 @@ export const appRouter = t.router({
     }),
   stopBattleRoyale: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       app.baseConfig.isBattleRoyale = false;
@@ -2035,7 +2031,7 @@ export const appRouter = t.router({
     }),
   pauseRound: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       clearTimeout(app.roundLoopTimeout);
@@ -2047,7 +2043,7 @@ export const appRouter = t.router({
     }),
   startRound: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string(), data: z.any() }))
     .mutation(async ({ input, ctx: { client } }) => {
       clearTimeout(app.roundLoopTimeout);
@@ -2060,7 +2056,7 @@ export const appRouter = t.router({
     }),
   enableForceLevel2: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       app.baseConfig.level2forced = true;
@@ -2069,7 +2065,7 @@ export const appRouter = t.router({
     }),
   disableForceLevel2: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       app.baseConfig.level2forced = false;
@@ -2078,7 +2074,7 @@ export const appRouter = t.router({
     }),
   startGodParty: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       app.baseConfig.isGodParty = true;
@@ -2088,7 +2084,7 @@ export const appRouter = t.router({
     }),
   stopGodParty: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       app.baseConfig.isGodParty = false;
@@ -2102,7 +2098,7 @@ export const appRouter = t.router({
     }),
   startRuneRoyale: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       app.baseConfig.isRuneRoyale = true;
@@ -2112,7 +2108,7 @@ export const appRouter = t.router({
     }),
   pauseRuneRoyale: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       emitAll('onBroadcast', `Rune Royale Paused`, 2);
@@ -2120,7 +2116,7 @@ export const appRouter = t.router({
     }),
   unpauseRuneRoyale: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       emitAll('onBroadcast', `Rune Royale Unpaused`, 2);
@@ -2128,7 +2124,7 @@ export const appRouter = t.router({
     }),
   stopRuneRoyale: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       app.baseConfig.isRuneRoyale = false;
@@ -2138,7 +2134,7 @@ export const appRouter = t.router({
     }),
   makeBattleHarder: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       app.baseConfig.dynamicDecayPower = false;
@@ -2162,7 +2158,7 @@ export const appRouter = t.router({
     }),
   makeBattleEasier: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       app.baseConfig.dynamicDecayPower = false;
@@ -2186,7 +2182,7 @@ export const appRouter = t.router({
     }),
   resetBattleDifficulty: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       app.baseConfig.dynamicDecayPower = true;
@@ -2208,7 +2204,7 @@ export const appRouter = t.router({
     }),
   messageUser: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ data: z.any(), signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       const targetClient = app.clients.find((c) => c.address === input.data.target);
@@ -2218,7 +2214,7 @@ export const appRouter = t.router({
     }),
   changeUser: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ data: z.any(), signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       const newClient = app.clients.find((c) => c.address === input.data.target);
@@ -2233,15 +2229,15 @@ export const appRouter = t.router({
     }),
   broadcast: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ data: z.any(), signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       emitAll('onBroadcast', input.data.message.replace(/:/gi, ''), 0);
       return { status: 1 };
     }),
-  kickUser: t.procedure
+  kickClient: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
+    .use(customErrorFormatter(t))
     .input(z.object({ data: z.any(), signature: z.string() }))
     .mutation(async ({ input, ctx: { client } }) => {
       const targetClient = app.clients.find((c) => c.address === input.data.target);
@@ -2251,8 +2247,7 @@ export const appRouter = t.router({
     }),
   info: t.procedure
     .use(validateMod)
-    .use(customErrorFormatter)
-
+    .use(customErrorFormatter(t))
     .mutation(async ({ input, ctx: { client } }) => {
       return {
         status: 1,
@@ -2282,9 +2277,7 @@ async function initEventHandler() {
   app.io.on('connection', function (socket) {
     try {
       log('Connection', socket.id);
-      const ip = socket.handshake.headers['x-forwarded-for']?.split(',')[0] || socket.conn.remoteAddress?.split(':')[3];
-      let hash = ip ? sha256(ip.slice(ip.length / 2)) : '';
-      hash = ip ? hash.slice(hash.length - 10, hash.length - 1) : '';
+
       const spawnPoint = app.playerSpawnPoints[Math.floor(Math.random() * app.playerSpawnPoints.length)];
       const client: Client = {
         name: 'Unknown' + Math.floor(Math.random() * 999),
@@ -2330,7 +2323,7 @@ async function initEventHandler() {
         joinedAt: 0,
         invincibleUntil: 0,
         decayPower: 1,
-        hash,
+        hash: ipHashFromSocket(socket),
         lastReportedTime: getTime(),
         lastUpdate: 0,
         gameMode: app.config.gameMode,
@@ -2404,17 +2397,23 @@ async function initEventHandler() {
       }
       app.clients = app.clients.filter((c) => c.hash !== client.hash);
       app.clients.push(client);
+
       socket.on('trpc', async (message) => {
         const { id, method, params } = message;
         try {
           const ctx = { socket, client };
-          const result = await appRouter.createCaller(ctx)[method](params);
+
+          const createCaller = t.createCallerFactory(appRouter);
+          const caller = createCaller(ctx);
+          const result = await caller[method](params);
+
           socket.emitAll('trpcResponse', { id, result });
         } catch (error) {
           console.log('user connection error', id, error.message);
           socket.emitAll('trpcResponse', { id, error: error.message });
         }
       });
+
       socket.on('disconnect', function () {
         log('User has disconnected');
         client.log.clientDisconnected += 1;
@@ -2495,7 +2494,7 @@ export async function initGameServer(gs) {
     app.maxRequestsPerWindow = 5;
     app.requestTimestamps = {};
     app.realm = undefined;
-    app.loggableEvents = ['onMaintenance', 'saveRoundRequest', 'SaveRoundRequest'];
+    app.loggableEvents = ['onMaintenance', 'saveRound'];
     app.currentPreset = presets[Math.floor(Math.random() * presets.length)];
     app.baseConfig = baseConfig;
     app.sharedConfig = sharedConfig;
@@ -2534,3 +2533,5 @@ export async function initGameServer(gs) {
 }
 
 export default { initGameServer };
+
+export type Router = typeof appRouter;

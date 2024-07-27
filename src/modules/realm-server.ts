@@ -1,289 +1,407 @@
 import axios from 'axios';
 import { isValidRequest, getSignedRequest } from '@arken/node/util/web3';
-import { log, logError, getTime } from '@arken/node/util';
+import { log, logError, getTime, isEthereumAddress } from '@arken/node/util';
 import { emitDirect } from '@arken/node/util/websocket';
 import { upgradeCodebase } from '@arken/node/util/codebase';
-import { initTRPC } from '@trpc/server';
-import { wsLink, createWSClient } from '@trpc/client/links/wsLink';
-import { createTRPCProxyClient } from '@trpc/client';
+import { initTRPC, TRPCError } from '@trpc/server';
+import { customErrorFormatter, transformer } from '@arken/node/util/rpc';
 import { z } from 'zod';
+import shortId from 'shortId';
+import packageJson from '../../package.json';
 
-let app;
+import { initTRPC } from '@trpc/server';
+import { z } from 'zod';
+import { getSignedRequest } from './utils'; // Your utility functions
+import { log, logError } from './logger'; // Assuming you have logging functions
+import type { Context } from './context'; // Define or import your context type
+import { customErrorFormatter, validateRequest, validateMod, validateAdmin } from './middleware'; // Middleware functions
+
 const t = initTRPC.create();
 
-const shortId = require('shortid');
+class RealmServer {
+  web3: any;
+  secrets: any;
+  client: any;
+  socket: any;
+  gameBridge: any;
+  realm: any;
+  seer: any;
+  io: any;
 
-export const appRouter = t.router({
-  authRequest: t.procedure
-    .input(z.object({ signature: z.object({ address: z.string() }) }))
-    .mutation(async ({ input, ctx: { socket } }) => {
-      const { signature } = input;
+  constructor(private ctx: Context) {
+    this.web3 = ctx.app.web3;
+    this.secrets = ctx.app.secrets;
+    this.client = ctx.client;
+    this.socket = ctx.socket;
+    this.gameBridge = ctx.app.gameBridge;
+    this.realm = ctx.app.realm;
+    this.seer = ctx.app.seer;
+    this.io = ctx.app.io;
+  }
 
-      if (await isValidRequest(app.web3, input)) {
-        if (app.realm.state.adminList.includes(signature.address)) {
-          socket.currentClient.isAdmin = true;
-          socket.currentClient.isMod = true;
-          await app.gameBridge.apiConnected.mutate(await getSignedRequest(app.web3, app.secrets, {}), {});
-        } else if (app.realm.state.modList.includes(signature.address)) {
-          socket.currentClient.isMod = true;
-        }
+  async auth({ signature }: { signature: { address: string; hash: string } }) {
+    const { address } = signature;
+    const { state } = this.realm;
 
-        return { status: 1 };
-      } else {
-        return { status: 0 };
+    if (state.adminList.includes(address)) {
+      this.client.isAdmin = true;
+      this.client.isMod = true;
+      await this.apiConnected();
+    } else if (state.modList.includes(address)) {
+      this.client.isAdmin = false;
+      this.client.isMod = true;
+    } else {
+      this.client.isAdmin = false;
+      this.client.isMod = false;
+    }
+
+    return { status: 1 };
+  }
+
+  async setConfig({ serverId, data }: { serverId: string; data: { config: Record<string, any> } }) {
+    this.ctx.app.state.config = {
+      ...this.ctx.app.state.config,
+      ...data.config,
+    };
+
+    await this.ctx.app.servers[serverId].router.setConfigRequest.mutate(
+      await getSignedRequest(this.web3, this.secrets, data),
+      data
+    );
+
+    return { status: 1 };
+  }
+
+  async ping() {
+    return { status: 1 };
+  }
+
+  async info() {
+    const games = this.ctx.app.clients.map((client) => client.info).filter((info) => !!info);
+    const playerCount = games.reduce((total, game) => total + game.playerCount, 0);
+    const speculatorCount = games.reduce((total, game) => total + game.speculatorCount, 0);
+
+    return {
+      status: 1,
+      data: {
+        playerCount,
+        speculatorCount,
+        version: this.ctx.app.version,
+        games,
+      },
+    };
+  }
+
+  async addMod({ signature, target }: { signature: { address: string; hash: string }; target: string }) {
+    this.ctx.app.state.modList.push(target);
+    return { status: 1 };
+  }
+
+  async removeMod({ signature, target }: { signature: { address: string; hash: string }; target: string }) {
+    this.ctx.app.state.modList = this.ctx.app.state.modList.filter((addr) => addr !== target);
+    return { status: 1 };
+  }
+
+  async banClient({ data }: { data: { target: string } }) {
+    for (const serverId of Object.keys(this.ctx.app.servers)) {
+      const res = await this.ctx.app.servers[serverId].banClient.mutate(data);
+      if (res.status !== 1) {
+        log('Failed to ban client', data.target, serverId);
       }
-    }),
+    }
+    return { status: 1 };
+  }
 
-  setConfigRequest: t.procedure
-    .input(z.object({ data: z.object({ config: z.record(z.any()) }), signature: z.object({ address: z.string() }) }))
-    .mutation(async ({ input, ctx }) => {
-      const { data, signature } = input;
+  async banUser({
+    data,
+    signature,
+  }: {
+    data: { target: string; bannedReason: string; bannedUntil: string };
+    signature: { address: string; hash: string };
+  }) {
+    this.ctx.app.seer.router.banUser.mutate(data);
 
-      if (!(await isValidRequest(app.web3, input)) && app.realm.state.modList.includes(signature.address)) {
-        return { status: 0 };
+    for (const serverId of Object.keys(this.ctx.app.servers)) {
+      const res = await this.ctx.app.servers[serverId].router.kickClient.mutate(data);
+
+      if (!res.status) {
+        log('Failed to kick client', data.target, serverId);
       }
+    }
 
-      app.gameBridge.state.config = {
-        ...app.gameBridge.state.config,
-        ...data.config,
-      };
+    return { status: 1 };
+  }
 
-      await app.gameBridge.setConfigRequest.mutate(await getSignedRequest(app.web3, app.secrets, data), data);
-      return { status: 1 };
-    }),
+  async bridgeState() {
+    return { status: 1, state: this.ctx.app.state };
+  }
 
-  pingRequest: t.procedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
-    return { id: input.id };
-  }),
+  async unbanClient({ data, signature }: { data: { target: string }; signature: { address: string; hash: string } }) {
+    for (const serverId of Object.keys(this.ctx.app.servers)) {
+      const res = await this.ctx.app.servers[serverId].unbanClient.mutate({ target: data.target });
 
-  infoRequest: t.procedure
-    .input(z.object({ signature: z.object({ address: z.string() }) }))
-    .mutation(async ({ input, ctx }) => {
-      const { signature } = input;
-
-      if (!(await isValidRequest(app.web3, input)) || !app.realm.state.modList.includes(signature.address)) {
-        return { status: 0 };
+      if (!res.status) {
+        log('Failed to kick client', data.target, serverId);
       }
+    }
+  }
 
-      const games = app.gameBridge.state.servers.map((s) => s.info).filter((i) => !!i);
-      app.gameBridge.state.config = {
-        ...app.gameBridge.state.config,
-        ...input.data.config,
-      };
-
-      const data = { isReset: true, config: app.gameBridge.state.config };
-      await app.gameBridge.setConfigRequest.mutate(await getSignedRequest(app.web3, app.secrets, data), data);
-
-      return {
-        status: 1,
-        data: {
-          playerCount: games.reduce((a, b) => a + b.playerCount, 0) || 0,
-          speculatorCount: games.reduce((a, b) => a + b.speculatorCount, 0) || 0,
-          version: '1.0.0',
-          games,
-        },
-      };
-    }),
-
-  addModRequest: t.procedure
-    .input(z.object({ signature: z.object({ address: z.string() }), target: z.string() }))
-    .mutation(async ({ input, ctx }) => {
-      const { target, signature } = input;
-
-      if ((await isValidRequest(app.web3, input)) && app.realm.state.modList.includes(signature.address)) {
-        app.realm.state.modList.push(target);
-        return { status: 1 };
-      } else {
-        return { status: 0 };
+  async matchServer() {
+    for (const server of Object.values(this.ctx.app.servers)) {
+      if (server.state.playerCount < this.ctx.app.state.maxPlayers) {
+        return { status: 1, endpoint: this.ctx.app.endpoint, port: 4020 };
       }
-    }),
+    }
+    return { status: 0, message: 'Failed to find server' };
+  }
 
-  removeModRequest: t.procedure
-    .input(z.object({ signature: z.object({ address: z.string() }), target: z.string() }))
-    .mutation(async ({ input, ctx }) => {
-      const { target, signature } = input;
+  async call({ data, signature }: { data: { method: string }; signature: { address: string; hash: string } }) {
+    return await this.ctx.app.call(data.method, signature, data);
+  }
 
-      if ((await isValidRequest(app.web3, input)) && app.realm.state.modList.includes(signature.address)) {
-        app.realm.state.modList = app.realm.state.modList.filter((addr) => addr !== target);
-        return { status: 1 };
-      } else {
-        return { status: 0 };
-      }
-    }),
+  private async apiConnected() {
+    return await this.ctx.app.apiConnected.mutate(await getSignedRequest(this.web3, this.secrets, {}), {});
+  }
+}
 
-  banPlayerRequest: t.procedure
-    .input(z.object({ data: z.object({ target: z.string() }) }))
-    .mutation(async ({ input, ctx: { socket } }) => {
-      const { data } = input;
+export const createRealmServerRouter = (ctx: Context) => {
+  const realmServer = new RealmServer(ctx);
 
-      if (!socket.currentClient.isMod) {
-        return { status: 2 };
-      }
+  return t.router({
+    auth: t.procedure
+      .use(customErrorFormatter(t))
+      .use(validateRequest(t))
+      .input(z.object({ signature: z.object({ address: z.string(), hash: z.string() }) }))
+      .mutation(({ input }) => realmServer.auth(input)),
 
-      const res = await app.realm.BanPlayerRequest.mutate(data);
-      return { status: res.status };
-    }),
+    setConfig: t.procedure
+      .use(customErrorFormatter(t))
+      .use(validateMod(t))
+      .use(validateRequest(t))
+      .input(
+        z.object({
+          data: z.object({ serverId: z.string(), config: z.record(z.any()) }),
+          signature: z.object({ address: z.string(), hash: z.string() }),
+        })
+      )
+      .mutation(({ input }) => realmServer.setConfig(input)),
 
-  banUserRequest: t.procedure
-    .input(
-      z.object({
-        data: z.object({ target: z.string(), bannedReason: z.string(), bannedUntil: z.string() }),
-        signature: z.object({ address: z.string() }),
-      })
-    )
-    .mutation(async ({ input, ctx: { socket } }) => {
-      const { data, signature } = input;
+    ping: t.procedure
+      .use(customErrorFormatter(t))
+      .input(z.object({ id: z.string() }))
+      .mutation(() => realmServer.ping()),
 
-      if (!socket.currentClient.isAdmin) {
-        return { status: 2 };
-      }
+    info: t.procedure
+      .use(customErrorFormatter(t))
+      .use(validateMod(t))
+      .use(validateRequest(t))
+      .input(z.object({ signature: z.object({ address: z.string(), hash: z.string() }) }))
+      .mutation(() => realmServer.info()),
 
-      let overview = {};
+    addMod: t.procedure
+      .use(customErrorFormatter(t))
+      .use(validateAdmin(t))
+      .use(validateRequest(t))
+      .input(
+        z.object({
+          data: z.object({ target: z.string() }),
+          signature: z.object({ address: z.string(), hash: z.string() }),
+        })
+      )
+      .mutation(({ input }) => realmServer.addMod(input)),
 
-      try {
-        overview = (await axios(`https://cache.arken.gg/users/${data.target}/overview.json`)).data;
-      } catch (e) {}
+    removeMod: t.procedure
+      .use(customErrorFormatter(t))
+      .use(validateAdmin)
+      .use(validateRequest(t))
+      .input(
+        z.object({
+          data: z.object({ target: z.string() }),
+          signature: z.object({ address: z.string(), hash: z.string() }),
+        })
+      )
+      .mutation(({ input }) => realmServer.removeMod(input)),
 
-      app.gameBridge.userCache[data.target] = {
-        ...overview,
-        isBanned: true,
-        bannedReason: data.bannedReason,
-        bannedUntil: data.bannedUntil,
-      };
+    banClient: t.procedure
+      .use(validateMod(t))
+      .use(customErrorFormatter(t))
+      .input(
+        z.object({
+          data: z.object({ target: z.string() }),
+          signature: z.object({ address: z.string(), hash: z.string() }),
+        })
+      )
+      .mutation(({ input }) => realmServer.banClient(input)),
 
-      await app.gameBridge.kickUser.mutate(await getSignedRequest(app.web3, app.secrets, data), data);
-      return { status: 1 };
-    }),
+    banUser: t.procedure
+      .use(customErrorFormatter(t))
+      .use(validateAdmin)
+      .use(validateRequest(t))
+      .input(
+        z.object({
+          data: z.object({ target: z.string(), bannedReason: z.string(), bannedUntil: z.string() }),
+          signature: z.object({ address: z.string(), hash: z.string() }),
+        })
+      )
+      .mutation(({ input }) => realmServer.banUser(input)),
 
-  bridgeStateRequest: t.procedure
-    .input(z.object({ signature: z.object({ address: z.string() }) }))
-    .mutation(async ({ input, ctx }) => {
-      if (!ctx.socket.currentClient.isMod) {
-        return { status: 2 };
-      }
+    bridgeState: t.procedure
+      .use(validateMod(t))
+      .use(customErrorFormatter(t))
+      .input(z.object({ signature: z.object({ address: z.string(), hash: z.string() }) }))
+      .mutation(() => realmServer.bridgeState()),
 
-      return { status: 1, state: ctx.app.gameBridge.state };
-    }),
+    unbanClient: t.procedure
+      .use(validateMod(t))
+      .use(customErrorFormatter(t))
+      .input(
+        z.object({
+          data: z.object({
+            target: z.string().refine(isEthereumAddress, {
+              message: 'Target must be a valid Ethereum address',
+            }),
+          }),
+          signature: z.object({ address: z.string(), hash: z.string() }),
+        })
+      )
+      .mutation(({ input }) => realmServer.unbanClient(input)),
 
-  unbanPlayerRequest: t.procedure
-    .input(z.object({ data: z.object({ target: z.string() }) }))
-    .mutation(async ({ input, ctx }) => {
-      const { data } = input;
+    matchServer: t.procedure.input(z.void()).mutation(() => realmServer.matchServer()),
 
-      if (!ctx.socket.currentClient.isMod) {
-        return { status: 2 };
-      }
+    call: t.procedure
+      .use(customErrorFormatter(t))
+      .input(
+        z.object({
+          data: z.object({
+            method: z.string(),
+          }),
+          signature: z.object({ address: z.string(), hash: z.string() }),
+        })
+      )
+      .mutation(({ input }) => realmServer.call(input)),
+  });
+};
 
-      const res = await app.realm.UnbanPlayerRequest.mutate(data);
-      return { status: res.status };
-    }),
+export type RealmServerRouter = ReturnType<typeof createRealmServerRouter>;
 
-  findGameServer: t.procedure.input(z.void()).mutation(async ({ ctx }) => {
-    return { endpoint: ctx.app.realm.endpoint, port: 7777 };
-  }),
+interface AppRouterContext {
+  client: any;
+  socket: any;
+}
 
-  callRequest: t.procedure
-    .input(z.object({ data: z.object({ method: z.string(), signature: z.any(), data: z.any() }) }))
-    .mutation(async ({ input, ctx }) => {
-      const { data } = input;
+interface Server {
+  state: Record<string, any>;
+  router: typeof appRouter;
+}
 
-      try {
-        const result = await app.gameBridge.call(data.method, data.signature, data.data);
-        return result;
-      } catch (e) {
-        return { status: 0 };
-      }
-    }),
-});
+interface Profile {
+  address: string;
+}
 
-async function sendEventToObservers(app, name, data = undefined) {
+interface Seer {
+  router: typeof appRouter;
+}
+
+interface Realm {
+  adminList: string[];
+  modList: string[];
+  state: Record<string, any>;
+  clients: Client[];
+  sockets: Record<string, any>;
+  clientLookup: Record<string, Client>;
+  ioCallbacks: Record<string, any>;
+  version: string;
+  endpoint: string;
+  servers: Record<string, Server>;
+  profiles: Record<string, Profile>;
+}
+
+interface Client {
+  id: string;
+  name: string;
+  ip: string;
+  info: any;
+  lastReportedTime: number;
+  isMod: boolean;
+  isAdmin: boolean;
+  log: {
+    clientDisconnected: number;
+  };
+}
+
+let app: App;
+
+const t = initTRPC.context<AppRouterContext>().create();
+
+async function sendEventToObservers(app: App, name: string, data: any = undefined) {
   try {
-    log('Emit Observers', name); // , data)
+    log('Emit Observers', name);
 
     const signature = await getSignedRequest(app.web3, app.secrets, data);
+    const id = shortId();
 
     return new Promise((resolve, reject) => {
-      const id = shortId();
-
-      const timeout = setTimeout(function () {
+      const timeout = setTimeout(() => {
         log('Request timeout', name);
-
         resolve({ status: 0, message: 'Request timeout' });
-
-        delete app.realm.ioCallbacks[id];
+        delete app.ioCallbacks[id];
       }, 60 * 1000);
 
-      app.realm.ioCallbacks[id] = { resolve, reject, timeout };
+      app.ioCallbacks[id] = { resolve, reject, timeout };
 
-      for (const socketId in app.realm.sockets) {
-        const socket = app.realm.sockets[socketId];
-        // console.log(socket, name, id, data)
+      Object.values(app.sockets).forEach((socket) => {
         socket.emit(name, { id, signature, data });
-      }
+      });
     });
-  } catch (e) {
-    logError(e);
+  } catch (error) {
+    logError(error);
+    return { status: 0 };
   }
 }
 
 export type AppRouter = typeof appRouter;
 
-export function initRealmServer(app) {
+export function initRealmServer(rs: App) {
   log('initRealmServer');
 
-  app.realm = {};
+  app = rs;
 
-  app.realm.version = '2.0.0';
+  app.version = packageJson.version;
+  app.endpoint = 'ptr1.isles.arken.gg';
+  app.clients = [];
+  app.clientLookup = {};
+  app.ioCallbacks = {};
+  app.sockets = {};
+  app.servers = {};
+  app.profiles = {};
 
-  app.realm.endpoint = 'ptr1.isles.arken.gg';
-
-  app.realm.clients = []; // to storage clients
-
-  app.realm.clientLookup = {};
-
-  app.realm.ioCallbacks = {};
-
-  app.realm.sockets = {}; // to storage sockets
-
-  app.realm.state = {};
-
-  // app.realm.state.banList = []
-
-  app.realm.state.adminList = [
-    '0xDfA8f768d82D719DC68E12B199090bDc3691fFc7', // ourselves
-    '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C', // realm server
-  ];
-
-  app.realm.state.modList = [
-    '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C', // realm server
-    '0xa987f487639920A3c2eFe58C8FBDedB96253ed9B', // botter
-    '0x1a367CA7bD311F279F1dfAfF1e60c4d797Faa6eb', // testman
-    '0x545612032BeaDED7E9f5F5Ab611aF6428026E53E', // kevin
-    '0x37470038C615Def104e1bee33c710bD16a09FdEf', // maiev
-    '0x150F24A67d5541ee1F8aBce2b69046e25d64619c', // maiev
-    '0xfE27380E57e5336eB8FFc017371F2147A3268fbE', // lazy?
-    '0x3551691499D740790C4511CDBD1D64b2f146f6Bd', // panda
-    '0xe563983d6f46266Ad939c16bD59E5535Ab6E774D', // disco
-    '0x62c79c01c33a3761fe2d2aD6f8df324225b8073b', // binzy
-    '0x82b644E1B2164F5B81B3e7F7518DdE8E515A419d',
-    '0xeb3fCb993dDe8a2Cd081FbE36238E4d64C286AC0',
-    // '0x2DF94b980FC880100D93072011675E6659C0ca21', // zavox
-    // '0x9b229c01eEf692A780d8Fee2558AaEa9873C032f', // me
-  ];
-
-  // app.io.on('connection', onRealmConnection.bind(null, app));
+  app.state = {
+    adminList: ['0xDfA8f768d82D719DC68E12B199090bDc3691fFc7', '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C'],
+    modList: [
+      '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C',
+      '0xa987f487639920A3c2eFe58C8FBDedB96253ed9B',
+      '0x1a367CA7bD311F279F1dfAfF1e60c4d797Faa6eb',
+      '0x545612032BeaDED7E9f5F5Ab611aF6428026E53E',
+      '0x37470038C615Def104e1bee33c710bD16a09FdEf',
+      '0x150F24A67d5541ee1F8aBce2b69046e25d64619c',
+      '0xfE27380E57e5336eB8FFc017371F2147A3268fbE',
+      '0x3551691499D740790C4511CDBD1D64b2f146f6Bd',
+      '0xe563983d6f46266Ad939c16bD59E5535Ab6E774D',
+      '0x62c79c01c33a3761fe2d2aD6f8df324225b8073b',
+      '0x82b644E1B2164F5B81B3e7F7518DdE8E515A419d',
+      '0xeb3fCb993dDe8a2Cd081FbE36238E4d64C286AC0',
+    ],
+  };
 
   app.io.on('connection', (socket) => {
-    console.log('Client connected');
-
-    const ip = 'HIDDEN'; // socket.handshake.headers['x-forwarded-for']?.split(',')[0] || socket.conn.remoteAddress?.split(':')[3]
-
+    const ip = 'HIDDEN';
     log('Client connected from ' + ip);
 
-    const currentClient = {
-      name: 'Unknown' + Math.floor(Math.random() * 999),
+    const client: Client = {
       id: socket.id,
+      name: 'Unknown' + Math.floor(Math.random() * 999),
       ip,
+      info: null,
       lastReportedTime: getTime(),
       isMod: false,
       isAdmin: false,
@@ -292,19 +410,148 @@ export function initRealmServer(app) {
       },
     };
 
-    app.realm.sockets[currentClient.id] = socket;
+    app.sockets[client.id] = socket;
+    app.clientLookup[client.id] = client;
+    app.clients.push(client);
+    app.servers = [];
 
-    app.realm.clientLookup[currentClient.id] = currentClient;
+    app.state = {};
 
-    app.realm.clients.push(currentClient);
+    app.state.playerRewards = {} as any;
+
+    app.state.spawnPort = app.isHttps ? process.env.GS_SSL_PORT || 8443 : process.env.GS_PORT || 8080;
+
+    app.state.clients = [];
+
+    app.state.rewards = {
+      runes: [
+        {
+          type: 'rune',
+          symbol: 'solo',
+          quantity: 100,
+        },
+        {
+          type: 'rune',
+          symbol: 'tyr',
+          quantity: 100,
+        },
+        {
+          type: 'rune',
+          symbol: 'nef',
+          quantity: 100,
+        },
+        {
+          type: 'rune',
+          symbol: 'ith',
+          quantity: 10000,
+        },
+        {
+          type: 'rune',
+          symbol: 'hel',
+          quantity: 100,
+        },
+        {
+          type: 'rune',
+          symbol: 'ral',
+          quantity: 10000,
+        },
+        {
+          type: 'rune',
+          symbol: 'thul',
+          quantity: 10000,
+        },
+        {
+          type: 'rune',
+          symbol: 'amn',
+          quantity: 10000,
+        },
+        {
+          type: 'rune',
+          symbol: 'ort',
+          quantity: 10000,
+        },
+        {
+          type: 'rune',
+          symbol: 'shael',
+          quantity: 100,
+        },
+        {
+          type: 'rune',
+          symbol: 'tal',
+          quantity: 10000,
+        },
+        {
+          type: 'rune',
+          symbol: 'dol',
+          quantity: 100,
+        },
+        {
+          type: 'rune',
+          symbol: 'zod',
+          quantity: 0,
+        },
+      ],
+      items: [],
+      characters: [
+        {
+          type: 'character',
+          tokenId: '1',
+        },
+      ],
+    } as any;
+
+    app.profiles = {};
+
+    // Override because we didnt get response from RS yet
+    app.state.config.rewardItemAmount = 0;
+    app.state.config.rewardWinnerAmount = 0;
+
+    app.state.rewardSpawnPoints = [
+      { x: -16.32, y: -15.7774 },
+      { x: -9.420004, y: -6.517404 },
+      { x: -3.130003, y: -7.537404 },
+      { x: -7.290003, y: -12.9074 },
+      { x: -16.09, y: -2.867404 },
+      { x: -5.39, y: -3.76 },
+      { x: -7.28, y: -15.36 },
+      { x: -13.46, y: -13.92 },
+      { x: -12.66, y: -1.527404 },
+    ];
+
+    app.state.rewardSpawnPoints2 = [
+      { x: -16.32, y: -15.7774 },
+      { x: -9.420004, y: -6.517404 },
+      { x: -3.130003, y: -7.537404 },
+      { x: -7.290003, y: -12.9074 },
+      { x: -16.09, y: -2.867404 },
+      { x: -5.39, y: -3.76 },
+      { x: -12.66, y: -1.527404 },
+
+      { x: -24.21, y: -7.58 },
+      { x: -30.62, y: -7.58 },
+      { x: -30.8, y: -14.52 },
+      { x: -20.04, y: -15.11 },
+      { x: -29.21, y: -3.76 },
+      { x: -18.16, y: 0.06 },
+      { x: -22.98, y: -3.35 },
+      { x: -25.92, y: -7.64 },
+      { x: -20.1, y: -6.93 },
+      { x: -26.74, y: 0 },
+      { x: -32.74, y: -5.17 },
+      { x: -25.74, y: -15.28 },
+      { x: -22.62, y: -11.69 },
+      { x: -26.44, y: -4.05 },
+    ];
 
     socket.on('trpc', async (message) => {
       const { id, method, params } = message;
 
       try {
-        const ctx = { app, socket }; // Your custom context, including `app` and `socket`
-        const result = await appRouter.createCaller(ctx)[method](params);
+        const ctx = { ...app, socket, client };
 
+        const createCaller = t.createCallerFactory(appRouter);
+        const caller = createCaller(ctx);
+        const result = await caller[method](params);
         socket.emit('trpcResponse', { id, result });
       } catch (error) {
         socket.emit('trpcResponse', { id, error: error.message });
@@ -314,20 +561,17 @@ export function initRealmServer(app) {
     socket.on('disconnect', async () => {
       log('Client has disconnected');
 
-      if (currentClient.isAdmin) {
-        await app.gameBridge.apiDisconnected.mutate(await getSignedRequest(app.web3, app.secrets, {}), {});
-      }
+      // if (client.isAdmin) {
+      //   await app.apiDisconnected.mutate(await getSignedRequest(app.web3, app.secrets, {}), {});
+      // }
 
-      currentClient.log.clientDisconnected += 1;
-
-      delete app.realm.sockets[currentClient.id];
-      delete app.realm.clientLookup[currentClient.id];
-
-      app.realm.clients = app.realm.clients.filter((c) => c.id !== currentClient.id);
+      // client.log.clientDisconnected += 1;
+      // delete app.sockets[client.id];
+      // delete app.clientLookup[client.id];
+      // app.clients = app.clients.filter((c) => c.id !== client.id);
     });
   });
 
-  app.realm.upgrade = upgradeCodebase;
-
-  app.realm.call = sendEventToObservers.bind(null, app);
+  // app.upgrade = upgradeCodebase;
+  // app.call = sendEventToObservers.bind(null, app);
 }

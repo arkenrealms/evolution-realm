@@ -1,12 +1,13 @@
-describe('tRPC and Game Server Integration Tests', () => {
-  const { createHTTPServer } = require('@trpc/server/adapters/standalone');
-  const { createTRPCProxyClient, httpBatchLink } = require('@trpc/client');
-  const io = require('socket.io');
-  const Client = require('socket.io-client');
-  const { initGameServer } = require('../game-server'); // Adjust the path accordingly
-  const { createServer } = require('http');
-  const { appRouter } = require('./app-router'); // Adjust the path accordingly
+// tests/integration.test.js
+const { createHTTPServer } = require('@trpc/server/adapters/standalone');
+const { createClient } = require('./trpc-client'); // Adjust path as needed
+const io = require('socket.io');
+const Client = require('socket.io-client');
+const { initGameServer } = require('./game-server'); // Adjust the path accordingly
+const { createServer } = require('http');
+const { appRouter } = require('../modules/game-bridge'); // Adjust the path accordingly
 
+describe('tRPC and Game Server Integration Tests', () => {
   let trpcServer;
   let trpcServerAddr;
   let trpcClient;
@@ -19,23 +20,18 @@ describe('tRPC and Game Server Integration Tests', () => {
   beforeAll(async () => {
     // Setup tRPC server
     trpcServer = createHTTPServer({ router: appRouter });
-    trpcServer.listen(0);
+    trpcServer.listen(2023);
     trpcServerAddr = trpcServer.server.address();
 
     // Setup tRPC client
-    trpcClient = createTRPCProxyClient({
-      links: [
-        httpBatchLink({
-          url: `http://localhost:${trpcServerAddr.port}`,
-        }),
-      ],
-    });
+    trpcClient = createClient();
 
     // Setup Socket.io server
     httpServer = createServer().listen();
     httpServerAddr = httpServer.address();
     ioServer = io(httpServer);
 
+    app.io = ioServer; // Attach io server to app
     initGameServer(app); // Initialize your game server with mocked app
     ioServer.attach(httpServer);
   });
@@ -60,8 +56,8 @@ describe('tRPC and Game Server Integration Tests', () => {
     done();
   });
 
-  test('tRPC initRequest', async () => {
-    const response = await trpcClient.query('initRequest');
+  test('tRPC init', async () => {
+    const response = await trpcClient.query('init');
     expect(response.status).toBe(1);
     expect(response.id).toBeDefined();
   });
@@ -80,6 +76,68 @@ describe('tRPC and Game Server Integration Tests', () => {
       winners: [],
     });
     expect(response.status).toBe(1);
+  });
+
+  test('tRPC getRandomRewardRequest', async () => {
+    const response = await trpcClient.query('getRandomRewardRequest');
+    expect(response.status).toBe(1);
+    expect(response.reward).toBeDefined();
+  });
+
+  test('tRPC verifyAdminSignatureRequest', async () => {
+    const response = await trpcClient.mutation('verifyAdminSignatureRequest', {
+      signature: 'sample_signature',
+    });
+    expect(response.status).toBe(1);
+    expect(response.verified).toBe(true);
+  });
+
+  test('tRPC verifyAdminSignatureRequest with invalid signature', async () => {
+    const response = await trpcClient.mutation('verifyAdminSignatureRequest', {
+      signature: 'invalid_signature',
+    });
+    expect(response.status).toBe(0);
+    expect(response.verified).toBe(false);
+  });
+
+  test('tRPC normalizeAddressRequest', async () => {
+    const response = await trpcClient.mutation('normalizeAddressRequest', {
+      address: '0x1234567890abcdef1234567890abcdef12345678',
+    });
+    expect(response.status).toBe(1);
+    expect(response.address).toBe('0x1234567890abcdef1234567890abcdef12345678');
+  });
+
+  test('tRPC normalizeAddressRequest with invalid address', async () => {
+    const response = await trpcClient.mutation('normalizeAddressRequest', {
+      address: 'invalid_address',
+    });
+    expect(response.status).toBe(0);
+    expect(response.address).toBeUndefined();
+  });
+
+  test('tRPC verifySignatureRequest', async () => {
+    const response = await trpcClient.mutation('verifySignatureRequest', {
+      signature: {
+        data: 'evolution',
+        hash: 'sample_hash',
+        address: '0x1234567890abcdef1234567890abcdef12345678',
+      },
+    });
+    expect(response.status).toBe(1);
+    expect(response.verified).toBe(true);
+  });
+
+  test('tRPC verifySignatureRequest with invalid data', async () => {
+    const response = await trpcClient.mutation('verifySignatureRequest', {
+      signature: {
+        data: 'invalid_data',
+        hash: 'sample_hash',
+        address: '0x1234567890abcdef1234567890abcdef12345678',
+      },
+    });
+    expect(response.status).toBe(0);
+    expect(response.verified).toBe(false);
   });
 
   test('Game mode Sprite Juice updates camera size', (done) => {
@@ -146,6 +204,28 @@ describe('tRPC and Game Server Integration Tests', () => {
       expect(player.cameraSize).toBeGreaterThan(3);
       done();
     });
+  });
+
+  test('Player receives maintenance message and disconnects', (done) => {
+    clientSocket.emit('RS_MaintenanceRequest', { signature: 'admin_signature' });
+
+    clientSocket.on('onMaintenance', () => {
+      expect(clientSocket.connected).toBe(false);
+      done();
+    });
+  });
+
+  test('Player does not receive maintenance message with invalid signature', (done) => {
+    clientSocket.emit('RS_MaintenanceRequest', { signature: 'invalid_signature' });
+
+    clientSocket.on('onMaintenance', () => {
+      done.fail('Player should not receive maintenance message with invalid signature');
+    });
+
+    setTimeout(() => {
+      expect(clientSocket.connected).toBe(true);
+      done();
+    }, 1000);
   });
 });
 

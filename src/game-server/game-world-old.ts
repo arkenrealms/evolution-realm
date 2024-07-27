@@ -2649,8 +2649,8 @@ function initEventHandler(app) {
       clients = clients.filter((c) => c.hash !== currentPlayer.hash); // if we allow same network, this needs to be fixed
       clients.push(currentPlayer);
 
-      socket.on('RS_Connected', async function (req) {
-        log('RS_Connected', req);
+      socket.on('connected', async function (req) {
+        log('connected', req);
 
         try {
           // Assume first connection for now but verify
@@ -2679,9 +2679,9 @@ function initEventHandler(app) {
             data: { status: 1 },
           });
 
-          const initRes = (await rsCall('initRequest', { status: 1 })) as any;
+          const initRes = (await rsCall('init', { status: 1 })) as any;
 
-          log('initRequest', initRes);
+          log('init', initRes);
 
           if (initRes?.status === 1) {
             baseConfig.id = initRes.id;
@@ -2701,7 +2701,7 @@ function initEventHandler(app) {
             data: { status: 0 },
           });
 
-          await rsCall('initRequest', { status: 0 });
+          await rsCall('init', { status: 0 });
         }
       });
 
@@ -2977,7 +2977,7 @@ function initEventHandler(app) {
         log('JoinRoom', currentPlayer.id, currentPlayer.hash);
 
         try {
-          const confirmUser = (await rsCall('GS_ConfirmUserRequest', { address: currentPlayer.address })) as any;
+          const confirmUser = (await rsCall('confirmProfileRequest', { address: currentPlayer.address })) as any;
 
           // // ZENO: put back
           // if (confirmUser?.status !== 1) {
@@ -3965,7 +3965,7 @@ function initEventHandler(app) {
         }
       });
 
-      socket.on('kickUser', async function (req) {
+      socket.on('kickClient', async function (req) {
         if ((await isValidAdminRequest(req)) && clients.find((c) => c.address === req.data.target)) {
           disconnectPlayer(
             app,
@@ -3975,7 +3975,7 @@ function initEventHandler(app) {
         }
       });
 
-      socket.on('RS_InfoRequest', function (req) {
+      socket.on('info', function (req) {
         publishEventDirect(socket, 'infoResponse', {
           id: req.id,
           data: {
