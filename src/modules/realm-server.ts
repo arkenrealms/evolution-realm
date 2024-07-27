@@ -8,13 +8,13 @@ import { customErrorFormatter, transformer } from '@arken/node/util/rpc';
 import { z } from 'zod';
 import shortId from 'shortId';
 import packageJson from '../../package.json';
-
 import { initTRPC } from '@trpc/server';
 import { z } from 'zod';
 import { getSignedRequest } from './utils'; // Your utility functions
 import { log, logError } from './logger'; // Assuming you have logging functions
 import type { Context } from './context'; // Define or import your context type
 import { customErrorFormatter, validateRequest, validateMod, validateAdmin } from './middleware'; // Middleware functions
+import { App } from './types';
 
 const t = initTRPC.create();
 
@@ -43,14 +43,22 @@ class RealmServer {
     const { address } = signature;
     const { state } = this.realm;
 
-    if (state.adminList.includes(address)) {
+    if (seerList.includes(address)) {
+      this.client.isSeer = true;
       this.client.isAdmin = true;
       this.client.isMod = true;
-      await this.apiConnected();
-    } else if (state.modList.includes(address)) {
+      await this.seerConnected();
+    } else if (adminList.includes(address)) {
+      this.client.isSeer = false;
+      this.client.isAdmin = true;
+      this.client.isMod = true;
+      await this.seerConnected();
+    } else if (modList.includes(address)) {
+      this.client.isSeer = false;
       this.client.isAdmin = false;
       this.client.isMod = true;
     } else {
+      this.client.isSeer = false;
       this.client.isAdmin = false;
       this.client.isMod = false;
     }
@@ -59,12 +67,12 @@ class RealmServer {
   }
 
   async setConfig({ serverId, data }: { serverId: string; data: { config: Record<string, any> } }) {
-    this.ctx.app.state.config = {
-      ...this.ctx.app.state.config,
+    this.config = {
+      ...this.config,
       ...data.config,
     };
 
-    await this.ctx.app.servers[serverId].router.setConfigRequest.mutate(
+    await this.servers[serverId].router.setConfigRequest.mutate(
       await getSignedRequest(this.web3, this.secrets, data),
       data
     );
@@ -77,7 +85,7 @@ class RealmServer {
   }
 
   async info() {
-    const games = this.ctx.app.clients.map((client) => client.info).filter((info) => !!info);
+    const games = this.clients.map((client) => client.info).filter((info) => !!info);
     const playerCount = games.reduce((total, game) => total + game.playerCount, 0);
     const speculatorCount = games.reduce((total, game) => total + game.speculatorCount, 0);
 
@@ -86,25 +94,37 @@ class RealmServer {
       data: {
         playerCount,
         speculatorCount,
-        version: this.ctx.app.version,
+        version: this.version,
         games,
       },
     };
   }
 
-  async addMod({ signature, target }: { signature: { address: string; hash: string }; target: string }) {
-    this.ctx.app.state.modList.push(target);
+  async addMod({
+    signature,
+    data: { target },
+  }: {
+    signature: { address: string; hash: string };
+    data: { target: string };
+  }) {
+    this.modList.push(target);
     return { status: 1 };
   }
 
-  async removeMod({ signature, target }: { signature: { address: string; hash: string }; target: string }) {
-    this.ctx.app.state.modList = this.ctx.app.state.modList.filter((addr) => addr !== target);
+  async removeMod({
+    signature,
+    data: { target },
+  }: {
+    signature: { address: string; hash: string };
+    data: { target: string };
+  }) {
+    this.modList = this.modList.filter((addr) => addr !== target);
     return { status: 1 };
   }
 
   async banClient({ data }: { data: { target: string } }) {
-    for (const serverId of Object.keys(this.ctx.app.servers)) {
-      const res = await this.ctx.app.servers[serverId].banClient.mutate(data);
+    for (const serverId of Object.keys(this.servers)) {
+      const res = await this.servers[serverId].banClient.mutate(data);
       if (res.status !== 1) {
         log('Failed to ban client', data.target, serverId);
       }
@@ -119,10 +139,10 @@ class RealmServer {
     data: { target: string; bannedReason: string; bannedUntil: string };
     signature: { address: string; hash: string };
   }) {
-    this.ctx.app.seer.router.banUser.mutate(data);
+    this.seer.router.banUser.mutate(data);
 
-    for (const serverId of Object.keys(this.ctx.app.servers)) {
-      const res = await this.ctx.app.servers[serverId].router.kickClient.mutate(data);
+    for (const serverId of Object.keys(this.servers)) {
+      const res = await this.servers[serverId].router.kickClient.mutate(data);
 
       if (!res.status) {
         log('Failed to kick client', data.target, serverId);
@@ -133,12 +153,12 @@ class RealmServer {
   }
 
   async bridgeState() {
-    return { status: 1, state: this.ctx.app.state };
+    return { status: 1, state: this.state };
   }
 
   async unbanClient({ data, signature }: { data: { target: string }; signature: { address: string; hash: string } }) {
-    for (const serverId of Object.keys(this.ctx.app.servers)) {
-      const res = await this.ctx.app.servers[serverId].unbanClient.mutate({ target: data.target });
+    for (const serverId of Object.keys(this.servers)) {
+      const res = await this.servers[serverId].unbanClient.mutate({ target: data.target });
 
       if (!res.status) {
         log('Failed to kick client', data.target, serverId);
@@ -147,20 +167,20 @@ class RealmServer {
   }
 
   async matchServer() {
-    for (const server of Object.values(this.ctx.app.servers)) {
-      if (server.state.playerCount < this.ctx.app.state.maxPlayers) {
-        return { status: 1, endpoint: this.ctx.app.endpoint, port: 4020 };
+    for (const server of Object.values(this.servers)) {
+      if (server.clientCount < this.config.maxClients) {
+        return { status: 1, endpoint: this.endpoint, port: 4020 };
       }
     }
     return { status: 0, message: 'Failed to find server' };
   }
 
   async call({ data, signature }: { data: { method: string }; signature: { address: string; hash: string } }) {
-    return await this.ctx.app.call(data.method, signature, data);
+    return await this.call(data.method, signature, data);
   }
 
-  private async apiConnected() {
-    return await this.ctx.app.apiConnected.mutate(await getSignedRequest(this.web3, this.secrets, {}), {});
+  private async seerConnected() {
+    return await this.seerConnected.mutate(await getSignedRequest(this.web3, this.secrets, {}), {});
   }
 }
 
@@ -329,42 +349,12 @@ interface Client {
   };
 }
 
-let app: App;
-
 const t = initTRPC.context<AppRouterContext>().create();
 
-async function sendEventToObservers(app: App, name: string, data: any = undefined) {
-  try {
-    log('Emit Observers', name);
+export type Router = typeof appRouter;
 
-    const signature = await getSignedRequest(app.web3, app.secrets, data);
-    const id = shortId();
-
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        log('Request timeout', name);
-        resolve({ status: 0, message: 'Request timeout' });
-        delete app.ioCallbacks[id];
-      }, 60 * 1000);
-
-      app.ioCallbacks[id] = { resolve, reject, timeout };
-
-      Object.values(app.sockets).forEach((socket) => {
-        socket.emit(name, { id, signature, data });
-      });
-    });
-  } catch (error) {
-    logError(error);
-    return { status: 0 };
-  }
-}
-
-export type AppRouter = typeof appRouter;
-
-export function initRealmServer(rs: App) {
+export function initRealmServer(app: App) {
   log('initRealmServer');
-
-  app = rs;
 
   app.version = packageJson.version;
   app.endpoint = 'ptr1.isles.arken.gg';
@@ -374,24 +364,21 @@ export function initRealmServer(rs: App) {
   app.sockets = {};
   app.servers = {};
   app.profiles = {};
-
-  app.state = {
-    adminList: ['0xDfA8f768d82D719DC68E12B199090bDc3691fFc7', '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C'],
-    modList: [
-      '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C',
-      '0xa987f487639920A3c2eFe58C8FBDedB96253ed9B',
-      '0x1a367CA7bD311F279F1dfAfF1e60c4d797Faa6eb',
-      '0x545612032BeaDED7E9f5F5Ab611aF6428026E53E',
-      '0x37470038C615Def104e1bee33c710bD16a09FdEf',
-      '0x150F24A67d5541ee1F8aBce2b69046e25d64619c',
-      '0xfE27380E57e5336eB8FFc017371F2147A3268fbE',
-      '0x3551691499D740790C4511CDBD1D64b2f146f6Bd',
-      '0xe563983d6f46266Ad939c16bD59E5535Ab6E774D',
-      '0x62c79c01c33a3761fe2d2aD6f8df324225b8073b',
-      '0x82b644E1B2164F5B81B3e7F7518DdE8E515A419d',
-      '0xeb3fCb993dDe8a2Cd081FbE36238E4d64C286AC0',
-    ],
-  };
+  app.adminList = ['0xDfA8f768d82D719DC68E12B199090bDc3691fFc7', '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C'];
+  app.modList = [
+    '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C',
+    '0xa987f487639920A3c2eFe58C8FBDedB96253ed9B',
+    '0x1a367CA7bD311F279F1dfAfF1e60c4d797Faa6eb',
+    '0x545612032BeaDED7E9f5F5Ab611aF6428026E53E',
+    '0x37470038C615Def104e1bee33c710bD16a09FdEf',
+    '0x150F24A67d5541ee1F8aBce2b69046e25d64619c',
+    '0xfE27380E57e5336eB8FFc017371F2147A3268fbE',
+    '0x3551691499D740790C4511CDBD1D64b2f146f6Bd',
+    '0xe563983d6f46266Ad939c16bD59E5535Ab6E774D',
+    '0x62c79c01c33a3761fe2d2aD6f8df324225b8073b',
+    '0x82b644E1B2164F5B81B3e7F7518DdE8E515A419d',
+    '0xeb3fCb993dDe8a2Cd081FbE36238E4d64C286AC0',
+  ];
 
   app.io.on('connection', (socket) => {
     const ip = 'HIDDEN';
@@ -414,16 +401,10 @@ export function initRealmServer(rs: App) {
     app.clientLookup[client.id] = client;
     app.clients.push(client);
     app.servers = [];
-
-    app.state = {};
-
-    app.state.playerRewards = {} as any;
-
-    app.state.spawnPort = app.isHttps ? process.env.GS_SSL_PORT || 8443 : process.env.GS_PORT || 8080;
-
-    app.state.clients = [];
-
-    app.state.rewards = {
+    app.playerRewards = {} as any;
+    app.spawnPort = app.isHttps ? process.env.GS_SSL_PORT || 8443 : process.env.GS_PORT || 8080;
+    app.clients = [];
+    app.rewards = {
       runes: [
         {
           type: 'rune',
@@ -503,10 +484,9 @@ export function initRealmServer(rs: App) {
     app.profiles = {};
 
     // Override because we didnt get response from RS yet
-    app.state.config.rewardItemAmount = 0;
-    app.state.config.rewardWinnerAmount = 0;
-
-    app.state.rewardSpawnPoints = [
+    app.config.rewardItemAmount = 0;
+    app.config.rewardWinnerAmount = 0;
+    app.rewardSpawnPoints = [
       { x: -16.32, y: -15.7774 },
       { x: -9.420004, y: -6.517404 },
       { x: -3.130003, y: -7.537404 },
@@ -517,8 +497,7 @@ export function initRealmServer(rs: App) {
       { x: -13.46, y: -13.92 },
       { x: -12.66, y: -1.527404 },
     ];
-
-    app.state.rewardSpawnPoints2 = [
+    app.rewardSpawnPoints2 = [
       { x: -16.32, y: -15.7774 },
       { x: -9.420004, y: -6.517404 },
       { x: -3.130003, y: -7.537404 },
@@ -547,9 +526,8 @@ export function initRealmServer(rs: App) {
       const { id, method, params } = message;
 
       try {
-        const ctx = { ...app, socket, client };
-
-        const createCaller = t.createCallerFactory(appRouter);
+        const ctx = { app, socket, client };
+        const createCaller = t.createCallerFactory(app.router);
         const caller = createCaller(ctx);
         const result = await caller[method](params);
         socket.emit('trpcResponse', { id, result });

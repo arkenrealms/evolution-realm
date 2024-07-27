@@ -10,10 +10,10 @@ import { upgradeGsCodebase, cloneGsCodebase } from '@arken/node/util/codebase';
 import { initTRPC } from '@trpc/server';
 import { z } from 'zod';
 import { createClient } from './trpc-client';
-import { Config, GameState, ServerState } from './types';
-import type { Router as GameWorldRouter } from '../game-world';
 import { createTRPCProxyClient, httpBatchLink, createWSClient, wsLink } from '@trpc/client';
 import { customErrorFormatter, transformer } from '@arken/node/util/rpc';
+import { Server, Application, GameWorldRouter } from '../types';
+
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
@@ -60,130 +60,85 @@ function getSocket(app, endpoint) {
   });
 }
 
-function startGameServer(app) {
-  try {
-    // const binaryPath = {
-    //   linux: '../game-server/build/index.js',
-    //   darwin: '../game-server/build/index.js',
-    //   win32: ''
-    // }[process.platform]
+type Context = { app: Application };
+export class GameServer extends Server {
+  constructor(private ctx: Context) {
+    super();
 
-    process.env.GS_PORT = app.gameBridge.state.spawnPort + '';
+    setInterval(() => {
+      this.characters = {};
+    }, 10 * 60 * 1000);
 
-    const env = {
-      ...process.env,
-      LOG_PREFIX: '[REGS]',
-    };
+    setTimeout(() => {
+      this.start();
 
-    // Start the server
-    app.gameBridge.process = spawn('node', ['-r', 'tsconfig-paths/register', 'build/index.js'], {
-      cwd: path.resolve('./game-server'),
-      env,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-
-    app.gameBridge.process.stdout.pipe(process.stdout);
-    app.gameBridge.process.stderr.pipe(process.stderr);
-
-    app.gameBridge.process.on('exit', (code, signal) => {
-      log(`Child process exited with code ${code} and signal ${signal}. Lets exit too.`);
-
-      process.exit(1);
-      // setTimeout(() => {
-      //   startGameServer(app)
-      // }, 1000)
-    });
-
-    app.subProcesses.push(app.gameBridge.process);
-
-    process.env.GS_PORT = app.gameBridge.state.spawnPort + 1 + '';
-  } catch (e) {
-    log('startGameServer error', e);
-  }
-}
-
-async function callGameServer(app, name, signature, data = {}) {
-  if (!app.gameBridge.socket?.connected) {
-    log(`Can't send GS message, not connected.`);
-    return Promise.reject();
+      setTimeout(() => {
+        this.connect();
+      }, 10 * 1000);
+    }, 1000);
   }
 
-  return new Promise((resolve, reject) => {
-    const id = shortId();
+  start() {
+    try {
+      // const binaryPath = {
+      //   linux: '../game-server/build/index.js',
+      //   darwin: '../game-server/build/index.js',
+      //   win32: ''
+      // }[process.platform]
 
-    const timeout = setTimeout(function () {
-      resolve({ status: 0, message: 'Request timeout to GS' });
+      process.env.GS_PORT = this.spawnPort + '';
 
-      delete app.gameBridge.ioCallbacks[id];
-    }, 30 * 1000);
+      const env = {
+        ...process.env,
+        LOG_PREFIX: '[REGS]',
+      };
 
-    app.gameBridge.ioCallbacks[id] = { resolve, reject, timeout };
+      // Start the server
+      this.process = spawn('node', ['-r', 'tsconfig-paths/register', 'build/index.js'], {
+        cwd: path.resolve('./game-server'),
+        env,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
 
-    log('GS call: ', name, { id, data });
+      this.process.stdout.pipe(process.stdout);
+      this.process.stderr.pipe(process.stderr);
 
-    app.gameBridge.socket.emit(name, { id, signature, data });
-  });
-}
+      this.process.on('exit', (code, signal) => {
+        log(`Child process exited with code ${code} and signal ${signal}. Lets exit too.`);
 
-async function fetchInfo(ctx: Context): Promise<any> {
-  const res = await ctx.app.seer.info.query();
-  if (res?.status === 1) {
-    return res.data;
+        process.exit(1);
+      });
+
+      this.app.subProcesses.push(this.process);
+
+      process.env.GS_PORT = this.spawnPort + 1 + '';
+    } catch (e) {
+      log('startGameServer error', e);
+    }
   }
-  return null;
-}
-interface Context {
-  app: AppContext;
-}
 
-interface AppContext {
-  config: Config;
-  gameState: GameState;
-  serverState: ServerState;
-  realm: ReturnType<typeof createClient>;
-  gameBridge: any; // Placeholder for game bridge state
-}
-
-interface Context {
-  app: AppContext;
-}
-
-interface AppContext {
-  config: Config;
-  gameState: GameState;
-  serverState: ServerState;
-  realm: ReturnType<typeof createClient>;
-  web3: any; // Assume web3 is a configured instance
-  secrets: any; // Secrets for signing
-  gameBridge: any; // Placeholder for game bridge state
-}
-
-export class GameServer {
-  endpoint: string;
-  key: string;
-  bridge?: ReturnType<typeof createTRPCProxyClient<GameBridgeRouter>>;
-  router?: ReturnType<typeof t.router>;
-  socket?: any;
-  id: string;
-  info: undefined;
-  isAuthed: false;
-
-  constructor(private ctx: Context) {}
+  async fetchInfo(ctx: Context): Promise<any> {
+    const res = await this.app.seer.info.query();
+    if (res?.status === 1) {
+      return res.data;
+    }
+    return null;
+  }
 
   async connect() {
-    log('Connected: ' + this.ctx.app.config.serverKey);
+    log('Connected: ' + this.app.config.serverKey);
 
     this.id = shortId();
     const data = { id: this.id };
-    const signature = await getSignedRequest(this.ctx.app.web3, this.ctx.app.secrets, data);
+    const signature = await getSignedRequest(this.app.web3, this.app.secrets, data);
 
-    this.ctx.app.serverState.socket.emit('connected', { signature, data });
+    this.socket.emit('connected', { signature, data });
 
     return { status: 1 };
   }
 
   disconnect() {
-    log('Disconnected: ' + this.ctx.app.config.serverKey);
+    log('Disconnected: ' + this.app.config.serverKey);
     return { status: 1 };
   }
 
@@ -194,29 +149,29 @@ export class GameServer {
     }
 
     log('GS initialized');
-    const info = await fetchInfo(this.ctx);
+    const info = await this.fetchInfo(this.ctx);
 
     if (!info) {
       logError('Could not fetch info');
       return { status: 0 };
     }
 
-    this.ctx.app.serverState.info = info;
-    this.ctx.app.serverState.isAuthed = true;
+    this.info = info;
+    this.isAuthed = true;
 
     return {
       status: 1,
       data: {
         id: shortId(),
-        roundId: this.ctx.app.state.config.roundId,
+        roundId: this.app.config.roundId,
       },
     };
   }
 
   configure({ clients }: { clients: any[] }) {
     log('configure');
-    const { config } = this.ctx.app.state;
-    this.ctx.app.state.clients = clients;
+    const { config } = this.app;
+    this.app.clients = clients;
 
     config.totalLegitPlayers = 0;
 
@@ -247,6 +202,7 @@ export class GameServer {
         ) / 1000
       ).toFixed(3)
     );
+
     config.rewardWinnerAmount = parseFloat(
       (
         Math.round(
@@ -266,20 +222,19 @@ export class GameServer {
   }
 
   async saveRound({ data }: { data: any }) {
-    const { config } = this.ctx.app.state;
+    const { config } = this.app;
 
     let failed = false;
 
     try {
       log('saveRound', data);
 
-      // Update player stat DB
-      const res = await this.ctx.app.seer.saveRound.mutate({
-        gsid: this.ctx.app.serverState.id,
+      const res = await this.app.seer.saveRound.mutate({
+        gsid: this.id,
         roundId: config.roundId,
         round: data,
         rewardWinnerAmount: config.rewardWinnerAmount,
-        lastClients: this.ctx.app.state.clients,
+        lastClients: this.app.clients,
       });
 
       if (res.status === 1) {
@@ -296,250 +251,209 @@ export class GameServer {
       failed = true;
     }
 
-    try {
-      if (failed) {
-        this.ctx.app.state.unsavedGames.push({
-          gsid: this.ctx.app.serverState.id,
-          roundId: config.roundId,
-          round: data,
-          rewardWinnerAmount: config.rewardWinnerAmount,
-        });
+    if (failed) {
+      this.app.unsavedGames.push({
+        gsid: this.id,
+        roundId: config.roundId,
+        round: data,
+        rewardWinnerAmount: config.rewardWinnerAmount,
+      });
 
-        return {
-          status: 0,
-          data: { rewardWinnerAmount: 0, rewardItemAmount: 0 },
-        };
-      } else {
-        for (const game of this.ctx.app.state.unsavedGames.filter((g) => g.status === undefined)) {
-          const res = await this.ctx.app.seer.router.saveRound.mutate(game);
-          game.status = res.status;
-        }
-
-        this.ctx.app.state.unsavedGames = this.ctx.app.state.unsavedGames.filter((g) => g.status !== 1);
+      return {
+        status: 0,
+        data: { rewardWinnerAmount: 0, rewardItemAmount: 0 },
+      };
+    } else {
+      for (const game of this.app.unsavedGames.filter((g) => g.status === undefined)) {
+        const res = await this.app.seer.router.saveRound.mutate(game);
+        game.status = res.status;
       }
 
-      this.ctx.app.state.config.roundId++;
-    } catch (e) {
-      logError(e);
-      return { status: 0, data: { rewardWinnerAmount: 0, rewardItemAmount: 0 } };
+      this.app.unsavedGames = this.app.unsavedGames.filter((g) => g.status !== 1);
     }
+
+    this.app.config.roundId++;
 
     return { status: 1 };
   }
 
   async confirmProfile({ data }: { data: { address: string } }) {
-    try {
-      log('confirmProfile', data);
+    log('confirmProfile', data);
 
-      let overview = this.ctx.app.userCache[data.address];
+    let overview = this.app.profiles[data.address];
 
-      if (!overview) {
-        try {
-          overview = (await axios.get(`https://cache.arken.gg/profiles/${data.address}/overview.json`)).data;
+    if (!overview) {
+      overview = (await axios.get(`https://cache.arken.gg/profiles/${data.address}/overview.json`)).data;
 
-          this.ctx.app.userCache[data.address] = overview;
-        } catch (e) {
-          return { status: 0 };
-        }
-      }
+      this.app.profiles[data.address] = overview;
+    }
 
-      if (this.ctx.app.state.clients.length > 50) {
-        return { status: 0 };
-      }
-
-      const now = Date.now() / 1000;
-
-      if (overview.isBanned && overview.bannedUntil > now) {
-        return { status: 0 };
-      }
-
-      return {
-        status: 1,
-        isMod:
-          this.ctx.app.realm.state.modList.includes(data.address) ||
-          this.ctx.app.realm.state.adminList.includes(data.address),
-      };
-    } catch (e) {
-      logError(e);
+    if (this.app.clients.length > 50) {
       return { status: 0 };
     }
+
+    const now = Date.now() / 1000;
+
+    if (overview.isBanned && overview.bannedUntil > now) {
+      return { status: 0 };
+    }
+
+    return {
+      status: 1,
+      isMod: this.app.modList.includes(data.address) || this.app.adminList.includes(data.address),
+    };
   }
 
   verifySignature({ signature }: { signature: { data: string; hash: string; address: string } }) {
-    try {
-      return {
-        status: 1,
-        verified:
-          this.ctx.app.web3.eth.accounts.recover(signature.data, signature.hash).toLowerCase() ===
-          signature.address.toLowerCase(),
-      };
-    } catch (e) {
-      logError(e);
-      return { status: 0, verified: false };
-    }
+    return {
+      status: 1,
+      verified:
+        this.app.web3.eth.accounts.recover(signature.data, signature.hash).toLowerCase() ===
+        signature.address.toLowerCase(),
+    };
   }
 
   verifyAdminSignature({ signature }: { signature: { data: string; hash: string; address: string } }) {
-    try {
-      const normalizedAddress = this.ctx.app.web3.utils.toChecksumAddress(signature.address.trim());
-      const isValid =
-        this.ctx.app.web3.eth.accounts.recover(signature.data, signature.hash).toLowerCase() ===
-          signature.address.toLowerCase() &&
-        (this.ctx.app.realm.state.adminList.includes(normalizedAddress) ||
-          this.ctx.app.realm.state.modList.includes(normalizedAddress));
+    const normalizedAddress = this.app.web3.utils.toChecksumAddress(signature.address.trim());
+    const isValid =
+      this.app.web3.eth.accounts.recover(signature.data, signature.hash).toLowerCase() ===
+        signature.address.toLowerCase() &&
+      (this.app.adminList.includes(normalizedAddress) || this.app.modList.includes(normalizedAddress));
 
-      return {
-        status: isValid ? 1 : 0,
-        address: normalizedAddress,
-      };
-    } catch (e) {
-      logError(e);
-      return { status: 0, address: signature.address };
-    }
+    return {
+      status: isValid ? 1 : 0,
+      address: normalizedAddress,
+    };
   }
 
   normalizeAddress({ address }: { address: string }) {
-    try {
-      return {
-        status: 1,
-        address: this.ctx.app.web3.utils.toChecksumAddress(address.trim()),
-      };
-    } catch (e) {
-      logError(e);
-      return { status: 0, address };
-    }
+    return {
+      status: 1,
+      address: this.app.web3.utils.toChecksumAddress(address.trim()),
+    };
   }
 
   getRandomReward({ id, data }: { id: string; data: any }) {
-    try {
-      const now = getTime();
-      const { config } = this.ctx.app.state;
+    const now = getTime();
+    const { config } = this.app;
 
-      config.drops = config.drops || {};
-      config.drops.guardian = config.drops.guardian || 1633043139000;
-      config.drops.earlyAccess = config.drops.earlyAccess || 1633043139000;
-      config.drops.trinket = config.drops.trinket || 1641251240764;
-      config.drops.santa = config.drops.santa || 1633043139000;
+    config.drops = config.drops || {};
+    config.drops.guardian = config.drops.guardian || 1633043139000;
+    config.drops.earlyAccess = config.drops.earlyAccess || 1633043139000;
+    config.drops.trinket = config.drops.trinket || 1641251240764;
+    config.drops.santa = config.drops.santa || 1633043139000;
 
-      const timesPer10Mins = Math.round((10 * 60) / config.rewardSpawnLoopSeconds);
-      const randPer10Mins = random(0, timesPer10Mins);
-      const timesPerDay = Math.round((40 * 60 * 60) / config.rewardSpawnLoopSeconds);
-      const randPerDay = random(0, timesPerDay);
-      const timesPerWeek = Math.round((10 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds);
-      const randPerWeek = random(0, timesPerWeek);
-      const timesPerBiweekly = Math.round((20 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds);
-      const randPerBiweekly = random(0, timesPerBiweekly);
-      const timesPerMonth = Math.round((31 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds);
-      const randPerMonth = random(0, timesPerMonth);
+    const timesPer10Mins = Math.round((10 * 60) / config.rewardSpawnLoopSeconds);
+    const randPer10Mins = random(0, timesPer10Mins);
+    const timesPerDay = Math.round((40 * 60 * 60) / config.rewardSpawnLoopSeconds);
+    const randPerDay = random(0, timesPerDay);
+    const timesPerWeek = Math.round((10 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds);
+    const randPerWeek = random(0, timesPerWeek);
+    const timesPerBiweekly = Math.round((20 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds);
+    const randPerBiweekly = random(0, timesPerBiweekly);
+    const timesPerMonth = Math.round((31 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds);
+    const randPerMonth = random(0, timesPerMonth);
 
-      let tempReward: any;
-      const dropItems = false; // Assuming this is determined elsewhere
+    let tempReward: any;
+    const dropItems = false; // Assuming this is determined elsewhere
 
-      if (
-        dropItems &&
-        now - config.drops.guardian > 48 * 60 * 60 * 1000 &&
-        randPerDay === Math.round(timesPerDay / 2)
-      ) {
-        tempReward = {
-          id: shortId.generate(),
-          position: config.level2open
-            ? this.ctx.app.state.rewardSpawnPoints2[random(0, this.ctx.app.state.rewardSpawnPoints2.length - 1)]
-            : this.ctx.app.state.rewardSpawnPoints[random(0, this.ctx.app.state.rewardSpawnPoints.length - 1)],
-          enabledAt: now,
-          name: 'Guardian Egg',
-          rarity: 'Magical',
-          quantity: 1,
-          rewardItemType: 2,
-        };
+    if (dropItems && now - config.drops.guardian > 48 * 60 * 60 * 1000 && randPerDay === Math.round(timesPerDay / 2)) {
+      tempReward = {
+        id: shortId.generate(),
+        position: config.level2open
+          ? this.app.rewardSpawnPoints2[random(0, this.app.rewardSpawnPoints2.length - 1)]
+          : this.app.rewardSpawnPoints[random(0, this.app.rewardSpawnPoints.length - 1)],
+        enabledAt: now,
+        name: 'Guardian Egg',
+        rarity: 'Magical',
+        quantity: 1,
+        rewardItemType: 2,
+      };
 
-        const rand = random(0, 1000);
-        if (rand === 1000) tempReward.rarity = 'Mythic';
-        else if (rand > 950) tempReward.rarity = 'Epic';
-        else if (rand > 850) tempReward.rarity = 'Rare';
+      const rand = random(0, 1000);
+      if (rand === 1000) tempReward.rarity = 'Mythic';
+      else if (rand > 950) tempReward.rarity = 'Epic';
+      else if (rand > 850) tempReward.rarity = 'Rare';
 
-        tempReward.rewardItemName = `${tempReward.rarity} ${tempReward.name}`;
-        config.drops.guardian = now;
-      } else if (
-        dropItems &&
-        now - config.drops.earlyAccess > 30 * 24 * 60 * 60 * 1000 &&
-        randPerMonth === Math.round(timesPerMonth / 2)
-      ) {
-        tempReward = {
-          id: shortId.generate(),
-          position: config.level2open
-            ? this.ctx.app.state.rewardSpawnPoints2[random(0, this.ctx.app.state.rewardSpawnPoints2.length - 1)]
-            : this.ctx.app.state.rewardSpawnPoints[random(0, this.ctx.app.state.rewardSpawnPoints.length - 1)],
-          enabledAt: now,
-          name: `Early Access Founder's Cube`,
-          rarity: 'Unique',
-          quantity: 1,
-          rewardItemType: 3,
-        };
+      tempReward.rewardItemName = `${tempReward.rarity} ${tempReward.name}`;
+      config.drops.guardian = now;
+    } else if (
+      dropItems &&
+      now - config.drops.earlyAccess > 30 * 24 * 60 * 60 * 1000 &&
+      randPerMonth === Math.round(timesPerMonth / 2)
+    ) {
+      tempReward = {
+        id: shortId.generate(),
+        position: config.level2open
+          ? this.app.rewardSpawnPoints2[random(0, this.app.rewardSpawnPoints2.length - 1)]
+          : this.app.rewardSpawnPoints[random(0, this.app.rewardSpawnPoints.length - 1)],
+        enabledAt: now,
+        name: `Early Access Founder's Cube`,
+        rarity: 'Unique',
+        quantity: 1,
+        rewardItemType: 3,
+      };
 
-        tempReward.rewardItemName = tempReward.name;
-        config.drops.earlyAccess = now;
-      } else if (
-        dropItems &&
-        now - config.drops.trinket > 24 * 60 * 60 * 1000 &&
-        randPerDay === Math.round(timesPerDay / 4)
-      ) {
-        tempReward = {
-          id: shortId.generate(),
-          position: config.level2open
-            ? this.ctx.app.state.rewardSpawnPoints2[random(0, this.ctx.app.state.rewardSpawnPoints2.length - 1)]
-            : this.ctx.app.state.rewardSpawnPoints[random(0, this.ctx.app.state.rewardSpawnPoints.length - 1)],
-          enabledAt: now,
-          name: 'Trinket',
-          rarity: 'Magical',
-          quantity: 1,
-          rewardItemType: 4,
-        };
+      tempReward.rewardItemName = tempReward.name;
+      config.drops.earlyAccess = now;
+    } else if (
+      dropItems &&
+      now - config.drops.trinket > 24 * 60 * 60 * 1000 &&
+      randPerDay === Math.round(timesPerDay / 4)
+    ) {
+      tempReward = {
+        id: shortId.generate(),
+        position: config.level2open
+          ? this.app.rewardSpawnPoints2[random(0, this.app.rewardSpawnPoints2.length - 1)]
+          : this.app.rewardSpawnPoints[random(0, this.app.rewardSpawnPoints.length - 1)],
+        enabledAt: now,
+        name: 'Trinket',
+        rarity: 'Magical',
+        quantity: 1,
+        rewardItemType: 4,
+      };
 
-        const rand = random(0, 1000);
-        if (rand === 1000) tempReward.rarity = 'Mythic';
-        else if (rand > 950) tempReward.rarity = 'Epic';
-        else if (rand > 850) tempReward.rarity = 'Rare';
+      const rand = random(0, 1000);
+      if (rand === 1000) tempReward.rarity = 'Mythic';
+      else if (rand > 950) tempReward.rarity = 'Epic';
+      else if (rand > 850) tempReward.rarity = 'Rare';
 
-        tempReward.rewardItemName = `${tempReward.rarity} ${tempReward.name}`;
-        config.drops.trinket = now;
-      } else {
-        const odds = Array(1000).fill('runes');
+      tempReward.rewardItemName = `${tempReward.rarity} ${tempReward.name}`;
+      config.drops.trinket = now;
+    } else {
+      const odds = Array(1000).fill('runes');
 
-        const rewardType = this.ctx.app.state.rewards[odds[random(0, odds.length - 1)]];
-        if (!rewardType || rewardType.length === 0) {
-          return { status: 2 };
-        }
-
-        const reward = rewardType[random(0, rewardType.length - 1)];
-        if (reward.type === 'rune' && reward.quantity <= 0) {
-          return { status: 3 };
-        }
-
-        tempReward = { ...reward, id: shortId.generate(), enabledAt: now };
-        tempReward.position = config.level2open
-          ? this.ctx.app.state.rewardSpawnPoints2[random(0, this.ctx.app.state.rewardSpawnPoints2.length - 1)]
-          : this.ctx.app.state.rewardSpawnPoints[random(0, this.ctx.app.state.rewardSpawnPoints.length - 1)];
+      const rewardType = this.app.rewards[odds[random(0, odds.length - 1)]];
+      if (!rewardType || rewardType.length === 0) {
+        return { status: 2 };
       }
 
-      return {
-        status: 1,
-        reward: tempReward,
-      };
-    } catch (e) {
-      logError(e);
-      return { status: 4 };
+      const reward = rewardType[random(0, rewardType.length - 1)];
+      if (reward.type === 'rune' && reward.quantity <= 0) {
+        return { status: 3 };
+      }
+
+      tempReward = { ...reward, id: shortId.generate(), enabledAt: now };
+      tempReward.position = config.level2open
+        ? this.app.rewardSpawnPoints2[random(0, this.app.rewardSpawnPoints2.length - 1)]
+        : this.app.rewardSpawnPoints[random(0, this.app.rewardSpawnPoints.length - 1)];
     }
+
+    return {
+      status: 1,
+      reward: tempReward,
+    };
   }
 
   connectGameServer(app, serverId) {
-    if (app.realm.servers[serverId].socket) {
-      app.gameBridge.socket.close();
+    if (app.servers[serverId].socket) {
+      this.socket.close();
 
-      clearTimeout(app.gameBridge.infoRequestTimeout);
-      clearTimeout(app.gameBridge.connectTimeout);
+      clearTimeout(this.infoRequestTimeout);
+      clearTimeout(this.connectTimeout);
     }
 
-    this.endpoint = 'localhost:' + app.realm.state.spawnPort; // local.isles.arken.gg
+    this.endpoint = 'localhost:' + app.spawnPort; // local.isles.arken.gg
     this.key = 'local1';
     this.socket = getSocket(app, (app.isHttps ? 'https://' : 'http://') + this.endpoint);
     this.socket.io.engine.on('upgrade', () => {
@@ -566,422 +480,29 @@ export class GameServer {
       const { id, method, params } = message;
 
       try {
-        const ctx = { ...app, socket, client };
+        const ctx = { app, socket, client };
 
         const createCaller = t.createCallerFactory(this.router);
         const caller = createCaller(ctx);
         const result = await caller[method](params);
-        socket.emit('trpcResponse', { id, result });
+        this.socket.emit('trpcResponse', { id, result });
       } catch (error) {
-        socket.emit('trpcResponse', { id, error: error.message });
+        this.socket.emit('trpcResponse', { id, error: error.message });
       }
     });
 
     this.socket.on('disconnect', async () => {
-      log('Client has disconnected');
+      log('GameWorld has disconnected');
 
-      if (client.isAdmin) {
-        await app.gameBridge.apiDisconnected.mutate(await getSignedRequest(app.web3, app.secrets, {}), {});
-      }
+      // if (client.isAdmin) {
+      //   await this.apiDisconnected.mutate(await getSignedRequest(app.web3, app.secrets, {}), {});
+      // }
 
-      client.log.clientDisconnected += 1;
-      delete app.realm.sockets[client.id];
-      delete app.realm.clientLookup[client.id];
-      app.realm.clients = app.realm.clients.filter((c) => c.id !== client.id);
+      // client.log.clientDisconnected += 1;
+      // delete app.sockets[client.id];
+      // delete app.clientLookup[client.id];
+      app.clients = app.clients.filter((c) => c.id !== client.id);
     });
-
-    const t = initTRPC.create();
-
-    this.router = t
-      .router<Context>()
-      .mutation('init', {
-        input: z.object({ status: z.number() }),
-        resolve: async ({ input, ctx }) => {
-          if (input.status !== 1) {
-            logError('Could not init');
-            return { status: 0 };
-          }
-
-          log('GS initialized');
-          const info = await fetchInfo(ctx);
-
-          if (!info) {
-            logError('Could not fetch info');
-            return { status: 0 };
-          }
-
-          ctx.app.serverState.info = info;
-          ctx.app.serverState.isAuthed = true;
-
-          return {
-            status: 1,
-            data: {
-              id: shortId(),
-              roundId: ctx.app.state.config.roundId,
-            },
-          };
-        },
-      })
-      .mutation('configure', {
-        input: z.object({
-          clients: z.array(z.any()),
-        }),
-        resolve: ({ input, ctx }) => {
-          log('configure');
-          const { config } = ctx.app.state;
-          ctx.app.state.clients = input.clients;
-
-          config.totalLegitPlayers = 0;
-
-          for (const client of input.clients) {
-            if (client.isGuest) continue;
-
-            try {
-              if (
-                (client.powerups > 100 && client.kills > 1) ||
-                (client.evolves > 20 && client.powerups > 200) ||
-                (client.rewards > 3 && client.powerups > 200) ||
-                client.evolves > 100 ||
-                client.points > 1000
-              ) {
-                config.totalLegitPlayers += 1;
-              }
-            } catch (e) {
-              log('Error 9343', e);
-            }
-          }
-
-          if (config.totalLegitPlayers === 0) config.totalLegitPlayers = 1;
-
-          config.rewardItemAmount = parseFloat(
-            (
-              Math.round(
-                Math.min(config.totalLegitPlayers * config.rewardItemAmountPerLegitPlayer, config.rewardItemAmountMax) *
-                  1000
-              ) / 1000
-            ).toFixed(3)
-          );
-          config.rewardWinnerAmount = parseFloat(
-            (
-              Math.round(
-                Math.min(
-                  config.totalLegitPlayers * config.rewardWinnerAmountPerLegitPlayer,
-                  config.rewardWinnerAmountMax
-                ) * 1000
-              ) / 1000
-            ).toFixed(3)
-          );
-
-          return {
-            status: 1,
-            data: {
-              rewardWinnerAmount: config.rewardWinnerAmount,
-              rewardItemAmount: config.rewardItemAmount,
-            },
-          };
-        },
-      })
-      .mutation('saveRound', {
-        input: z.object({ data: z.any() }),
-        resolve: async ({ input, ctx }) => {
-          const { config } = ctx.app.state;
-
-          let failed = false;
-
-          try {
-            log('saveRound', input);
-
-            // Update player stat DB
-            const res = await ctx.app.seer.saveRound.mutate({
-              gsid: ctx.app.serverState.id,
-              roundId: config.roundId,
-              round: input.data,
-              rewardWinnerAmount: config.rewardWinnerAmount,
-              lastClients: ctx.app.state.clients,
-            });
-
-            if (res.status === 1) {
-              return {
-                status: 1,
-                data: res,
-              };
-            } else {
-              failed = true;
-              log('Save round failed', res);
-            }
-          } catch (e) {
-            logError('Save round failed', e);
-            failed = true;
-          }
-
-          try {
-            if (failed) {
-              ctx.app.state.unsavedGames.push({
-                gsid: ctx.app.serverState.id,
-                roundId: config.roundId,
-                round: input.data,
-                rewardWinnerAmount: config.rewardWinnerAmount,
-              });
-
-              return {
-                status: 0,
-                data: { rewardWinnerAmount: 0, rewardItemAmount: 0 },
-              };
-            } else {
-              for (const game of ctx.app.state.unsavedGames.filter((g) => g.status === undefined)) {
-                const res = await ctx.app.seer.router.saveRound.mutate(game);
-                game.status = res.status;
-              }
-
-              ctx.app.state.unsavedGames = ctx.app.state.unsavedGames.filter((g) => g.status !== 1);
-            }
-
-            ctx.app.state.config.roundId++;
-          } catch (e) {
-            logError(e);
-            return { status: 0, data: { rewardWinnerAmount: 0, rewardItemAmount: 0 } };
-          }
-
-          return { status: 1 };
-        },
-      })
-      .mutation('confirmProfile', {
-        input: z.object({
-          data: z.object({
-            address: z.string(),
-          }),
-        }),
-        resolve: async ({ input, ctx }) => {
-          try {
-            log('confirmProfile', input);
-
-            let overview = ctx.app.userCache[input.address];
-
-            if (!overview) {
-              try {
-                overview = (await axios.get(`https://cache.arken.gg/profiles/${input.address}/overview.json`)).data;
-
-                ctx.app.userCache[input.address] = overview;
-              } catch (e) {
-                return { status: 0 };
-              }
-            }
-
-            if (ctx.app.state.clients.length > 50) {
-              return { status: 0 };
-            }
-
-            const now = Date.now() / 1000;
-
-            if (overview.isBanned && overview.bannedUntil > now) {
-              return { status: 0 };
-            }
-
-            return {
-              status: 1,
-              isMod:
-                ctx.app.realm.state.modList.includes(input.address) ||
-                ctx.app.realm.state.adminList.includes(input.address),
-            };
-          } catch (e) {
-            logError(e);
-            return { status: 0 };
-          }
-        },
-      })
-      .mutation('verifySignature', {
-        input: z.object({
-          signature: z.object({
-            data: z.string(),
-            hash: z.string(),
-            address: z.string(),
-          }),
-        }),
-        resolve: ({ input, ctx }) => {
-          try {
-            return {
-              status: 1,
-              verified:
-                ctx.app.web3.eth.accounts.recover(input.signature.data, input.signature.hash).toLowerCase() ===
-                input.signature.address.toLowerCase(),
-            };
-          } catch (e) {
-            logError(e);
-            return { status: 0, verified: false };
-          }
-        },
-      })
-      .mutation('verifyAdminSignature', {
-        input: z.object({
-          data: z.object({
-            signature: z.object({
-              data: z.string(),
-              hash: z.string(),
-              address: z.string(),
-            }),
-          }),
-        }),
-        resolve: ({ input, ctx }) => {
-          try {
-            const normalizedAddress = ctx.app.web3.utils.toChecksumAddress(input.signature.address.trim());
-            const isValid =
-              ctx.app.web3.eth.accounts.recover(input.signature.data, input.signature.hash).toLowerCase() ===
-                input.signature.address.toLowerCase() &&
-              (ctx.app.realm.state.adminList.includes(normalizedAddress) ||
-                ctx.app.realm.state.modList.includes(normalizedAddress));
-
-            return {
-              status: isValid ? 1 : 0,
-              address: normalizedAddress,
-            };
-          } catch (e) {
-            logError(e);
-            return { status: 0, address: input.signature.address };
-          }
-        },
-      })
-      .mutation('normalizeAddress', {
-        input: z.object({
-          address: z.string(),
-        }),
-        resolve: ({ input, ctx }) => {
-          try {
-            return {
-              status: 1,
-              address: ctx.app.web3.utils.toChecksumAddress(input.address.trim()),
-            };
-          } catch (e) {
-            logError(e);
-            return { status: 0, address: input.address };
-          }
-        },
-      })
-      .mutation('getRandomReward', {
-        input: z.object({
-          id: z.string(),
-          data: z.any(),
-        }),
-        resolve: ({ input, ctx }) => {
-          try {
-            const now = getTime();
-            const { config } = ctx.app.state;
-
-            config.drops = config.drops || {};
-            config.drops.guardian = config.drops.guardian || 1633043139000;
-            config.drops.earlyAccess = config.drops.earlyAccess || 1633043139000;
-            config.drops.trinket = config.drops.trinket || 1633043139000;
-            config.drops.santa = config.drops.santa || 1633043139000;
-
-            const timesPer10Mins = Math.round((10 * 60) / config.rewardSpawnLoopSeconds);
-            const randPer10Mins = random(0, timesPer10Mins);
-            const timesPerDay = Math.round((40 * 60 * 60) / config.rewardSpawnLoopSeconds);
-            const randPerDay = random(0, timesPerDay);
-            const timesPerWeek = Math.round((10 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds);
-            const randPerWeek = random(0, timesPerWeek);
-            const timesPerBiweekly = Math.round((20 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds);
-            const randPerBiweekly = random(0, timesPerBiweekly);
-            const timesPerMonth = Math.round((31 * 24 * 60 * 60) / config.rewardSpawnLoopSeconds);
-            const randPerMonth = random(0, timesPerMonth);
-
-            let tempReward: any;
-            const dropItems = false; // Assuming this is determined elsewhere
-
-            if (
-              dropItems &&
-              now - config.drops.guardian > 48 * 60 * 60 * 1000 &&
-              randPerDay === Math.round(timesPerDay / 2)
-            ) {
-              tempReward = {
-                id: shortId.generate(),
-                position: config.level2open
-                  ? ctx.app.state.rewardSpawnPoints2[random(0, ctx.app.state.rewardSpawnPoints2.length - 1)]
-                  : ctx.app.state.rewardSpawnPoints[random(0, ctx.app.state.rewardSpawnPoints.length - 1)],
-                enabledAt: now,
-                name: 'Guardian Egg',
-                rarity: 'Magical',
-                quantity: 1,
-                rewardItemType: 2,
-              };
-
-              const rand = random(0, 1000);
-              if (rand === 1000) tempReward.rarity = 'Mythic';
-              else if (rand > 950) tempReward.rarity = 'Epic';
-              else if (rand > 850) tempReward.rarity = 'Rare';
-
-              tempReward.rewardItemName = `${tempReward.rarity} ${tempReward.name}`;
-              config.drops.guardian = now;
-            } else if (
-              dropItems &&
-              now - config.drops.earlyAccess > 30 * 24 * 60 * 60 * 1000 &&
-              randPerMonth === Math.round(timesPerMonth / 2)
-            ) {
-              tempReward = {
-                id: shortId.generate(),
-                position: config.level2open
-                  ? ctx.app.state.rewardSpawnPoints2[random(0, ctx.app.state.rewardSpawnPoints2.length - 1)]
-                  : ctx.app.state.rewardSpawnPoints[random(0, ctx.app.state.rewardSpawnPoints.length - 1)],
-                enabledAt: now,
-                name: `Early Access Founder's Cube`,
-                rarity: 'Unique',
-                quantity: 1,
-                rewardItemType: 3,
-              };
-
-              tempReward.rewardItemName = tempReward.name;
-              config.drops.earlyAccess = now;
-            } else if (
-              dropItems &&
-              now - config.drops.trinket > 24 * 60 * 60 * 1000 &&
-              randPerDay === Math.round(timesPerDay / 4)
-            ) {
-              tempReward = {
-                id: shortId.generate(),
-                position: config.level2open
-                  ? ctx.app.state.rewardSpawnPoints2[random(0, ctx.app.state.rewardSpawnPoints2.length - 1)]
-                  : ctx.app.state.rewardSpawnPoints[random(0, ctx.app.state.rewardSpawnPoints.length - 1)],
-                enabledAt: now,
-                name: 'Trinket',
-                rarity: 'Magical',
-                quantity: 1,
-                rewardItemType: 4,
-              };
-
-              const rand = random(0, 1000);
-              if (rand === 1000) tempReward.rarity = 'Mythic';
-              else if (rand > 950) tempReward.rarity = 'Epic';
-              else if (rand > 850) tempReward.rarity = 'Rare';
-
-              tempReward.rewardItemName = `${tempReward.rarity} ${tempReward.name}`;
-              config.drops.trinket = now;
-            } else {
-              const odds = Array(1000).fill('runes');
-
-              const rewardType = ctx.app.state.rewards[odds[random(0, odds.length - 1)]];
-              if (!rewardType || rewardType.length === 0) {
-                return { status: 2 };
-              }
-
-              const reward = rewardType[random(0, rewardType.length - 1)];
-              if (reward.type === 'rune' && reward.quantity <= 0) {
-                return { status: 3 };
-              }
-
-              tempReward = { ...reward, id: shortId.generate(), enabledAt: now };
-              tempReward.position = config.level2open
-                ? ctx.app.state.rewardSpawnPoints2[random(0, ctx.app.state.rewardSpawnPoints2.length - 1)]
-                : ctx.app.state.rewardSpawnPoints[random(0, ctx.app.state.rewardSpawnPoints.length - 1)];
-            }
-
-            return {
-              status: 1,
-              reward: tempReward,
-            };
-          } catch (e) {
-            logError(e);
-            return { status: 4 };
-          }
-        },
-      });
   }
 }
 
@@ -994,8 +515,6 @@ export async function init(app) {
 
   gameServer.router = t.router({
     connect: t.procedure.input(z.object({})).mutation(() => gameServer.connect()),
-    disconnect: t.procedure.input(z.object({})).mutation(() => gameServer.disconnect()),
-    connect: t.procedure.input(z.object({})).mutation(({ input }) => gameServer.connect()),
 
     disconnect: t.procedure.input(z.object({})).mutation(() => gameServer.disconnect()),
 
@@ -1051,55 +570,7 @@ export async function init(app) {
         santa: 1633043139000,
       },
     });
-    // Save the default config to the database
+
     await config.save();
   }
-
-  // Do something with the config data
-  app.gameBridge.state.config = config;
-
-  // app.gameBridge.state.config = jetpack.read(path.resolve('./public/data/config.json'), 'json') || {
-  //   roundId: 1,
-  //   rewardItemAmountPerLegitPlayer: 0,
-  //   rewardItemAmountMax: 0,
-  //   rewardWinnerAmountPerLegitPlayer: 0,
-  //   rewardWinnerAmountMax: 0,
-  //   rewardItemAmount: 0,
-  //   rewardWinnerAmount: 0,
-  //   drops: {
-  //     guardian: 1633043139000,
-  //     earlyAccess: 1633043139000,
-  //     trinket: 1641251240764,
-  //     santa: 1633043139000,
-  //   },
-  // };
-
-  app.gameBridge.state.servers = [];
-
-  app.gameBridge.process = null;
-
-  app.gameBridge.call = callGameServer.bind(null, app);
-
-  app.gameBridge.start = startGameServer.bind(null, app);
-
-  app.gameBridge.connect = connectGameServer.bind(null, app);
-
-  app.gameBridge.clone = cloneGsCodebase;
-
-  app.gameBridge.upgrade = upgradeGsCodebase;
-
-  app.gameBridge.characters = {};
-
-  // Clear equipment cache every 10 mins
-  setInterval(function () {
-    app.gameBridge.characters = {};
-  }, 10 * 60 * 1000);
-
-  setTimeout(() => {
-    app.gameBridge.start();
-
-    setTimeout(() => {
-      app.gameBridge.connect();
-    }, 10 * 1000);
-  }, 1000);
 }

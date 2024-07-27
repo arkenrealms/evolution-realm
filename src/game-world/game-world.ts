@@ -19,8 +19,7 @@ import { createClient } from './trpc-client';
 import mapData from './public/data/map.json';
 import { UnsavedGame } from '../models';
 import { z } from 'zod';
-import { disconnectClient, emit, spectate } from '@arken/node/util/player';
-import { customErrorFormatter } from '@arken/node/util/customErrorFormatter';
+import { customErrorFormatter } from '@arken/node/util/rpc';
 import { testMode, baseConfig, sharedConfig, Config } from './config';
 import { presets } from './presets';
 
@@ -733,7 +732,7 @@ function sendUpdates() {
   const leaderboard = app.round.players.sort(comparePlayers).slice(0, 10);
   for (let j = 0; j < leaderboard.length; j++) {
     emitAll(
-      'OnUpdateBestKiller',
+      'onUpdateBestPlayer',
       leaderboard[j].name,
       j,
       leaderboard[j].points,

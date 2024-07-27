@@ -1319,7 +1319,7 @@ function sendUpdates(app) {
   const leaderboard = round.players.sort(comparePlayers).slice(0, 10);
   for (let j = 0; j < leaderboard.length; j++) {
     publishEvent(
-      'OnUpdateBestKiller',
+      'onUpdateBestPlayer',
       leaderboard[j].name,
       j,
       leaderboard[j].points,
