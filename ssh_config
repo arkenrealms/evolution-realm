@@ -1,11 +1,5 @@
-Host sdk
+Host arkenbot
 HostName github.com
-IdentityFile ~/.ssh/id_ed25519_sdk
-ServerAliveInterval 60
-ServerAliveCountMax 30
-
-Host evors
-HostName github.com
-IdentityFile ~/.ssh/id_ed25519_evors
+IdentityFile ~/.ssh/id_ed25519
 ServerAliveInterval 60
 ServerAliveCountMax 30

@@ -1,13 +1,13 @@
 {
   "name": "@arken/evolution-realm-server",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "description": "",
   "scripts": {
-    "dev": "ARKEN_ENV=local LOG=1 LOG_PREFIX=[RERS*] RS_PORT=4010 RS_SSL_PORT=4011 GS_PORT=4020 GS_SSL_PORT=4021 PROVIDER_URI=wss://spring-practical-market.bsc.quiknode.pro/89275f246ac3cd3b9dacd017b931805deca236c0/ tsnd --respawn -r dotenv/config -r tsconfig-paths/register ./src/index.ts",
+    "dev": "ARKEN_ENV=local LOG=1 LOG_PREFIX=[RERS*] RS_PORT=4010 RS_SSL_PORT=4011 GS_PORT=4020 GS_SSL_PORT=4021 tsnd --respawn -r dotenv/config -r tsconfig-paths/register ./src/index.ts",
     "inspect": "NODE_ENV=development yarn build && PORT=3001 NODE_ENV=production node --inspect build/index.js",
     "prod": "NODE_ENV=production yarn run nodemon --config nodemon.production.json",
     "build": "NODE_ENV=production tsc && tsc-alias",
-    "start": "ARKEN_ENV=local LOG=1 LOG_PREFIX=[RERS] RS_PORT=4010 RS_SSL_PORT=4011 GS_PORT=4020 GS_SSL_PORT=4021 PROVIDER_URI=wss://spring-practical-market.bsc.quiknode.pro/89275f246ac3cd3b9dacd017b931805deca236c0/ NODE_ENV=production node -r tsconfig-paths/register --max_semi_space_size=30000 --max-old-space-size=30000 --initial-old-space-size=8000 --optimize-for-size --experimental-modules --experimental-json-modules build/src/index.js",
+    "start": "ARKEN_ENV=local LOG=1 LOG_PREFIX=[RERS] RS_PORT=4010 RS_SSL_PORT=4011 GS_PORT=4020 GS_SSL_PORT=4021 NODE_ENV=production node -r tsconfig-paths/register --max_semi_space_size=30000 --max-old-space-size=30000 --initial-old-space-size=8000 --optimize-for-size --experimental-modules --experimental-json-modules build/src/index.js",
     "forever": "NODE_ENV=production yarn build && sudo nohup forever start forever-config.json &",
     "config": "sudo /opt/bitnami/ctlscript.sh stop apache",
     "kill": "sudo pkill -f node",
