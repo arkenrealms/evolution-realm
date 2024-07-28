@@ -116,8 +116,8 @@ describe('tRPC and Game Server Integration Tests', () => {
     expect(response.address).toBeUndefined();
   });
 
-  test('tRPC verifySignatureRequest', async () => {
-    const response = await trpcClient.mutation('verifySignatureRequest', {
+  test('tRPC auth', async () => {
+    const response = await trpcClient.mutation('auth', {
       signature: {
         data: 'evolution',
         hash: 'sample_hash',
@@ -128,8 +128,8 @@ describe('tRPC and Game Server Integration Tests', () => {
     expect(response.verified).toBe(true);
   });
 
-  test('tRPC verifySignatureRequest with invalid data', async () => {
-    const response = await trpcClient.mutation('verifySignatureRequest', {
+  test('tRPC auth with invalid data', async () => {
+    const response = await trpcClient.mutation('auth', {
       signature: {
         data: 'invalid_data',
         hash: 'sample_hash',

@@ -1,11 +1,11 @@
 {
-  "uid": "rune-evolution-realm-server",
+  "uid": "evolution-realm-server",
   "max": 999999999999,
   "minUptime": 0,
   "spinSleepTime": 30000,
   "append": true,
   "watch": false,
-  "command": "sudo RS_PORT=4010 RS_SSL_PORT=4011 GS_PORT=4020 GS_SSL_PORT=4021 PROVIDER_URI=wss://spring-practical-market.bsc.quiknode.pro/89275f246ac3cd3b9dacd017b931805deca236c0/ LOG=0 LOG_PREFIX=[RERS] NODE_ENV=production /usr/bin/node -r tsconfig-paths/register --max_semi_space_size=30000 --max-old-space-size=30000 --initial-old-space-size=8000 --optimize-for-size --experimental-modules --experimental-json-modules",
+  "command": "sudo RS_PORT=4010 RS_SSL_PORT=4011 GS_PORT=4020 GS_SSL_PORT=4021 LOG=0 LOG_PREFIX=[RERS] NODE_ENV=production /usr/bin/node -r tsconfig-paths/register --max_semi_space_size=30000 --max-old-space-size=30000 --initial-old-space-size=8000 --optimize-for-size --experimental-modules --experimental-json-modules",
   "script": "build/src/index.js",
   "logFile": "./forever-script-log.log",
   "outFile": "./forever-script-out.log",

@@ -1,64 +1,47 @@
 import fs from 'fs';
 import helmet from 'helmet';
 import cors from 'cors';
-import express from 'express';
+import express, { Express } from 'express';
 import { log, logError, isDebug } from '@arken/node/util';
 import { catchExceptions } from '@arken/node/util/process';
-import { initGameServer } from './game-server';
+import { initGameWorld } from './game-world';
 import { initMonitor } from './monitor';
-export type { Router } from './game-server';
-
-const path = require('path');
+import path from 'path';
+import http from 'http';
+import https from 'https';
+import { Server as SocketIOServer } from 'socket.io';
+export { Router } from './game-world';
 
 if (isDebug) {
   console.log('Running GS in DEBUG mode');
 }
+export class Application {
+  public server: Express;
+  public state: {
+    port: number;
+    sslPort: number;
+    spawnPort?: number;
+  };
+  public isHttps: boolean;
+  public http?: http.Server;
+  public https?: https.Server;
+  public io?: SocketIOServer;
 
-function startServer(app) {
-  log('startServer', app.isHttps);
-
-  if (app.isHttps) {
-    // app.https.on('error', function (e) {
-    //   app.state.sslPort++
-    //   setTimeout(() => startServer(app), 10 * 1000)
-    // })
-
-    app.https.listen(app.state.sslPort, function () {
-      log(`Backend ready and listening on *:${app.state.sslPort} (https)`);
-
-      app.state.spawnPort = app.state.sslPort;
-    });
-  } else {
-    // app.http.on('error', function (e) {
-    //   app.state.port++
-    //   setTimeout(() => startServer(app), 10 * 1000)
-    // })
-
-    app.http.listen(app.state.port, function () {
-      log(`Backend ready and listening on *:${app.state.port} (http)`);
-
-      app.state.spawnPort = app.state.port;
-    });
+  constructor() {
+    this.server = express();
+    this.state = {
+      port: process.env.GS_PORT ? parseInt(process.env.GS_PORT, 10) : 8080,
+      sslPort: process.env.GS_SSL_PORT ? parseInt(process.env.GS_SSL_PORT, 10) : 8443,
+    };
+    this.isHttps = process.env.ARKEN_ENV !== 'local';
+    this.setupMiddleware();
+    this.setupServer();
   }
-}
 
-async function init() {
-  catchExceptions();
-
-  try {
-    const app = {} as any;
-
-    app.state = {};
-    app.state.port = process.env.GS_PORT || 8080;
-    app.state.sslPort = process.env.GS_SSL_PORT || 8443;
-    app.state.spawnPort = undefined;
-
-    app.server = express();
-
-    // Security related
-    app.server.set('trust proxy', 1);
-    app.server.use(helmet());
-    app.server.use(
+  private setupMiddleware() {
+    this.server.set('trust proxy', 1);
+    this.server.use(helmet());
+    this.server.use(
       cors({
         allowedHeaders: [
           'Accept',
@@ -70,23 +53,22 @@ async function init() {
         ],
       })
     );
+  }
 
-    app.isHttps = process.env.ARKEN_ENV !== 'local';
-
-    if (app.isHttps) {
-      app.https = require('https').createServer(
+  private setupServer() {
+    if (this.isHttps) {
+      this.https = https.createServer(
         {
           key: fs.readFileSync(path.resolve('../privkey.pem')),
           cert: fs.readFileSync(path.resolve('../fullchain.pem')),
         },
-        app.server
+        this.server
       );
     } else {
-      app.http = require('http').Server(app.server);
+      this.http = http.createServer(this.server);
     }
 
-    app.io = require('socket.io')(app.isHttps ? app.https : app.http, {
-      secure: app.isHttps ? true : false,
+    this.io = new SocketIOServer(this.isHttps ? this.https : this.http, {
       pingInterval: 30 * 1000,
       pingTimeout: 90 * 1000,
       upgradeTimeout: 20 * 1000,
@@ -98,15 +80,31 @@ async function init() {
         origin: '*',
       },
     });
+  }
 
-    initMonitor(app);
-    initGameServer(app);
-    // initWebServer(app.server)
+  public start() {
+    log('Starting server...', this.isHttps ? 'HTTPS' : 'HTTP');
+    catchExceptions();
+    try {
+      if (this.isHttps && this.https) {
+        this.https.listen(this.state.sslPort, () => {
+          log(`Backend ready and listening on *:${this.state.sslPort} (https)`);
+          this.state.spawnPort = this.state.sslPort;
+        });
+      } else if (this.http) {
+        this.http.listen(this.state.port, () => {
+          log(`Backend ready and listening on *:${this.state.port} (http)`);
+          this.state.spawnPort = this.state.port;
+        });
+      }
 
-    startServer(app);
-  } catch (e) {
-    log('Error 383892', e);
+      initMonitor(this);
+      initGameWorld(this);
+    } catch (error) {
+      logError('Error starting server:', error);
+    }
   }
 }
 
-init();
+const app = new Application();
+app.start();

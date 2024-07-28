@@ -142,9 +142,7 @@ function initRoutes(app) {
     app.server.get('/readiness_check', (req, res) => res.sendStatus(200));
     app.server.get('/liveness_check', (req, res) => res.sendStatus(200));
 
-    app.server.get('/.well-known/acme-challenge/-mROdU-GRZs53IaKoASvx7og2NHoD0fw5_nnaHtE4Ic', (req, res) =>
-      res.end('-mROdU-GRZs53IaKoASvx7og2NHoD0fw5_nnaHtE4Ic.rf1Z-ViQiJBjN-_x-EzQlmFjnB7obDoQD_BId0Z24Oc')
-    );
+    app.server.get('/hello', (req, res) => res.end('world'));
   } catch (e) {
     logError(e);
   }
@@ -170,17 +168,4 @@ export async function initWebServer(app) {
   app.server.use(express.static(path.resolve('./public')));
 
   initRoutes(app);
-
-  if (app.isHttps) {
-    const sslPort = process.env.RS_SSL_PORT || 443;
-    app.https.listen(sslPort, function () {
-      log(`:: Backend ready and listening on *:${sslPort} (https)`);
-    });
-  } else {
-    // Finalize
-    const port = process.env.RS_PORT || 80;
-    app.http.listen(port, function () {
-      log(`:: Backend ready and listening on *:${port} (http)`);
-    });
-  }
 }

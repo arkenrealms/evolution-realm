@@ -1,20 +1,16 @@
 import axios from 'axios';
+import type { SeerRouter } from '@arken/seer';
 import { isValidRequest, getSignedRequest } from '@arken/node/util/web3';
 import { log, logError, getTime, isEthereumAddress } from '@arken/node/util';
 import { emitDirect } from '@arken/node/util/websocket';
 import { upgradeCodebase } from '@arken/node/util/codebase';
 import { initTRPC, TRPCError } from '@trpc/server';
-import { customErrorFormatter, transformer } from '@arken/node/util/rpc';
+import { customErrorFormatter, transformer, validateMod, validateRequest } from '@arken/node/util/rpc';
 import { z } from 'zod';
 import shortId from 'shortId';
 import packageJson from '../../package.json';
-import { initTRPC } from '@trpc/server';
 import { z } from 'zod';
-import { getSignedRequest } from './utils'; // Your utility functions
-import { log, logError } from './logger'; // Assuming you have logging functions
-import type { Context } from './context'; // Define or import your context type
-import { customErrorFormatter, validateRequest, validateMod, validateAdmin } from './middleware'; // Middleware functions
-import { App } from './types';
+import { Application } from './types';
 
 const t = initTRPC.create();
 
@@ -27,6 +23,9 @@ class RealmServer {
   realm: any;
   seer: any;
   io: any;
+  seerList: any;
+  adminList: any;
+  modList: any;
 
   constructor(private ctx: Context) {
     this.web3 = ctx.app.web3;
@@ -37,23 +36,26 @@ class RealmServer {
     this.realm = ctx.app.realm;
     this.seer = ctx.app.seer;
     this.io = ctx.app.io;
+    this.seerList = ctx.app.seerList;
+    this.adminList = ctx.app.adminList;
+    this.modList = ctx.app.modList;
   }
 
   async auth({ signature }: { signature: { address: string; hash: string } }) {
     const { address } = signature;
     const { state } = this.realm;
 
-    if (seerList.includes(address)) {
+    if (this.seerList.includes(address)) {
       this.client.isSeer = true;
       this.client.isAdmin = true;
       this.client.isMod = true;
       await this.seerConnected();
-    } else if (adminList.includes(address)) {
+    } else if (this.adminList.includes(address)) {
       this.client.isSeer = false;
       this.client.isAdmin = true;
       this.client.isMod = true;
       await this.seerConnected();
-    } else if (modList.includes(address)) {
+    } else if (this.modList.includes(address)) {
       this.client.isSeer = false;
       this.client.isAdmin = false;
       this.client.isMod = true;
@@ -309,31 +311,12 @@ interface AppRouterContext {
   socket: any;
 }
 
-interface Server {
-  state: Record<string, any>;
-  router: typeof appRouter;
+interface Seer {
+  router: SeerRouter;
 }
 
 interface Profile {
   address: string;
-}
-
-interface Seer {
-  router: typeof appRouter;
-}
-
-interface Realm {
-  adminList: string[];
-  modList: string[];
-  state: Record<string, any>;
-  clients: Client[];
-  sockets: Record<string, any>;
-  clientLookup: Record<string, Client>;
-  ioCallbacks: Record<string, any>;
-  version: string;
-  endpoint: string;
-  servers: Record<string, Server>;
-  profiles: Record<string, Profile>;
 }
 
 interface Client {
@@ -353,8 +336,8 @@ const t = initTRPC.context<AppRouterContext>().create();
 
 export type Router = typeof appRouter;
 
-export function initRealmServer(app: App) {
-  log('initRealmServer');
+export function init(app: Application) {
+  log('init realm server');
 
   app.version = packageJson.version;
   app.endpoint = 'ptr1.isles.arken.gg';

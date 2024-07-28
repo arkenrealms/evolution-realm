@@ -221,7 +221,7 @@ export class GameServer extends Server {
     };
   }
 
-  async saveRound({ data }: { data: any }) {
+  async saveRound({ data }: { data?: any }) {
     const { config } = this.app;
 
     let failed = false;
@@ -277,7 +277,7 @@ export class GameServer extends Server {
     return { status: 1 };
   }
 
-  async confirmProfile({ data }: { data: { address: string } }) {
+  async confirmProfile({ data }: { data?: { address?: string } }) {
     log('confirmProfile', data);
 
     let overview = this.app.profiles[data.address];
@@ -304,36 +304,41 @@ export class GameServer extends Server {
     };
   }
 
-  verifySignature({ signature }: { signature: { data: string; hash: string; address: string } }) {
+  auth({ data, signature }: { data?: string; signature?: { hash?: string; address?: string } }) {
+    const groups = [];
+
+    if (signature.address.length !== 42 || signature.address.slice(0, 2) !== '0x') return { status: 0 };
+
+    const normalizedAddress = this.app.web3.utils.toChecksumAddress(signature.address.trim());
+
+    if (!normalizedAddress) return { status: 0 };
+
+    if (this.app.seerList.includes(normalizedAddress) || this.app.seerList.includes(normalizedAddress))
+      groups.push('seer');
+
+    if (this.app.adminList.includes(normalizedAddress) || this.app.adminList.includes(normalizedAddress))
+      groups.push('admin');
+
+    if (this.app.modList.includes(normalizedAddress) || this.app.modList.includes(normalizedAddress))
+      groups.push('mod');
+
+    if (this.app.web3.eth.accounts.recover(data, signature.hash).toLowerCase() !== signature.address.toLowerCase())
+      return { status: 0 };
+
     return {
       status: 1,
-      verified:
-        this.app.web3.eth.accounts.recover(signature.data, signature.hash).toLowerCase() ===
-        signature.address.toLowerCase(),
+      groups,
     };
   }
 
-  verifyAdminSignature({ signature }: { signature: { data: string; hash: string; address: string } }) {
-    const normalizedAddress = this.app.web3.utils.toChecksumAddress(signature.address.trim());
-    const isValid =
-      this.app.web3.eth.accounts.recover(signature.data, signature.hash).toLowerCase() ===
-        signature.address.toLowerCase() &&
-      (this.app.adminList.includes(normalizedAddress) || this.app.modList.includes(normalizedAddress));
-
-    return {
-      status: isValid ? 1 : 0,
-      address: normalizedAddress,
-    };
-  }
-
-  normalizeAddress({ address }: { address: string }) {
+  normalizeAddress({ address }: { address?: string }) {
     return {
       status: 1,
       address: this.app.web3.utils.toChecksumAddress(address.trim()),
     };
   }
 
-  getRandomReward({ id, data }: { id: string; data: any }) {
+  getRandomReward({ data }: { data?: any }) {
     const now = getTime();
     const { config } = this.app;
 
@@ -460,7 +465,7 @@ export class GameServer extends Server {
       console.log('Connection upgraded to WebSocket');
       console.log('WebSocket object:', this.socket.io.engine.transport.ws);
 
-      this.world = createTRPCProxyClient<GameWorldRouter>({
+      this.bridge = createTRPCProxyClient<GameWorldRouter>({
         links: [
           wsLink({
             client: this.socket.io.engine.transport.ws,
@@ -506,14 +511,8 @@ export class GameServer extends Server {
   }
 }
 
-const createGameServerRouter = (ctx: Context) => {};
-
-export type Router = typeof createGameServerRouter;
-
-export async function init(app) {
-  const gameServer = new GameServer({ app });
-
-  gameServer.router = t.router({
+const createGameServerRouter = (gameServer: GameServer) => {
+  return t.router({
     connect: t.procedure.input(z.object({})).mutation(() => gameServer.connect()),
 
     disconnect: t.procedure.input(z.object({})).mutation(() => gameServer.disconnect()),
@@ -524,19 +523,23 @@ export async function init(app) {
       .input(z.object({ clients: z.array(z.any()) }))
       .mutation(({ input }) => gameServer.configure(input)),
 
-    saveRound: t.procedure.input(z.object({ data: z.any() })).mutation(({ input }) => gameServer.saveRound(input)),
+    saveRound: t.procedure
+      .input(
+        z.object({
+          data: z.object({
+            status: z.number(),
+          }),
+        })
+      )
+      .mutation(({ input }) => gameServer.saveRound(input)),
 
     confirmProfile: t.procedure
       .input(z.object({ data: z.object({ address: z.string() }) }))
       .mutation(({ input }) => gameServer.confirmProfile(input)),
 
-    verifySignature: t.procedure
-      .input(z.object({ signature: z.object({ data: z.string(), hash: z.string(), address: z.string() }) }))
-      .mutation(({ input }) => gameServer.verifySignature(input)),
-
-    verifyAdminSignature: t.procedure
-      .input(z.object({ signature: z.object({ data: z.string(), hash: z.string(), address: z.string() }) }))
-      .mutation(({ input }) => gameServer.verifyAdminSignature(input)),
+    auth: t.procedure
+      .input(z.object({ data: z.string(), signature: z.object({ hash: z.string(), address: z.string() }) }))
+      .mutation(({ input }) => gameServer.auth(input)),
 
     normalizeAddress: t.procedure
       .input(z.object({ address: z.string() }))
@@ -546,6 +549,14 @@ export async function init(app) {
       .input(z.object({ id: z.string(), data: z.any() }))
       .mutation(({ input }) => gameServer.getRandomReward(input)),
   });
+};
+
+export type Router = typeof createGameServerRouter;
+
+export async function init(app) {
+  const gameServer = new GameServer({ app });
+
+  gameServer.router = createGameServerRouter(gameServer);
 
   await mongoose.connect('mongodb://localhost:27017/yourDatabase', {
     useNewUrlParser: true,

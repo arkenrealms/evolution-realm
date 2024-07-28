@@ -1,4 +1,3 @@
-import jetpack from 'fs-jetpack';
 import fs from 'fs';
 import express, { Express } from 'express';
 import helmet from 'helmet';
@@ -7,19 +6,19 @@ import * as dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { log, logError } from '@arken/node/util';
 import { catchExceptions } from '@arken/node/util/process';
-import { initWeb3 } from './modules/web3';
-import { initRealmServer } from './modules/realm-server';
-import { initWebServer } from './modules/web-server';
-import { initMonitor } from './modules/monitor';
 import { Server as HttpServer } from 'http';
 import { Server as HttpsServer } from 'https';
 import { Server as SocketServer } from 'socket.io';
 import path from 'path';
-import { App as AppType, AppState, AppConfig, AppModule, AppModules } from './types';
+import { initWeb3 } from './modules/web3';
+import { init as initRealmServer } from './modules/realm-server';
+import { initWebServer } from './modules/web-server';
+import { initMonitor } from './modules/monitor';
+import { Application as ApplicationType, AppState, AppConfig, AppModule, AppModules } from './types';
 
 dotenv.config();
 
-class App {
+class Application {
   state: AppState;
   flags: AppConfig;
   server: Express;
@@ -67,8 +66,6 @@ class App {
     }
 
     this.io = new SocketServer(this.isHttps ? this.https : this.http, {
-      secure: this.isHttps,
-      port: this.isHttps ? Number(process.env.RS_SSL_PORT) || 7443 : Number(process.env.RS_PORT) || 7080,
       pingInterval: 30 * 1000,
       pingTimeout: 90 * 1000,
       upgradeTimeout: 20 * 1000,
@@ -120,6 +117,19 @@ class App {
         // useUnifiedTopology: true,
       });
 
+      if (app.isHttps) {
+        const sslPort = process.env.RS_SSL_PORT || 443;
+        app.https.listen(sslPort, function () {
+          log(`:: Backend ready and listening on *:${sslPort} (https)`);
+        });
+      } else {
+        // Finalize
+        const port = process.env.RS_PORT || 80;
+        app.http.listen(port, function () {
+          log(`:: Backend ready and listening on *:${port} (http)`);
+        });
+      }
+
       for (const module of this.moduleConfig) {
         this.modules[module.name] = module.instance;
 
@@ -147,5 +157,5 @@ class App {
   }
 }
 
-const app = new App();
+const app = new Application();
 app.init();
