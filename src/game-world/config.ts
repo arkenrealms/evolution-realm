@@ -14,7 +14,7 @@ export type Config = {
   hideMap: boolean;
   disconnectClientSeconds: number;
   dynamicDecayPower: boolean;
-  decayPowerPerMaxEvolvedPlayers: number;
+  decayPowerPerMaxEvolvedClients: number;
   pickupCheckPositionDistance: number;
   playersRequiredForLevel2: number;
   preventBadKills: boolean;
@@ -25,7 +25,7 @@ export type Config = {
   antifeed4: boolean;
   isBattleRoyale: boolean;
   isGodParty: boolean;
-  isRuneRoyale: boolean;
+  isRoyale: boolean;
   avatarDirection: number;
   calcRoundRewards: boolean;
   flushEventQueueSeconds: number;
@@ -36,11 +36,11 @@ export type Config = {
   };
   anticheat: {
     enabled: boolean;
-    samePlayerCantClaimRewardTwiceInRow: boolean;
+    sameClientCantClaimRewardTwiceInRow: boolean;
     disconnectPositionJumps: boolean;
   };
   optimization: {
-    sendPlayerUpdateWithNoChanges: boolean;
+    sendClientUpdateWithNoChanges: boolean;
   };
   antifeed1: boolean;
   avatarDecayPower0: number;
@@ -59,7 +59,7 @@ export type Config = {
   checkPositionDistance: number;
   claimingRewards: boolean;
   decayPower: number;
-  disconnectPlayerSeconds: number;
+  disconnectClientSeconds: number;
   disconnectPositionJumps: boolean;
   fastestLoopSeconds: number;
   fastLoopSeconds: number;
@@ -93,7 +93,7 @@ export type Config = {
   roundLoopSeconds: number;
   sendUpdateLoopSeconds: number;
   slowLoopSeconds: number;
-  spritesPerPlayerCount: number;
+  spritesPerClientCount: number;
   spritesStartCount: number;
   spritesTotal: number;
   guide: string[];
@@ -116,7 +116,7 @@ export const baseConfig: Partial<Config> = {
   level3open: false,
   hideMap: false,
   dynamicDecayPower: true,
-  decayPowerPerMaxEvolvedPlayers: 0.6,
+  decayPowerPerMaxEvolvedClients: 0.6,
   pickupCheckPositionDistance: 1,
   playersRequiredForLevel2: 15,
   preventBadKills: false,
@@ -127,15 +127,15 @@ export const baseConfig: Partial<Config> = {
   antifeed4: true,
   isBattleRoyale: false,
   isGodParty: false,
-  isRuneRoyale: false,
+  isRoyale: false,
   avatarDirection: 1,
   calcRoundRewards: true,
   flushEventQueueSeconds: 0.02,
   mechanics: [1150, 1160, 1222, 1223, 1030, 1102, 1164, 1219, 1105, 1104, 1117, 1118],
   disabledMechanics: [],
   log: { connections: false },
-  anticheat: { enabled: false, samePlayerCantClaimRewardTwiceInRow: false, disconnectPositionJumps: false },
-  optimization: { sendPlayerUpdateWithNoChanges: true },
+  anticheat: { enabled: false, sameClientCantClaimRewardTwiceInRow: false, disconnectPositionJumps: false },
+  optimization: { sendClientUpdateWithNoChanges: true },
   disconnectClientSeconds: 60,
   guide: [],,
 };
@@ -158,7 +158,7 @@ export const sharedConfig: Partial<Config> = {
   checkPositionDistance: 2,
   claimingRewards: false,
   decayPower: 2,
-  disconnectPlayerSeconds: testMode ? 999 : 30,
+  disconnectClientSeconds: testMode ? 999 : 30,
   disconnectPositionJumps: true,
   fastestLoopSeconds: 0.02,
   fastLoopSeconds: 0.04,
@@ -192,7 +192,7 @@ export const sharedConfig: Partial<Config> = {
   roundLoopSeconds: testMode ? 1 * 60 : 5 * 60,
   sendUpdateLoopSeconds: 3,
   slowLoopSeconds: 1,
-  spritesPerPlayerCount: 1,
+  spritesPerClientCount: 1,
   spritesStartCount: 50,
   spritesTotal: 50
 };

@@ -1,16 +1,14 @@
 import axios from 'axios';
-import type { SeerRouter } from '@arken/seer';
 import { isValidRequest, getSignedRequest } from '@arken/node/util/web3';
 import { log, logError, getTime, isEthereumAddress } from '@arken/node/util';
 import { emitDirect } from '@arken/node/util/websocket';
 import { upgradeCodebase } from '@arken/node/util/codebase';
 import { initTRPC, TRPCError } from '@trpc/server';
-import { customErrorFormatter, transformer, validateMod, validateRequest } from '@arken/node/util/rpc';
-import { z } from 'zod';
+import { customErrorFormatter, transformer, hasRole, validateRequest } from '@arken/node/util/rpc';
 import shortId from 'shortId';
 import packageJson from '../../package.json';
 import { z } from 'zod';
-import { Application } from './types';
+import { GameRealmApplication } from '../types';
 
 const t = initTRPC.create();
 
@@ -68,13 +66,13 @@ class RealmServer {
     return { status: 1 };
   }
 
-  async setConfig({ serverId, data }: { serverId: string; data: { config: Record<string, any> } }) {
+  async setConfig({ roomId, data }: { roomId: string; data: { config: Record<string, any> } }) {
     this.config = {
       ...this.config,
       ...data.config,
     };
 
-    await this.servers[serverId].router.setConfigRequest.mutate(
+    await this.rooms[roomId].router.setConfigRequest.mutate(
       await getSignedRequest(this.web3, this.secrets, data),
       data
     );
@@ -125,10 +123,10 @@ class RealmServer {
   }
 
   async banClient({ data }: { data: { target: string } }) {
-    for (const serverId of Object.keys(this.servers)) {
-      const res = await this.servers[serverId].banClient.mutate(data);
+    for (const roomId of Object.keys(this.rooms)) {
+      const res = await this.rooms[roomId].banClient.mutate(data);
       if (res.status !== 1) {
-        log('Failed to ban client', data.target, serverId);
+        log('Failed to ban client', data.target, roomId);
       }
     }
     return { status: 1 };
@@ -143,11 +141,11 @@ class RealmServer {
   }) {
     this.seer.router.banUser.mutate(data);
 
-    for (const serverId of Object.keys(this.servers)) {
-      const res = await this.servers[serverId].router.kickClient.mutate(data);
+    for (const roomId of Object.keys(this.rooms)) {
+      const res = await this.rooms[roomId].router.kickClient.mutate(data);
 
       if (!res.status) {
-        log('Failed to kick client', data.target, serverId);
+        log('Failed to kick client', data.target, roomId);
       }
     }
 
@@ -159,17 +157,17 @@ class RealmServer {
   }
 
   async unbanClient({ data, signature }: { data: { target: string }; signature: { address: string; hash: string } }) {
-    for (const serverId of Object.keys(this.servers)) {
-      const res = await this.servers[serverId].unbanClient.mutate({ target: data.target });
+    for (const roomId of Object.keys(this.rooms)) {
+      const res = await this.rooms[roomId].unbanClient.mutate({ target: data.target });
 
       if (!res.status) {
-        log('Failed to kick client', data.target, serverId);
+        log('Failed to kick client', data.target, roomId);
       }
     }
   }
 
   async matchServer() {
-    for (const server of Object.values(this.servers)) {
+    for (const server of Object.values(this.rooms)) {
       if (server.clientCount < this.config.maxClients) {
         return { status: 1, endpoint: this.endpoint, port: 4020 };
       }
@@ -198,11 +196,11 @@ export const createRealmServerRouter = (ctx: Context) => {
 
     setConfig: t.procedure
       .use(customErrorFormatter(t))
-      .use(validateMod(t))
+      .use(hasRole('mod', t))
       .use(validateRequest(t))
       .input(
         z.object({
-          data: z.object({ serverId: z.string(), config: z.record(z.any()) }),
+          data: z.object({ roomId: z.string(), config: z.record(z.any()) }),
           signature: z.object({ address: z.string(), hash: z.string() }),
         })
       )
@@ -215,7 +213,7 @@ export const createRealmServerRouter = (ctx: Context) => {
 
     info: t.procedure
       .use(customErrorFormatter(t))
-      .use(validateMod(t))
+      .use(hasRole('mod', t))
       .use(validateRequest(t))
       .input(z.object({ signature: z.object({ address: z.string(), hash: z.string() }) }))
       .mutation(() => realmServer.info()),
@@ -245,7 +243,7 @@ export const createRealmServerRouter = (ctx: Context) => {
       .mutation(({ input }) => realmServer.removeMod(input)),
 
     banClient: t.procedure
-      .use(validateMod(t))
+      .use(hasRole('mod', t))
       .use(customErrorFormatter(t))
       .input(
         z.object({
@@ -268,13 +266,13 @@ export const createRealmServerRouter = (ctx: Context) => {
       .mutation(({ input }) => realmServer.banUser(input)),
 
     bridgeState: t.procedure
-      .use(validateMod(t))
+      .use(hasRole('mod', t))
       .use(customErrorFormatter(t))
       .input(z.object({ signature: z.object({ address: z.string(), hash: z.string() }) }))
       .mutation(() => realmServer.bridgeState()),
 
     unbanClient: t.procedure
-      .use(validateMod(t))
+      .use(hasRole('mod', t))
       .use(customErrorFormatter(t))
       .input(
         z.object({
@@ -306,33 +304,7 @@ export const createRealmServerRouter = (ctx: Context) => {
 
 export type RealmServerRouter = ReturnType<typeof createRealmServerRouter>;
 
-interface AppRouterContext {
-  client: any;
-  socket: any;
-}
-
-interface Seer {
-  router: SeerRouter;
-}
-
-interface Profile {
-  address: string;
-}
-
-interface Client {
-  id: string;
-  name: string;
-  ip: string;
-  info: any;
-  lastReportedTime: number;
-  isMod: boolean;
-  isAdmin: boolean;
-  log: {
-    clientDisconnected: number;
-  };
-}
-
-const t = initTRPC.context<AppRouterContext>().create();
+const t = initTRPC.context<GameRealmApplicationRouterContext>().create();
 
 export type Router = typeof appRouter;
 
@@ -345,7 +317,7 @@ export function init(app: Application) {
   app.clientLookup = {};
   app.ioCallbacks = {};
   app.sockets = {};
-  app.servers = {};
+  app.rooms = {};
   app.profiles = {};
   app.adminList = ['0xDfA8f768d82D719DC68E12B199090bDc3691fFc7', '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C'];
   app.modList = [
@@ -383,7 +355,7 @@ export function init(app: Application) {
     app.sockets[client.id] = socket;
     app.clientLookup[client.id] = client;
     app.clients.push(client);
-    app.servers = [];
+    app.rooms = [];
     app.playerRewards = {} as any;
     app.spawnPort = app.isHttps ? process.env.GS_SSL_PORT || 8443 : process.env.GS_PORT || 8080;
     app.clients = [];
@@ -534,5 +506,5 @@ export function init(app: Application) {
   });
 
   // app.upgrade = upgradeCodebase;
-  // app.call = sendEventToObservers.bind(null, app);
+  // app.call = sendEventToObrooms.bind(null, app);
 }
