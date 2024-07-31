@@ -9,10 +9,9 @@ import { emitDirect } from '@arken/node/util/websocket';
 import { upgradeGsCodebase, cloneGsCodebase } from '@arken/node/util/codebase';
 import { initTRPC } from '@trpc/server';
 import { z } from 'zod';
-import { createClient } from './trpc-client';
 import { createTRPCProxyClient, httpBatchLink, createWSClient, wsLink } from '@trpc/client';
 import { customErrorFormatter, transformer } from '@arken/node/util/rpc';
-import { Server, Application, GameWorldRouter } from '../types';
+import { Server, Application, GameWorldRouter } from '@arken/evolution-protocol/types';
 
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
@@ -118,7 +117,7 @@ export class GameServer extends Server {
   }
 
   async fetchInfo(ctx: Context): Promise<any> {
-    const res = await this.app.seer.info.query();
+    const res = await this.app.seer.emit.info.query();
     if (res?.status === 1) {
       return res.data;
     }
@@ -229,7 +228,7 @@ export class GameServer extends Server {
     try {
       log('saveRound', data);
 
-      const res = await this.app.seer.saveRound.mutate({
+      const res = await this.app.seer.emit.saveRound.mutate({
         gsid: this.id,
         roundId: config.roundId,
         round: data,
@@ -252,7 +251,7 @@ export class GameServer extends Server {
     }
 
     if (failed) {
-      this.app.unsavedGames.push({
+      this.unsavedGames.push({
         gsid: this.id,
         roundId: config.roundId,
         round: data,
@@ -265,7 +264,7 @@ export class GameServer extends Server {
       };
     } else {
       for (const game of this.app.unsavedGames.filter((g) => g.status === undefined)) {
-        const res = await this.app.seer.router.saveRound.mutate(game);
+        const res = await this.app.seer.emit.saveRound.mutate(game);
         game.status = res.status;
       }
 
@@ -288,7 +287,8 @@ export class GameServer extends Server {
       this.app.profiles[data.address] = overview;
     }
 
-    if (this.app.clients.length > 50) {
+    if (this.app.clients.length > 100) {
+      console.log('Too many clients'); // TODO: add to queue
       return { status: 0 };
     }
 
@@ -305,7 +305,7 @@ export class GameServer extends Server {
   }
 
   auth({ data, signature }: { data?: string; signature?: { hash?: string; address?: string } }) {
-    const groups = [];
+    const roles = [];
 
     if (signature.address.length !== 42 || signature.address.slice(0, 2) !== '0x') return { status: 0 };
 
@@ -313,28 +313,23 @@ export class GameServer extends Server {
 
     if (!normalizedAddress) return { status: 0 };
 
-    if (this.app.seerList.includes(normalizedAddress) || this.app.seerList.includes(normalizedAddress))
-      groups.push('seer');
-
-    if (this.app.adminList.includes(normalizedAddress) || this.app.adminList.includes(normalizedAddress))
-      groups.push('admin');
-
-    if (this.app.modList.includes(normalizedAddress) || this.app.modList.includes(normalizedAddress))
-      groups.push('mod');
-
     if (this.app.web3.eth.accounts.recover(data, signature.hash).toLowerCase() !== signature.address.toLowerCase())
       return { status: 0 };
 
+    if (this.app.seerList.includes(normalizedAddress)) roles.push('seer');
+    if (this.app.adminList.includes(normalizedAddress)) roles.push('admin');
+    if (this.app.modList.includes(normalizedAddress)) roles.push('mod');
+
     return {
       status: 1,
-      groups,
+      data: { roles },
     };
   }
 
   normalizeAddress({ address }: { address?: string }) {
     return {
       status: 1,
-      address: this.app.web3.utils.toChecksumAddress(address.trim()),
+      data: { address: this.app.web3.utils.toChecksumAddress(address.trim()) },
     };
   }
 
@@ -366,8 +361,8 @@ export class GameServer extends Server {
       tempReward = {
         id: shortId.generate(),
         position: config.level2open
-          ? this.app.rewardSpawnPoints2[random(0, this.app.rewardSpawnPoints2.length - 1)]
-          : this.app.rewardSpawnPoints[random(0, this.app.rewardSpawnPoints.length - 1)],
+          ? this.app.config.rewardSpawnPoints2[random(0, this.app.config.rewardSpawnPoints2.length - 1)]
+          : this.app.config.rewardSpawnPoints[random(0, this.app.config.rewardSpawnPoints.length - 1)],
         enabledAt: now,
         name: 'Guardian Egg',
         rarity: 'Magical',
@@ -390,8 +385,8 @@ export class GameServer extends Server {
       tempReward = {
         id: shortId.generate(),
         position: config.level2open
-          ? this.app.rewardSpawnPoints2[random(0, this.app.rewardSpawnPoints2.length - 1)]
-          : this.app.rewardSpawnPoints[random(0, this.app.rewardSpawnPoints.length - 1)],
+          ? this.app.config.rewardSpawnPoints2[random(0, this.app.config.rewardSpawnPoints2.length - 1)]
+          : this.app.config.rewardSpawnPoints[random(0, this.app.config.rewardSpawnPoints.length - 1)],
         enabledAt: now,
         name: `Early Access Founder's Cube`,
         rarity: 'Unique',
@@ -409,8 +404,8 @@ export class GameServer extends Server {
       tempReward = {
         id: shortId.generate(),
         position: config.level2open
-          ? this.app.rewardSpawnPoints2[random(0, this.app.rewardSpawnPoints2.length - 1)]
-          : this.app.rewardSpawnPoints[random(0, this.app.rewardSpawnPoints.length - 1)],
+          ? this.app.config.rewardSpawnPoints2[random(0, this.app.config.rewardSpawnPoints2.length - 1)]
+          : this.app.config.rewardSpawnPoints[random(0, this.app.config.rewardSpawnPoints.length - 1)],
         enabledAt: now,
         name: 'Trinket',
         rarity: 'Magical',
@@ -440,8 +435,8 @@ export class GameServer extends Server {
 
       tempReward = { ...reward, id: shortId.generate(), enabledAt: now };
       tempReward.position = config.level2open
-        ? this.app.rewardSpawnPoints2[random(0, this.app.rewardSpawnPoints2.length - 1)]
-        : this.app.rewardSpawnPoints[random(0, this.app.rewardSpawnPoints.length - 1)];
+        ? this.app.config.rewardSpawnPoints2[random(0, this.app.config.rewardSpawnPoints2.length - 1)]
+        : this.app.config.rewardSpawnPoints[random(0, this.app.config.rewardSpawnPoints.length - 1)];
     }
 
     return {
@@ -450,7 +445,7 @@ export class GameServer extends Server {
     };
   }
 
-  connectGameServer(app, serverId) {
+  connect(app, serverId) {
     if (app.servers[serverId].socket) {
       this.socket.close();
 
@@ -465,7 +460,7 @@ export class GameServer extends Server {
       console.log('Connection upgraded to WebSocket');
       console.log('WebSocket object:', this.socket.io.engine.transport.ws);
 
-      this.bridge = createTRPCProxyClient<GameWorldRouter>({
+      this.rooms.push = createTRPCProxyClient<GameWorldRouter>({
         links: [
           wsLink({
             client: this.socket.io.engine.transport.ws,
@@ -485,22 +480,22 @@ export class GameServer extends Server {
       const { id, method, params } = message;
 
       try {
-        const ctx = { app, socket, client };
+        const ctx = { app, client };
 
         const createCaller = t.createCallerFactory(this.router);
         const caller = createCaller(ctx);
         const result = await caller[method](params);
         this.socket.emit('trpcResponse', { id, result });
-      } catch (error) {
-        this.socket.emit('trpcResponse', { id, error: error.message });
+      } catch (e) {
+        this.socket.emit('trpcResponse', { id, error: e.message });
       }
     });
 
     this.socket.on('disconnect', async () => {
-      log('GameWorld has disconnected');
+      log('Room has disconnected');
 
       // if (client.isAdmin) {
-      //   await this.apiDisconnected.mutate(await getSignedRequest(app.web3, app.secrets, {}), {});
+      //   await this.seerDisconnected.mutate(await getSignedRequest(app.web3, app.secrets, {}), {});
       // }
 
       // client.log.clientDisconnected += 1;

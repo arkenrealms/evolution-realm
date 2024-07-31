@@ -13,8 +13,8 @@ COPY ssh_config /root/.ssh/config
 RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
 
 WORKDIR /usr/src/app
-RUN git clone git@arkenbot:arken/evolution-realm-server.git
-WORKDIR /usr/src/app/evolution-realm-server/game-server
+RUN git clone git@arkenbot:arken/evolution-realm.git
+WORKDIR /usr/src/app/evolution-realm/game-server
 RUN yarn install
 RUN yarn run build
 

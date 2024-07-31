@@ -1,5 +1,5 @@
 {
-  "uid": "evolution-realm-server",
+  "uid": "evolution-realm",
   "max": 999999999999,
   "minUptime": 0,
   "spinSleepTime": 30000,

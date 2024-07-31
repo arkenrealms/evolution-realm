@@ -10,31 +10,23 @@ import { Server as HttpServer } from 'http';
 import { Server as HttpsServer } from 'https';
 import { Server as SocketServer } from 'socket.io';
 import path from 'path';
-import { initWeb3 } from './modules/web3';
-import { init as initRealmServer } from './modules/realm-server';
-import { initWebServer } from './modules/web-server';
-import { initMonitor } from './modules/monitor';
-import { Application as ApplicationType, AppState, AppConfig, AppModule, AppModules } from './types';
+import { init as initRealmServer } from './realm-server';
+import { initWebServer } from './web-server';
+import { initMonitor } from './monitor';
+import { schema } from '@arken/node/types';
 
 dotenv.config();
 
 class Application {
-  state: AppState;
-  flags: AppConfig;
+  state: schema.Data;
   server: Express;
   isHttps: boolean;
   https?: HttpsServer;
   http?: HttpServer;
   io: SocketServer;
   subProcesses: any[] = [];
-  moduleConfig: AppModule[];
-  modules: AppModules = {};
 
   constructor() {
-    this.flags = {
-      testBanSystem: false,
-    };
-
     this.server = express();
     this.server.set('trust proxy', 1);
     this.server.use(helmet());
@@ -77,33 +69,6 @@ class Application {
         origin: '*',
       },
     });
-
-    this.moduleConfig = [
-      {
-        name: 'initMonitor',
-        instance: initMonitor,
-        async: false,
-        timeout: 0,
-      },
-      {
-        name: 'initWeb3',
-        instance: initWeb3,
-        async: false,
-        timeout: 0,
-      },
-      {
-        name: 'initRealmServer',
-        instance: initRealmServer,
-        async: false,
-        timeout: 0,
-      },
-      {
-        name: 'initWebServer',
-        instance: initWebServer,
-        async: false,
-        timeout: 0,
-      },
-    ];
   }
 
   async init() {
@@ -130,27 +95,9 @@ class Application {
         });
       }
 
-      for (const module of this.moduleConfig) {
-        this.modules[module.name] = module.instance;
-
-        if (module.timeout) {
-          setTimeout(async () => {
-            if (module.async) {
-              await module.instance(this);
-            } else {
-              module.instance(this);
-            }
-          }, module.timeout);
-        } else {
-          if (module.async) {
-            await module.instance(this);
-          } else {
-            module.instance(this);
-          }
-        }
-      }
-
-      if (this.flags.testBanSystem) this.tests.testBanSystem(this);
+      await initMonitor(this);
+      await initRealmServer(this);
+      await initWebServer(this);
     } catch (e) {
       logError(e);
     }

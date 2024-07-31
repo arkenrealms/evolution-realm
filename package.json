@@ -1,6 +1,6 @@
 {
-  "name": "@arken/evolution-realm-server",
-  "version": "1.5.0",
+  "name": "@arken/evolution-realm",
+  "version": "2.0.0",
   "description": "",
   "scripts": {
     "dev": "ARKEN_ENV=local LOG=1 LOG_PREFIX=[RERS*] RS_PORT=4010 RS_SSL_PORT=4011 GS_PORT=4020 GS_SSL_PORT=4021 tsnd --respawn -r dotenv/config -r tsconfig-paths/register ./src/index.ts",
@@ -29,6 +29,8 @@
   },
   "devDependencies": {
     "@arken/node": "workspace:*",
+    "@arken/evolution-shard": "workspace:*",
+    "@arken/evolution-protocol": "workspace:*",
     "@truffle/hdwallet-provider": "^1.2.0",
     "@typechain/ethers-v4": "^1.0.0",
     "@types/common-tags": "^1.8.0",

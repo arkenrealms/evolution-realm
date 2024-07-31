@@ -6,54 +6,35 @@ import { upgradeCodebase } from '@arken/node/util/codebase';
 import { initTRPC, TRPCError } from '@trpc/server';
 import { customErrorFormatter, transformer, hasRole, validateRequest } from '@arken/node/util/rpc';
 import shortId from 'shortId';
-import packageJson from '../../package.json';
+import packageJson from '../package.json';
 import { z } from 'zod';
-import { GameRealmApplication } from '../types';
-
-const t = initTRPC.create();
+import type { Realm } from '@arken/evolution-protocol/types';
+import { createRouter } from '@arken/evolution-protocol/realm/server';]
 
 class RealmServer {
-  web3: any;
-  secrets: any;
-  client: any;
-  socket: any;
-  gameBridge: any;
-  realm: any;
-  seer: any;
-  io: any;
-  seerList: any;
-  adminList: any;
-  modList: any;
+  app: Realm.Application;
+  client: Realm.Client;
+  shards: any;
 
-  constructor(private ctx: Context) {
-    this.web3 = ctx.app.web3;
-    this.secrets = ctx.app.secrets;
-    this.client = ctx.client;
-    this.socket = ctx.socket;
-    this.gameBridge = ctx.app.gameBridge;
-    this.realm = ctx.app.realm;
-    this.seer = ctx.app.seer;
-    this.io = ctx.app.io;
-    this.seerList = ctx.app.seerList;
-    this.adminList = ctx.app.adminList;
-    this.modList = ctx.app.modList;
+  constructor(app: Realm.Application) {
+    this.app = app;
+    this.client = client;
+    this.emit = createRouter(this);
   }
 
   async auth({ signature }: { signature: { address: string; hash: string } }) {
     const { address } = signature;
-    const { state } = this.realm;
 
-    if (this.seerList.includes(address)) {
+    if (this.app.seerList.includes(address)) {
       this.client.isSeer = true;
       this.client.isAdmin = true;
       this.client.isMod = true;
-      await this.seerConnected();
-    } else if (this.adminList.includes(address)) {
+      // await this.onSeerConnected();
+    } else if (this.app.adminList.includes(address)) {
       this.client.isSeer = false;
       this.client.isAdmin = true;
       this.client.isMod = true;
-      await this.seerConnected();
-    } else if (this.modList.includes(address)) {
+    } else if (this.app.modList.includes(address)) {
       this.client.isSeer = false;
       this.client.isAdmin = false;
       this.client.isMod = true;
@@ -66,14 +47,14 @@ class RealmServer {
     return { status: 1 };
   }
 
-  async setConfig({ roomId, data }: { roomId: string; data: { config: Record<string, any> } }) {
-    this.config = {
-      ...this.config,
+  async setConfig({ data }: { data: { shardId: string; config: Record<string, any> } }) {
+    this.app.config = {
+      ...this.app.config,
       ...data.config,
     };
 
-    await this.rooms[roomId].router.setConfigRequest.mutate(
-      await getSignedRequest(this.web3, this.secrets, data),
+    await this.shards[data.shardId].router.setConfigRequest.mutate(
+      await getSignedRequest(this.app.web3, this.app.secrets, data),
       data
     );
 
@@ -94,7 +75,7 @@ class RealmServer {
       data: {
         playerCount,
         speculatorCount,
-        version: this.version,
+        version: this.app.version,
         games,
       },
     };
@@ -107,7 +88,7 @@ class RealmServer {
     signature: { address: string; hash: string };
     data: { target: string };
   }) {
-    this.modList.push(target);
+    this.app.modList.push(target);
     return { status: 1 };
   }
 
@@ -118,15 +99,15 @@ class RealmServer {
     signature: { address: string; hash: string };
     data: { target: string };
   }) {
-    this.modList = this.modList.filter((addr) => addr !== target);
+    this.app.modList = this.app.modList.filter((addr) => addr !== target);
     return { status: 1 };
   }
 
   async banClient({ data }: { data: { target: string } }) {
-    for (const roomId of Object.keys(this.rooms)) {
-      const res = await this.rooms[roomId].banClient.mutate(data);
+    for (const shardId of Object.keys(this.shards)) {
+      const res = await this.shards[shardId].banClient.mutate(data);
       if (res.status !== 1) {
-        log('Failed to ban client', data.target, roomId);
+        log('Failed to ban client', data.target, shardId);
       }
     }
     return { status: 1 };
@@ -139,185 +120,65 @@ class RealmServer {
     data: { target: string; bannedReason: string; bannedUntil: string };
     signature: { address: string; hash: string };
   }) {
-    this.seer.router.banUser.mutate(data);
+    this.seer.emit.banUser.mutate(data);
 
-    for (const roomId of Object.keys(this.rooms)) {
-      const res = await this.rooms[roomId].router.kickClient.mutate(data);
+    for (const shardId of Object.keys(this.shards)) {
+      const res = await this.shards[shardId].emit.kickClient.mutate(data);
 
       if (!res.status) {
-        log('Failed to kick client', data.target, roomId);
+        log('Failed to kick client', data.target, shardId);
       }
     }
 
     return { status: 1 };
   }
 
-  async bridgeState() {
-    return { status: 1, state: this.state };
+  async state() {
+    return { status: 1, data: {
+      config: this.app.config,
+      adminList: this.app.adminList,
+      modList: this.app.modList
+    } };
   }
 
   async unbanClient({ data, signature }: { data: { target: string }; signature: { address: string; hash: string } }) {
-    for (const roomId of Object.keys(this.rooms)) {
-      const res = await this.rooms[roomId].unbanClient.mutate({ target: data.target });
+    for (const shardId of Object.keys(this.shards)) {
+      const res = await this.shards[shardId].unbanClient.mutate({ target: data.target });
 
       if (!res.status) {
-        log('Failed to kick client', data.target, roomId);
+        log('Failed to kick client', data.target, shardId);
       }
     }
+
+    return { status: 1 }
   }
 
   async matchServer() {
-    for (const server of Object.values(this.rooms)) {
-      if (server.clientCount < this.config.maxClients) {
+    for (const server of Object.values(this.shards)) {
+      if (server.clientCount < this.app.config.maxClients) {
         return { status: 1, endpoint: this.endpoint, port: 4020 };
       }
     }
     return { status: 0, message: 'Failed to find server' };
   }
 
-  async call({ data, signature }: { data: { method: string }; signature: { address: string; hash: string } }) {
-    return await this.call(data.method, signature, data);
-  }
+  // async call({ data, signature }: { data: { method: string }; signature: { address: string; hash: string } }) {
+  //   return await this.call(data.method, signature, data);
+  // }
 
-  private async seerConnected() {
-    return await this.seerConnected.mutate(await getSignedRequest(this.web3, this.secrets, {}), {});
-  }
+  // private async onSeerConnected() {
+  //   return await this.emit.seerConnected.mutate(await getSignedRequest(this.app.web3, this.app.secrets, {}), {});
+  // }
 }
 
-export const createRealmServerRouter = (ctx: Context) => {
-  const realmServer = new RealmServer(ctx);
-
-  return t.router({
-    auth: t.procedure
-      .use(customErrorFormatter(t))
-      .use(validateRequest(t))
-      .input(z.object({ signature: z.object({ address: z.string(), hash: z.string() }) }))
-      .mutation(({ input }) => realmServer.auth(input)),
-
-    setConfig: t.procedure
-      .use(customErrorFormatter(t))
-      .use(hasRole('mod', t))
-      .use(validateRequest(t))
-      .input(
-        z.object({
-          data: z.object({ roomId: z.string(), config: z.record(z.any()) }),
-          signature: z.object({ address: z.string(), hash: z.string() }),
-        })
-      )
-      .mutation(({ input }) => realmServer.setConfig(input)),
-
-    ping: t.procedure
-      .use(customErrorFormatter(t))
-      .input(z.object({ id: z.string() }))
-      .mutation(() => realmServer.ping()),
-
-    info: t.procedure
-      .use(customErrorFormatter(t))
-      .use(hasRole('mod', t))
-      .use(validateRequest(t))
-      .input(z.object({ signature: z.object({ address: z.string(), hash: z.string() }) }))
-      .mutation(() => realmServer.info()),
-
-    addMod: t.procedure
-      .use(customErrorFormatter(t))
-      .use(validateAdmin(t))
-      .use(validateRequest(t))
-      .input(
-        z.object({
-          data: z.object({ target: z.string() }),
-          signature: z.object({ address: z.string(), hash: z.string() }),
-        })
-      )
-      .mutation(({ input }) => realmServer.addMod(input)),
-
-    removeMod: t.procedure
-      .use(customErrorFormatter(t))
-      .use(validateAdmin)
-      .use(validateRequest(t))
-      .input(
-        z.object({
-          data: z.object({ target: z.string() }),
-          signature: z.object({ address: z.string(), hash: z.string() }),
-        })
-      )
-      .mutation(({ input }) => realmServer.removeMod(input)),
-
-    banClient: t.procedure
-      .use(hasRole('mod', t))
-      .use(customErrorFormatter(t))
-      .input(
-        z.object({
-          data: z.object({ target: z.string() }),
-          signature: z.object({ address: z.string(), hash: z.string() }),
-        })
-      )
-      .mutation(({ input }) => realmServer.banClient(input)),
-
-    banUser: t.procedure
-      .use(customErrorFormatter(t))
-      .use(validateAdmin)
-      .use(validateRequest(t))
-      .input(
-        z.object({
-          data: z.object({ target: z.string(), bannedReason: z.string(), bannedUntil: z.string() }),
-          signature: z.object({ address: z.string(), hash: z.string() }),
-        })
-      )
-      .mutation(({ input }) => realmServer.banUser(input)),
-
-    bridgeState: t.procedure
-      .use(hasRole('mod', t))
-      .use(customErrorFormatter(t))
-      .input(z.object({ signature: z.object({ address: z.string(), hash: z.string() }) }))
-      .mutation(() => realmServer.bridgeState()),
-
-    unbanClient: t.procedure
-      .use(hasRole('mod', t))
-      .use(customErrorFormatter(t))
-      .input(
-        z.object({
-          data: z.object({
-            target: z.string().refine(isEthereumAddress, {
-              message: 'Target must be a valid Ethereum address',
-            }),
-          }),
-          signature: z.object({ address: z.string(), hash: z.string() }),
-        })
-      )
-      .mutation(({ input }) => realmServer.unbanClient(input)),
-
-    matchServer: t.procedure.input(z.void()).mutation(() => realmServer.matchServer()),
-
-    call: t.procedure
-      .use(customErrorFormatter(t))
-      .input(
-        z.object({
-          data: z.object({
-            method: z.string(),
-          }),
-          signature: z.object({ address: z.string(), hash: z.string() }),
-        })
-      )
-      .mutation(({ input }) => realmServer.call(input)),
-  });
-};
-
-export type RealmServerRouter = ReturnType<typeof createRealmServerRouter>;
-
-const t = initTRPC.context<GameRealmApplicationRouterContext>().create();
-
-export type Router = typeof appRouter;
-
-export function init(app: Application) {
+export function init(app: Realm.Application) {
   log('init realm server');
 
   app.version = packageJson.version;
   app.endpoint = 'ptr1.isles.arken.gg';
   app.clients = [];
-  app.clientLookup = {};
-  app.ioCallbacks = {};
   app.sockets = {};
-  app.rooms = {};
+  app.shards = {};
   app.profiles = {};
   app.adminList = ['0xDfA8f768d82D719DC68E12B199090bDc3691fFc7', '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C'];
   app.modList = [
@@ -339,7 +200,7 @@ export function init(app: Application) {
     const ip = 'HIDDEN';
     log('Client connected from ' + ip);
 
-    const client: Client = {
+    const client: Realm.Client = {
       id: socket.id,
       name: 'Unknown' + Math.floor(Math.random() * 999),
       ip,
@@ -353,13 +214,11 @@ export function init(app: Application) {
     };
 
     app.sockets[client.id] = socket;
-    app.clientLookup[client.id] = client;
     app.clients.push(client);
-    app.rooms = [];
+    app.shards = [];
     app.playerRewards = {} as any;
-    app.spawnPort = app.isHttps ? process.env.GS_SSL_PORT || 8443 : process.env.GS_PORT || 8080;
-    app.clients = [];
-    app.rewards = {
+    this.spawnPort = app.isHttps ? process.env.GS_SSL_PORT || 8443 : process.env.GS_PORT || 8080;
+    this.rewards = {
       runes: [
         {
           type: 'rune',
@@ -373,57 +232,57 @@ export function init(app: Application) {
         },
         {
           type: 'rune',
-          symbol: 'nef',
+          symbol: 'nen',
           quantity: 100,
         },
         {
           type: 'rune',
-          symbol: 'ith',
+          symbol: 'isa',
           quantity: 10000,
         },
         {
           type: 'rune',
-          symbol: 'hel',
+          symbol: 'han',
           quantity: 100,
         },
         {
           type: 'rune',
-          symbol: 'ral',
+          symbol: 'ro',
           quantity: 10000,
         },
         {
           type: 'rune',
-          symbol: 'thul',
+          symbol: 'thal',
           quantity: 10000,
         },
         {
           type: 'rune',
-          symbol: 'amn',
+          symbol: 'ash',
           quantity: 10000,
         },
         {
           type: 'rune',
-          symbol: 'ort',
+          symbol: 'ore',
           quantity: 10000,
         },
         {
           type: 'rune',
-          symbol: 'shael',
+          symbol: 'sen',
           quantity: 100,
         },
         {
           type: 'rune',
-          symbol: 'tal',
+          symbol: 'tai',
           quantity: 10000,
         },
         {
           type: 'rune',
-          symbol: 'dol',
+          symbol: 'da',
           quantity: 100,
         },
         {
           type: 'rune',
-          symbol: 'zod',
+          symbol: 'zel',
           quantity: 0,
         },
       ],
@@ -494,9 +353,11 @@ export function init(app: Application) {
     socket.on('disconnect', async () => {
       log('Client has disconnected');
 
-      // if (client.isAdmin) {
-      //   await app.apiDisconnected.mutate(await getSignedRequest(app.web3, app.secrets, {}), {});
-      // }
+      if (client.isSeer) {
+        for (const shardId of Object.keys(app.shards)) {
+        await app.shards[shardId].emit.seerDisconnected.mutate() // await getSignedRequest(app.web3, app.secrets, {}), {});
+        }
+      }
 
       // client.log.clientDisconnected += 1;
       // delete app.sockets[client.id];
@@ -506,5 +367,5 @@ export function init(app: Application) {
   });
 
   // app.upgrade = upgradeCodebase;
-  // app.call = sendEventToObrooms.bind(null, app);
+  // app.call = sendEventToObshards.bind(null, app);
 }
