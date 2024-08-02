@@ -11,7 +11,8 @@ import { initTRPC } from '@trpc/server';
 import { z } from 'zod';
 import { createTRPCProxyClient, httpBatchLink, createWSClient, wsLink } from '@trpc/client';
 import { customErrorFormatter, transformer } from '@arken/node/util/rpc';
-import { Server, Application, GameWorldRouter } from '@arken/evolution-protocol/types';
+import type { Realm, Shard } from '@arken/evolution-protocol/types';
+import { RealmServer } from './realm-server';
 
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
@@ -59,10 +60,35 @@ function getSocket(app, endpoint) {
   });
 }
 
-type Context = { app: Application };
-export class GameServer extends Server {
-  constructor(private ctx: Context) {
-    super();
+type Context = { realm: RealmServer };
+
+class ShardProxyClient {
+  infoRequestTimeout: any;
+  connectTimeout: any;
+  emit: ReturnType<typeof createTRPCProxyClient<Shard.Router>>;
+  id: string;
+  endpoint: string;
+  key: string;
+  socket: any;
+
+  constructor() {}
+}
+
+export class ShardBridge {
+  emit: any;
+  process: any;
+  characters: any;
+  spawnPort: any;
+  info: any;
+  isAuthed: any;
+  socket: any;
+  realm: RealmServer;
+  shards: any;
+  endpoint: any;
+  key: any;
+
+  constructor({ realm }: Context) {
+    this.realm = realm;
 
     setInterval(() => {
       this.characters = {};
@@ -108,16 +134,16 @@ export class GameServer extends Server {
         process.exit(1);
       });
 
-      this.app.subProcesses.push(this.process);
+      this.realm.subProcesses.push(this.process);
 
       process.env.GS_PORT = this.spawnPort + 1 + '';
     } catch (e) {
-      log('startGameServer error', e);
+      log('startShardBridge error', e);
     }
   }
 
   async fetchInfo(ctx: Context): Promise<any> {
-    const res = await this.app.seer.emit.info.query();
+    const res = await this.realm.seer.emit.info.query();
     if (res?.status === 1) {
       return res.data;
     }
@@ -125,11 +151,11 @@ export class GameServer extends Server {
   }
 
   async connect() {
-    log('Connected: ' + this.app.config.serverKey);
+    log('Connected: ' + this.realm.config.serverKey);
 
     this.id = shortId();
     const data = { id: this.id };
-    const signature = await getSignedRequest(this.app.web3, this.app.secrets, data);
+    const signature = await getSignedRequest(this.realm.web3, this.realm.secrets, data);
 
     this.socket.emit('connected', { signature, data });
 
@@ -137,7 +163,7 @@ export class GameServer extends Server {
   }
 
   disconnect() {
-    log('Disconnected: ' + this.app.config.serverKey);
+    log('Disconnected: ' + this.realm.config.serverKey);
     return { status: 1 };
   }
 
@@ -162,15 +188,15 @@ export class GameServer extends Server {
       status: 1,
       data: {
         id: shortId(),
-        roundId: this.app.config.roundId,
+        roundId: this.realm.config.roundId,
       },
     };
   }
 
-  configure({ clients }: { clients: any[] }) {
+  configure({ clients }: { clients?: any[] }) {
     log('configure');
-    const { config } = this.app;
-    this.app.clients = clients;
+    const { config } = this.realm;
+    this.realm.clients = clients;
 
     config.totalLegitPlayers = 0;
 
@@ -221,19 +247,19 @@ export class GameServer extends Server {
   }
 
   async saveRound({ data }: { data?: any }) {
-    const { config } = this.app;
+    const { config } = this.realm;
 
     let failed = false;
 
     try {
       log('saveRound', data);
 
-      const res = await this.app.seer.emit.saveRound.mutate({
+      const res = await this.realm.seer.emit.saveRound.mutate({
         gsid: this.id,
         roundId: config.roundId,
         round: data,
         rewardWinnerAmount: config.rewardWinnerAmount,
-        lastClients: this.app.clients,
+        lastClients: this.realm.clients,
       });
 
       if (res.status === 1) {
@@ -251,7 +277,7 @@ export class GameServer extends Server {
     }
 
     if (failed) {
-      this.unsavedGames.push({
+      this.realm.unsavedGames.push({
         gsid: this.id,
         roundId: config.roundId,
         round: data,
@@ -263,15 +289,15 @@ export class GameServer extends Server {
         data: { rewardWinnerAmount: 0, rewardItemAmount: 0 },
       };
     } else {
-      for (const game of this.app.unsavedGames.filter((g) => g.status === undefined)) {
-        const res = await this.app.seer.emit.saveRound.mutate(game);
+      for (const game of this.realm.unsavedGames.filter((g) => g.status === undefined)) {
+        const res = await this.realm.seer.emit.saveRound.mutate(game);
         game.status = res.status;
       }
 
-      this.app.unsavedGames = this.app.unsavedGames.filter((g) => g.status !== 1);
+      this.realm.unsavedGames = this.realm.unsavedGames.filter((g) => g.status !== 1);
     }
 
-    this.app.config.roundId++;
+    this.realm.config.roundId++;
 
     return { status: 1 };
   }
@@ -279,15 +305,15 @@ export class GameServer extends Server {
   async confirmProfile({ data }: { data?: { address?: string } }) {
     log('confirmProfile', data);
 
-    let overview = this.app.profiles[data.address];
+    let overview = this.realm.profiles[data.address];
 
     if (!overview) {
-      overview = (await axios.get(`https://cache.arken.gg/profiles/${data.address}/overview.json`)).data;
+      overview = await this.realm.seer.emit.getProfile(data.address).query();
 
-      this.app.profiles[data.address] = overview;
+      this.realm.profiles[data.address] = overview;
     }
 
-    if (this.app.clients.length > 100) {
+    if (this.realm.clients.length > 100) {
       console.log('Too many clients'); // TODO: add to queue
       return { status: 0 };
     }
@@ -300,7 +326,7 @@ export class GameServer extends Server {
 
     return {
       status: 1,
-      isMod: this.app.modList.includes(data.address) || this.app.adminList.includes(data.address),
+      isMod: this.realm.modList.includes(data.address) || this.realm.adminList.includes(data.address),
     };
   }
 
@@ -309,16 +335,16 @@ export class GameServer extends Server {
 
     if (signature.address.length !== 42 || signature.address.slice(0, 2) !== '0x') return { status: 0 };
 
-    const normalizedAddress = this.app.web3.utils.toChecksumAddress(signature.address.trim());
+    const normalizedAddress = this.realm.web3.utils.toChecksumAddress(signature.address.trim());
 
     if (!normalizedAddress) return { status: 0 };
 
-    if (this.app.web3.eth.accounts.recover(data, signature.hash).toLowerCase() !== signature.address.toLowerCase())
+    if (this.realm.web3.eth.accounts.recover(data, signature.hash).toLowerCase() !== signature.address.toLowerCase())
       return { status: 0 };
 
-    if (this.app.seerList.includes(normalizedAddress)) roles.push('seer');
-    if (this.app.adminList.includes(normalizedAddress)) roles.push('admin');
-    if (this.app.modList.includes(normalizedAddress)) roles.push('mod');
+    if (this.realm.seerList.includes(normalizedAddress)) roles.push('seer');
+    if (this.realm.adminList.includes(normalizedAddress)) roles.push('admin');
+    if (this.realm.modList.includes(normalizedAddress)) roles.push('mod');
 
     return {
       status: 1,
@@ -329,13 +355,13 @@ export class GameServer extends Server {
   normalizeAddress({ address }: { address?: string }) {
     return {
       status: 1,
-      data: { address: this.app.web3.utils.toChecksumAddress(address.trim()) },
+      data: { address: this.realm.web3.utils.toChecksumAddress(address.trim()) },
     };
   }
 
   getRandomReward({ data }: { data?: any }) {
     const now = getTime();
-    const { config } = this.app;
+    const { config } = this.realm;
 
     config.drops = config.drops || {};
     config.drops.guardian = config.drops.guardian || 1633043139000;
@@ -361,8 +387,8 @@ export class GameServer extends Server {
       tempReward = {
         id: shortId.generate(),
         position: config.level2open
-          ? this.app.config.rewardSpawnPoints2[random(0, this.app.config.rewardSpawnPoints2.length - 1)]
-          : this.app.config.rewardSpawnPoints[random(0, this.app.config.rewardSpawnPoints.length - 1)],
+          ? this.realm.config.rewardSpawnPoints2[random(0, this.realm.config.rewardSpawnPoints2.length - 1)]
+          : this.realm.config.rewardSpawnPoints[random(0, this.realm.config.rewardSpawnPoints.length - 1)],
         enabledAt: now,
         name: 'Guardian Egg',
         rarity: 'Magical',
@@ -385,8 +411,8 @@ export class GameServer extends Server {
       tempReward = {
         id: shortId.generate(),
         position: config.level2open
-          ? this.app.config.rewardSpawnPoints2[random(0, this.app.config.rewardSpawnPoints2.length - 1)]
-          : this.app.config.rewardSpawnPoints[random(0, this.app.config.rewardSpawnPoints.length - 1)],
+          ? this.realm.config.rewardSpawnPoints2[random(0, this.realm.config.rewardSpawnPoints2.length - 1)]
+          : this.realm.config.rewardSpawnPoints[random(0, this.realm.config.rewardSpawnPoints.length - 1)],
         enabledAt: now,
         name: `Early Access Founder's Cube`,
         rarity: 'Unique',
@@ -404,8 +430,8 @@ export class GameServer extends Server {
       tempReward = {
         id: shortId.generate(),
         position: config.level2open
-          ? this.app.config.rewardSpawnPoints2[random(0, this.app.config.rewardSpawnPoints2.length - 1)]
-          : this.app.config.rewardSpawnPoints[random(0, this.app.config.rewardSpawnPoints.length - 1)],
+          ? this.realm.config.rewardSpawnPoints2[random(0, this.realm.config.rewardSpawnPoints2.length - 1)]
+          : this.realm.config.rewardSpawnPoints[random(0, this.realm.config.rewardSpawnPoints.length - 1)],
         enabledAt: now,
         name: 'Trinket',
         rarity: 'Magical',
@@ -423,7 +449,7 @@ export class GameServer extends Server {
     } else {
       const odds = Array(1000).fill('runes');
 
-      const rewardType = this.app.rewards[odds[random(0, odds.length - 1)]];
+      const rewardType = this.realm.rewards[odds[random(0, odds.length - 1)]];
       if (!rewardType || rewardType.length === 0) {
         return { status: 2 };
       }
@@ -435,8 +461,8 @@ export class GameServer extends Server {
 
       tempReward = { ...reward, id: shortId.generate(), enabledAt: now };
       tempReward.position = config.level2open
-        ? this.app.config.rewardSpawnPoints2[random(0, this.app.config.rewardSpawnPoints2.length - 1)]
-        : this.app.config.rewardSpawnPoints[random(0, this.app.config.rewardSpawnPoints.length - 1)];
+        ? this.realm.config.rewardSpawnPoints2[random(0, this.realm.config.rewardSpawnPoints2.length - 1)]
+        : this.realm.config.rewardSpawnPoints[random(0, this.realm.config.rewardSpawnPoints.length - 1)];
     }
 
     return {
@@ -445,29 +471,33 @@ export class GameServer extends Server {
     };
   }
 
-  connect(app, serverId) {
-    if (app.servers[serverId].socket) {
-      this.socket.close();
+  bridge(id) {
+    const existingShard = this.shards.find((s) => s.id === id);
+    if (existingShard?.socket) {
+      existingShard.socket.close();
 
-      clearTimeout(this.infoRequestTimeout);
-      clearTimeout(this.connectTimeout);
+      clearTimeout(existingShard.infoRequestTimeout);
+      clearTimeout(existingShard.connectTimeout);
     }
 
-    this.endpoint = 'localhost:' + app.spawnPort; // local.isles.arken.gg
-    this.key = 'local1';
-    this.socket = getSocket(app, (app.isHttps ? 'https://' : 'http://') + this.endpoint);
-    this.socket.io.engine.on('upgrade', () => {
+    const shardProxyClient = new ShardProxyClient();
+
+    shardProxyClient.emit = createTRPCProxyClient<Shard.Router>({
+      links: [
+        wsLink({
+          client: this.socket.io.engine.transport.ws,
+        }),
+      ],
+      transformer,
+    });
+
+    shardProxyClient.id = id;
+    shardProxyClient.endpoint = 'localhost:' + app.spawnPort; // local.isles.arken.gg
+    shardProxyClient.key = 'local1';
+    shardProxyClient.socket = getSocket(app, (app.isHttps ? 'https://' : 'http://') + this.endpoint);
+    shardProxyClient.socket.io.engine.on('upgrade', () => {
       console.log('Connection upgraded to WebSocket');
       console.log('WebSocket object:', this.socket.io.engine.transport.ws);
-
-      this.rooms.push = createTRPCProxyClient<GameWorldRouter>({
-        links: [
-          wsLink({
-            client: this.socket.io.engine.transport.ws,
-          }),
-        ],
-        transformer,
-      });
     });
 
     // Create WebSocket client for tRPC
@@ -476,13 +506,13 @@ export class GameServer extends Server {
     //   // connectionParams: {}, // Optional: any params you want to pass during connection
     // });
 
-    this.socket.on('trpc', async (message) => {
+    shardProxyClient.socket.on('trpc', async (message) => {
       const { id, method, params } = message;
 
       try {
         const ctx = { app, client };
 
-        const createCaller = t.createCallerFactory(this.router);
+        const createCaller = t.createCallerFactory(this.emit);
         const caller = createCaller(ctx);
         const result = await caller[method](params);
         this.socket.emit('trpcResponse', { id, result });
@@ -491,7 +521,7 @@ export class GameServer extends Server {
       }
     });
 
-    this.socket.on('disconnect', async () => {
+    shardProxyClient.socket.on('disconnect', async () => {
       log('Room has disconnected');
 
       // if (client.isAdmin) {
@@ -501,22 +531,24 @@ export class GameServer extends Server {
       // client.log.clientDisconnected += 1;
       // delete app.sockets[client.id];
       // delete app.clientLookup[client.id];
-      app.clients = app.clients.filter((c) => c.id !== client.id);
+      this.realm.clients = this.realm.clients.filter((c) => c.id !== client.id);
     });
+
+    this.shards.push(shardProxyClient);
   }
 }
 
-const createGameServerRouter = (gameServer: GameServer) => {
+const createShardBridgeRouter = (shardBridge: ShardBridge) => {
   return t.router({
-    connect: t.procedure.input(z.object({})).mutation(() => gameServer.connect()),
+    connect: t.procedure.input(z.object({})).mutation(() => shardBridge.connect()),
 
-    disconnect: t.procedure.input(z.object({})).mutation(() => gameServer.disconnect()),
+    disconnect: t.procedure.input(z.object({})).mutation(() => shardBridge.disconnect()),
 
-    init: t.procedure.input(z.object({ status: z.number() })).mutation(({ input }) => gameServer.init(input)),
+    init: t.procedure.input(z.object({ status: z.number() })).mutation(({ input }) => shardBridge.init(input)),
 
     configure: t.procedure
       .input(z.object({ clients: z.array(z.any()) }))
-      .mutation(({ input }) => gameServer.configure(input)),
+      .mutation(({ input }) => shardBridge.configure(input)),
 
     saveRound: t.procedure
       .input(
@@ -526,33 +558,34 @@ const createGameServerRouter = (gameServer: GameServer) => {
           }),
         })
       )
-      .mutation(({ input }) => gameServer.saveRound(input)),
+      .mutation(({ input }) => shardBridge.saveRound(input)),
 
     confirmProfile: t.procedure
       .input(z.object({ data: z.object({ address: z.string() }) }))
-      .mutation(({ input }) => gameServer.confirmProfile(input)),
+      .mutation(({ input }) => shardBridge.confirmProfile(input)),
 
     auth: t.procedure
       .input(z.object({ data: z.string(), signature: z.object({ hash: z.string(), address: z.string() }) }))
-      .mutation(({ input }) => gameServer.auth(input)),
+      .mutation(({ input }) => shardBridge.auth(input)),
 
     normalizeAddress: t.procedure
       .input(z.object({ address: z.string() }))
-      .mutation(({ input }) => gameServer.normalizeAddress(input)),
+      .mutation(({ input }) => shardBridge.normalizeAddress(input)),
 
     getRandomReward: t.procedure
       .input(z.object({ id: z.string(), data: z.any() }))
-      .mutation(({ input }) => gameServer.getRandomReward(input)),
+      .mutation(({ input }) => shardBridge.getRandomReward(input)),
   });
 };
 
-export type Router = typeof createGameServerRouter;
+export type Router = typeof createShardBridgeRouter;
 
-export async function init(app) {
-  const gameServer = new GameServer({ app });
+export async function init(realm) {
+  const shardBridge = new ShardBridge({ realm });
 
-  gameServer.router = createGameServerRouter(gameServer);
+  shardBridge.emit = createShardBridgeRouter(shardBridge);
 
+  // TODO: REMOVE, REPLACE WITH SEER
   await mongoose.connect('mongodb://localhost:27017/yourDatabase', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
