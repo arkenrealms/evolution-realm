@@ -1,5 +1,6 @@
 import axios from 'axios';
 import md5 from 'js-md5';
+import dayjs from 'dayjs';
 import jetpack from 'fs-jetpack';
 import { spawn } from 'child_process';
 import { io as ioClient } from 'socket.io-client';
@@ -70,6 +71,8 @@ class ShardProxyClient {
   endpoint: string;
   key: string;
   socket: any;
+  // info: UnwrapPromise<ReturnType<Shard.Service['info']>>;
+  info: Shard.ServiceInfo;
 
   constructor() {}
 }
@@ -80,12 +83,12 @@ export class ShardBridge {
   characters: any;
   spawnPort: any;
   info: any;
-  isAuthed: any;
+  isAuthed: boolean;
   socket: any;
   realm: RealmServer;
-  shards: any;
-  endpoint: any;
-  key: any;
+  shards: ShardProxyClient[];
+  endpoint: string;
+  key: string;
 
   constructor({ realm }: Context) {
     this.realm = realm;
@@ -142,7 +145,7 @@ export class ShardBridge {
     }
   }
 
-  async fetchInfo(ctx: Context): Promise<any> {
+  async getSeerInfo(ctx: Context): Promise<any> {
     const res = await this.realm.seer.emit.info.query();
     if (res?.status === 1) {
       return res.data;
@@ -150,7 +153,7 @@ export class ShardBridge {
     return null;
   }
 
-  async connect() {
+  async connect(input: any, ctx: { client }) {
     log('Connected: ' + this.realm.config.serverKey);
 
     this.id = shortId();
@@ -162,8 +165,8 @@ export class ShardBridge {
     return { status: 1 };
   }
 
-  disconnect() {
-    log('Disconnected: ' + this.realm.config.serverKey);
+  disconnect(input: any, { client }: any) {
+    log('Disconnected: ' + client.id);
     return { status: 1 };
   }
 
@@ -173,8 +176,8 @@ export class ShardBridge {
       return { status: 0 };
     }
 
-    log('GS initialized');
-    const info = await this.fetchInfo(this.ctx);
+    log('Shard instance initialized');
+    const info = await this.getSeerInfo(this.ctx);
 
     if (!info) {
       logError('Could not fetch info');
@@ -246,7 +249,7 @@ export class ShardBridge {
     };
   }
 
-  async saveRound({ data }: { data?: any }) {
+  async saveRound({ data }: { data?: any }, { client }: any) {
     const { config } = this.realm;
 
     let failed = false;
@@ -255,7 +258,7 @@ export class ShardBridge {
       log('saveRound', data);
 
       const res = await this.realm.seer.emit.saveRound.mutate({
-        gsid: this.id,
+        shardId: client.id,
         roundId: config.roundId,
         round: data,
         rewardWinnerAmount: config.rewardWinnerAmount,
@@ -305,12 +308,12 @@ export class ShardBridge {
   async confirmProfile({ data }: { data?: { address?: string } }) {
     log('confirmProfile', data);
 
-    let overview = this.realm.profiles[data.address];
+    let profile = this.realm.profiles[data.address];
 
-    if (!overview) {
-      overview = await this.realm.seer.emit.getProfile(data.address).query();
+    if (!profile) {
+      profile = await this.realm.seer.emit.getProfile(data.address).query();
 
-      this.realm.profiles[data.address] = overview;
+      this.realm.profiles[data.address] = profile;
     }
 
     if (this.realm.clients.length > 100) {
@@ -318,9 +321,9 @@ export class ShardBridge {
       return { status: 0 };
     }
 
-    const now = Date.now() / 1000;
+    const now = dayjs();
 
-    if (overview.isBanned && overview.bannedUntil > now) {
+    if (profile.isBanned && dayjs(profile.banExpireDate).isAfter(now)) {
       return { status: 0 };
     }
 

@@ -429,7 +429,7 @@ export class RealmServer implements Realm.Server {
     data,
     signature,
   }: {
-    data: { target: string; bannedReason: string; bannedUntil: string };
+    data: { target: string; banReason: string; banExpireDate: string };
     signature: { address: string; hash: string };
   }) {
     this.seer.emit.banUser.mutate(data);
@@ -470,7 +470,7 @@ export class RealmServer implements Realm.Server {
 
   async matchShard() {
     for (const shard of Object.values(this.shards)) {
-      if (shard.clientCount < this.config.maxClients) {
+      if (shard.info.clientCount < this.config.maxClients) {
         return { status: 1, endpoint: shard.endpoint, port: 4020 };
       }
     }
