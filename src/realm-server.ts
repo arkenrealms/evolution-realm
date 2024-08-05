@@ -12,7 +12,6 @@ import helmet from 'helmet';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import { log, logError } from '@arken/node/util';
 import { catchExceptions } from '@arken/node/util/process';
 import type { Profile } from '@arken/node/types';
 import { Server as HttpServer } from 'http';
@@ -21,7 +20,7 @@ import { Server as SocketServer } from 'socket.io';
 import path from 'path';
 import packageJson from '../package.json';
 import { z } from 'zod';
-import { createRouter } from '@arken/evolution-protocol/realm/server';
+import { createRouter, createCallerFactory } from '@arken/evolution-protocol/realm/server';
 import { initWebServer } from './web-server';
 import { initMonitor } from './monitor';
 import { schema } from '@arken/node/types';
@@ -44,7 +43,7 @@ export class RealmServer implements Realm.Server {
   seerList: string[];
   adminList: string[];
   modList: string[];
-  sockets: Record<string, any>;
+  // sockets: Record<string, any>;
   version: string;
   endpoint: string;
   shards: ShardBridge[];
@@ -134,8 +133,8 @@ export class RealmServer implements Realm.Server {
       this.version = packageJson.version;
       this.endpoint = 'ptr1.isles.arken.gg';
       this.clients = [];
-      this.sockets = {};
-      this.shards = {};
+      // this.sockets = {};
+      this.shards = [];
       this.profiles = {};
       this.seerList = ['0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C'];
       this.adminList = ['0xDfA8f768d82D719DC68E12B199090bDc3691fFc7', '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C'];
@@ -153,6 +152,186 @@ export class RealmServer implements Realm.Server {
         '0x82b644E1B2164F5B81B3e7F7518DdE8E515A419d',
         '0xeb3fCb993dDe8a2Cd081FbE36238E4d64C286AC0',
       ];
+      this.playerRewards = {} as any;
+      this.spawnPort = this.isHttps ? process.env.GS_SSL_PORT || 8443 : process.env.GS_PORT || 8080;
+
+      // Override because we didnt get response from RS yet
+      // this.config = {
+      //   maxClients: 100;
+      //   roundId: 1;
+      //   rewardItemAmount: 0,
+      //   rewardWinnerAmount: 0,
+      //   rewardItemAmountPerLegitPlayer: 0;
+      //   rewardItemAmountMax: 0;
+      //   rewardWinnerAmountPerLegitPlayer: 0;
+      //   rewardWinnerAmountMax: 0;
+      //   rewardItemAmount: 0;
+      //   rewardWinnerAmount: 0;
+      //   drops: {
+      //     guardian: 0;
+      //     earlyAccess: 0;
+      //     trinket: 0;
+      //     santa: 0;
+      //   };
+      //   totalLegitPlayers: 0;
+      //   isBattleRoyale: boolean;
+      //   isGodParty: boolean;
+      //   level2open: boolean;
+      //   isRoundPaused: boolean;
+      //   gameMode: string;
+      //   maxEvolves: 0;
+      //   pointsPerEvolve: 0;
+      //   pointsPerKill: 0;
+      //   decayPower: 0;
+      //   dynamicDecayPower: boolean;
+      //   baseSpeed: 0;
+      //   avatarSpeedMultiplier: Record<0, 0>;
+      //   avatarDecayPower: Record<0, 0>;
+      //   preventBadKills: boolean;
+      //   antifeed1: boolean;
+      //   antifeed2: boolean;
+      //   antifeed3: boolean;
+      //   noDecay: boolean;
+      //   noBoot: boolean;
+      //   rewardSpawnLoopSeconds: 0;
+      //   orbOnDeathPercent: 0;
+      //   orbTimeoutSeconds: 0;
+      //   orbCutoffSeconds: 0;
+      //   orbLookup: Record<string, any>;
+      //   roundLoopSeconds: 0;
+      //   fastLoopSeconds: 0;
+      //   leadercap: boolean;
+      //   hideMap: boolean;
+      //   checkPositionDistance: 0;
+      //   checkInterval: 0;
+      //   resetInterval: 0;
+      //   loggableEvents: string[];
+      //   rewardSpawnPoints: [
+      //     { x: -16.32, y: -15.7774 },
+      //     { x: -9.420004, y: -6.517404 },
+      //     { x: -3.130003, y: -7.537404 },
+      //     { x: -7.290003, y: -12.9074 },
+      //     { x: -16.09, y: -2.867404 },
+      //     { x: -5.39, y: -3.76 },
+      //     { x: -7.28, y: -15.36 },
+      //     { x: -13.46, y: -13.92 },
+      //     { x: -12.66, y: -1.527404 },
+      //   ],
+      //   rewardSpawnPoints2: [
+      //     { x: -16.32, y: -15.7774 },
+      //     { x: -9.420004, y: -6.517404 },
+      //     { x: -3.130003, y: -7.537404 },
+      //     { x: -7.290003, y: -12.9074 },
+      //     { x: -16.09, y: -2.867404 },
+      //     { x: -5.39, y: -3.76 },
+      //     { x: -12.66, y: -1.527404 },
+
+      //     { x: -24.21, y: -7.58 },
+      //     { x: -30.62, y: -7.58 },
+      //     { x: -30.8, y: -14.52 },
+      //     { x: -20.04, y: -15.11 },
+      //     { x: -29.21, y: -3.76 },
+      //     { x: -18.16, y: 0.06 },
+      //     { x: -22.98, y: -3.35 },
+      //     { x: -25.92, y: -7.64 },
+      //     { x: -20.1, y: -6.93 },
+      //     { x: -26.74, y: 0 },
+      //     { x: -32.74, y: -5.17 },
+      //     { x: -25.74, y: -15.28 },
+      //     { x: -22.62, y: -11.69 },
+      //     { x: -26.44, y: -4.05 },
+      //   ],
+      //   mapBoundary: {
+      //     x: { min: number; max: number };
+      //     y: { min: number; max: number };
+      //   },
+      //   spawnBoundary1: {
+      //     x: { min: number; max: number };
+      //     y: { min: number; max: number };
+      //   },
+      //   spawnBoundary2: {
+      //     x: { min: number; max: number };
+      //     y: { min: number; max: number };
+      //   },
+      //   rewards: {
+
+      //   runes: [
+      //     {
+      //       type: 'rune',
+      //       symbol: 'solo',
+      //       quantity: 10000,
+      //     },
+      //     // {
+      //     //   type: 'rune',
+      //     //   symbol: 'tyr',
+      //     //   quantity: 100,
+      //     // },
+      //     // {
+      //     //   type: 'rune',
+      //     //   symbol: 'nen',
+      //     //   quantity: 100,
+      //     // },
+      //     // {
+      //     //   type: 'rune',
+      //     //   symbol: 'isa',
+      //     //   quantity: 10000,
+      //     // },
+      //     // {
+      //     //   type: 'rune',
+      //     //   symbol: 'han',
+      //     //   quantity: 100,
+      //     // },
+      //     // {
+      //     //   type: 'rune',
+      //     //   symbol: 'ro',
+      //     //   quantity: 10000,
+      //     // },
+      //     // {
+      //     //   type: 'rune',
+      //     //   symbol: 'thal',
+      //     //   quantity: 10000,
+      //     // },
+      //     // {
+      //     //   type: 'rune',
+      //     //   symbol: 'ash',
+      //     //   quantity: 10000,
+      //     // },
+      //     // {
+      //     //   type: 'rune',
+      //     //   symbol: 'ore',
+      //     //   quantity: 10000,
+      //     // },
+      //     // {
+      //     //   type: 'rune',
+      //     //   symbol: 'sen',
+      //     //   quantity: 100,
+      //     // },
+      //     // {
+      //     //   type: 'rune',
+      //     //   symbol: 'tai',
+      //     //   quantity: 10000,
+      //     // },
+      //     // {
+      //     //   type: 'rune',
+      //     //   symbol: 'da',
+      //     //   quantity: 100,
+      //     // },
+      //     // {
+      //     //   type: 'rune',
+      //     //   symbol: 'zel',
+      //     //   quantity: 0,
+      //     // },
+      //   ],
+      //   items: [],
+      //   characters: [
+      //     {
+      //       type: 'character',
+      //       tokenId: '1',
+      //     },
+      //   ],
+      //   },
+      //   maxClients: 100,
+      // }
 
       this.io.on('connection', (socket) => {
         const ip = 'HIDDEN';
@@ -164,6 +343,7 @@ export class RealmServer implements Realm.Server {
           ip,
           info: null,
           lastReportedTime: getTime(),
+          isSeer: false,
           isMod: false,
           isAdmin: false,
           log: {
@@ -171,135 +351,15 @@ export class RealmServer implements Realm.Server {
           },
         };
 
-        this.sockets[client.id] = socket;
+        // this.sockets[client.id] = socket;
         this.clients.push(client);
-        this.shards = [];
-        this.playerRewards = {} as any;
-        this.spawnPort = this.isHttps ? process.env.GS_SSL_PORT || 8443 : process.env.GS_PORT || 8080;
-        this.rewards = {
-          runes: [
-            {
-              type: 'rune',
-              symbol: 'solo',
-              quantity: 10000,
-            },
-            // {
-            //   type: 'rune',
-            //   symbol: 'tyr',
-            //   quantity: 100,
-            // },
-            // {
-            //   type: 'rune',
-            //   symbol: 'nen',
-            //   quantity: 100,
-            // },
-            // {
-            //   type: 'rune',
-            //   symbol: 'isa',
-            //   quantity: 10000,
-            // },
-            // {
-            //   type: 'rune',
-            //   symbol: 'han',
-            //   quantity: 100,
-            // },
-            // {
-            //   type: 'rune',
-            //   symbol: 'ro',
-            //   quantity: 10000,
-            // },
-            // {
-            //   type: 'rune',
-            //   symbol: 'thal',
-            //   quantity: 10000,
-            // },
-            // {
-            //   type: 'rune',
-            //   symbol: 'ash',
-            //   quantity: 10000,
-            // },
-            // {
-            //   type: 'rune',
-            //   symbol: 'ore',
-            //   quantity: 10000,
-            // },
-            // {
-            //   type: 'rune',
-            //   symbol: 'sen',
-            //   quantity: 100,
-            // },
-            // {
-            //   type: 'rune',
-            //   symbol: 'tai',
-            //   quantity: 10000,
-            // },
-            // {
-            //   type: 'rune',
-            //   symbol: 'da',
-            //   quantity: 100,
-            // },
-            // {
-            //   type: 'rune',
-            //   symbol: 'zel',
-            //   quantity: 0,
-            // },
-          ],
-          items: [],
-          characters: [
-            {
-              type: 'character',
-              tokenId: '1',
-            },
-          ],
-        } as any;
-
-        this.profiles = {};
-
-        // Override because we didnt get response from RS yet
-        this.config.rewardItemAmount = 0;
-        this.config.rewardWinnerAmount = 0;
-        this.rewardSpawnPoints = [
-          { x: -16.32, y: -15.7774 },
-          { x: -9.420004, y: -6.517404 },
-          { x: -3.130003, y: -7.537404 },
-          { x: -7.290003, y: -12.9074 },
-          { x: -16.09, y: -2.867404 },
-          { x: -5.39, y: -3.76 },
-          { x: -7.28, y: -15.36 },
-          { x: -13.46, y: -13.92 },
-          { x: -12.66, y: -1.527404 },
-        ];
-        this.rewardSpawnPoints2 = [
-          { x: -16.32, y: -15.7774 },
-          { x: -9.420004, y: -6.517404 },
-          { x: -3.130003, y: -7.537404 },
-          { x: -7.290003, y: -12.9074 },
-          { x: -16.09, y: -2.867404 },
-          { x: -5.39, y: -3.76 },
-          { x: -12.66, y: -1.527404 },
-
-          { x: -24.21, y: -7.58 },
-          { x: -30.62, y: -7.58 },
-          { x: -30.8, y: -14.52 },
-          { x: -20.04, y: -15.11 },
-          { x: -29.21, y: -3.76 },
-          { x: -18.16, y: 0.06 },
-          { x: -22.98, y: -3.35 },
-          { x: -25.92, y: -7.64 },
-          { x: -20.1, y: -6.93 },
-          { x: -26.74, y: 0 },
-          { x: -32.74, y: -5.17 },
-          { x: -25.74, y: -15.28 },
-          { x: -22.62, y: -11.69 },
-          { x: -26.44, y: -4.05 },
-        ];
 
         socket.on('trpc', async (message) => {
           const { id, method, params } = message;
 
           try {
-            const ctx = { app, socket, client };
-            const createCaller = t.createCallerFactory(this.router);
+            const ctx = { client };
+            const createCaller = createCallerFactory(this.emit);
             const caller = createCaller(ctx);
             const result = await caller[method](params);
             socket.emit('trpcResponse', { id, result });
@@ -327,7 +387,7 @@ export class RealmServer implements Realm.Server {
       // this.upgrade = upgradeCodebase;
       // this.call = sendEventToObshards.bind(null, app);
 
-      await initMonitor(this);
+      if (process.env.ARKEN_ENV !== 'local') await initMonitor(this);
       await initWebServer(this);
     } catch (e) {
       logError(e);
@@ -359,7 +419,7 @@ export class RealmServer implements Realm.Server {
     return { status: 1 };
   }
 
-  async setConfig({ data }: { data: { shardId: string; config: Record<string, any> } }) {
+  async setConfig({ data }: { data?: { shardId?: string; config?: Record<string, any> } }) {
     this.config = {
       ...this.config,
       ...data.config,
@@ -488,6 +548,8 @@ export class RealmServer implements Realm.Server {
 
 export function init() {
   const realmServer = new RealmServer();
+
+  realmServer.init();
 
   return realmServer;
 }
