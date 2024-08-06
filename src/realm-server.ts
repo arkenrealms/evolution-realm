@@ -1,17 +1,17 @@
-import axios from 'axios';
-import { isValidRequest, getSignedRequest } from '@arken/node/util/web3';
-import { log, logError, getTime, isEthereumAddress } from '@arken/node/util';
-import { emitDirect } from '@arken/node/util/websocket';
-import { upgradeCodebase } from '@arken/node/util/codebase';
-import { initTRPC, TRPCError } from '@trpc/server';
-import { customErrorFormatter, transformer, hasRole, validateRequest } from '@arken/node/util/rpc';
-import shortId from 'shortId';
+// import axios from 'axios';
+import { getSignedRequest } from '@arken/node/util/web3';
+import { log, logError, getTime } from '@arken/node/util';
+// import { emitDirect } from '@arken/node/util/websocket';
+// import { upgradeCodebase } from '@arken/node/util/codebase';
+// import { initTRPC, TRPCError } from '@trpc/server';
+// import { customErrorFormatter, transformer, hasRole, validateRequest } from '@arken/node/util/rpc';
+// import shortId from 'shortId';
 import fs from 'fs';
 import express, { Express } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
-import mongoose from 'mongoose';
+// import mongoose from 'mongoose';
 import { catchExceptions } from '@arken/node/util/process';
 import type { Profile } from '@arken/node/types';
 import { Server as HttpServer } from 'http';
@@ -19,13 +19,13 @@ import { Server as HttpsServer } from 'https';
 import { Server as SocketServer } from 'socket.io';
 import path from 'path';
 import packageJson from '../package.json';
-import { z } from 'zod';
+// import { z } from 'zod';
 import { createRouter, createCallerFactory } from '@arken/evolution-protocol/realm/server';
 import { initWebServer } from './web-server';
 import { initMonitor } from './monitor';
 import { schema } from '@arken/node/types';
 import type { Realm } from '@arken/evolution-protocol/types';
-import { ShardBridge } from './shard-bridge';
+import { init as initShardbridge, ShardBridge } from './shard-bridge';
 
 dotenv.config();
 
@@ -55,9 +55,6 @@ export class RealmServer implements Realm.Server {
   clients: Realm.Client[];
   playerRewards: Record<string, any>;
   spawnPort: string | number;
-  rewards: any;
-  rewardSpawnPoints: any;
-  rewardSpawnPoints2: any;
 
   constructor() {
     this.emit = createRouter(this as Realm.Server);
@@ -112,10 +109,10 @@ export class RealmServer implements Realm.Server {
     try {
       log('RealmServer init');
 
-      await mongoose.connect(process.env.DATABASE_URL!, {
-        // useNewUrlParser: true,
-        // useUnifiedTopology: true,
-      });
+      // await mongoose.connect(process.env.DATABASE_URL!, {
+      // useNewUrlParser: true,
+      // useUnifiedTopology: true,
+      // });
 
       if (this.isHttps) {
         const sslPort = process.env.RS_SSL_PORT || 443;
@@ -155,6 +152,7 @@ export class RealmServer implements Realm.Server {
       this.playerRewards = {} as any;
       this.spawnPort = this.isHttps ? process.env.GS_SSL_PORT || 8443 : process.env.GS_PORT || 8080;
 
+      this.initShard();
       // Override because we didnt get response from RS yet
       // this.config = {
       //   maxClients: 100;
@@ -206,41 +204,6 @@ export class RealmServer implements Realm.Server {
       //   checkInterval: 0;
       //   resetInterval: 0;
       //   loggableEvents: string[];
-      //   rewardSpawnPoints: [
-      //     { x: -16.32, y: -15.7774 },
-      //     { x: -9.420004, y: -6.517404 },
-      //     { x: -3.130003, y: -7.537404 },
-      //     { x: -7.290003, y: -12.9074 },
-      //     { x: -16.09, y: -2.867404 },
-      //     { x: -5.39, y: -3.76 },
-      //     { x: -7.28, y: -15.36 },
-      //     { x: -13.46, y: -13.92 },
-      //     { x: -12.66, y: -1.527404 },
-      //   ],
-      //   rewardSpawnPoints2: [
-      //     { x: -16.32, y: -15.7774 },
-      //     { x: -9.420004, y: -6.517404 },
-      //     { x: -3.130003, y: -7.537404 },
-      //     { x: -7.290003, y: -12.9074 },
-      //     { x: -16.09, y: -2.867404 },
-      //     { x: -5.39, y: -3.76 },
-      //     { x: -12.66, y: -1.527404 },
-
-      //     { x: -24.21, y: -7.58 },
-      //     { x: -30.62, y: -7.58 },
-      //     { x: -30.8, y: -14.52 },
-      //     { x: -20.04, y: -15.11 },
-      //     { x: -29.21, y: -3.76 },
-      //     { x: -18.16, y: 0.06 },
-      //     { x: -22.98, y: -3.35 },
-      //     { x: -25.92, y: -7.64 },
-      //     { x: -20.1, y: -6.93 },
-      //     { x: -26.74, y: 0 },
-      //     { x: -32.74, y: -5.17 },
-      //     { x: -25.74, y: -15.28 },
-      //     { x: -22.62, y: -11.69 },
-      //     { x: -26.44, y: -4.05 },
-      //   ],
       //   mapBoundary: {
       //     x: { min: number; max: number };
       //     y: { min: number; max: number };
@@ -392,6 +355,12 @@ export class RealmServer implements Realm.Server {
     } catch (e) {
       logError(e);
     }
+  }
+
+  async initShard() {
+    const shard = await initShardbridge(this);
+
+    this.shards.push(shard);
   }
 
   async auth({ signature }: { signature: { address: string; hash: string } }) {

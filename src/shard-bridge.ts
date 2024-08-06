@@ -12,15 +12,11 @@ import { initTRPC } from '@trpc/server';
 import { z } from 'zod';
 import { createTRPCProxyClient, httpBatchLink, createWSClient, wsLink } from '@trpc/client';
 import { customErrorFormatter, transformer } from '@arken/node/util/rpc';
-import type { Realm, Shard } from '@arken/evolution-protocol/types';
+import { Realm, Shard } from '@arken/evolution-protocol/types';
 import { RealmServer } from './realm-server';
 
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-
-function random(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 
 // Define the schema for the configuration
 const configSchema = new Schema({
@@ -48,6 +44,7 @@ const shortId = require('shortid');
 export const t = initTRPC.create();
 export const router = t.router;
 export const procedure = t.procedure;
+export const createCallerFactory = t.createCallerFactory;
 
 function getSocket(endpoint) {
   log('Connecting to', endpoint);
@@ -110,6 +107,7 @@ type ShardBridgeConfig = {
     x: { min: number; max: number };
     y: { min: number; max: number };
   };
+  rewards: Record<string, any>;
 };
 
 export class ShardBridge {
@@ -138,13 +136,6 @@ export class ShardBridge {
         this.characters = {};
       }, 10 * 60 * 1000);
 
-      setTimeout(() => {
-        this.start();
-
-        setTimeout(() => {
-          this.connect();
-        }, 10 * 1000);
-      }, 1000);
       // const binaryPath = {
       //   linux: '../game-server/build/index.js',
       //   darwin: '../game-server/build/index.js',
@@ -160,7 +151,7 @@ export class ShardBridge {
 
       // Start the server
       this.process = spawn('node', ['-r', 'tsconfig-paths/register', 'build/index.js'], {
-        cwd: path.resolve('./game-server'),
+        cwd: path.resolve('../shard'),
         env,
         stdio: ['ignore', 'pipe', 'pipe'],
       });
@@ -207,7 +198,7 @@ export class ShardBridge {
     return { status: 1 };
   }
 
-  async init({ status }: { status: number }) {
+  async init({ status }: { status?: number }) {
     if (status !== 1) {
       logError('Could not init');
       return { status: 0 };
@@ -429,7 +420,7 @@ export class ShardBridge {
         position: config.level2open
           ? this.config.rewardSpawnPoints2[random(0, this.config.rewardSpawnPoints2.length - 1)]
           : this.config.rewardSpawnPoints[random(0, this.config.rewardSpawnPoints.length - 1)],
-        enabledAt: now,
+        enabledDate: now,
         name: 'Guardian Egg',
         rarity: 'Magical',
         quantity: 1,
@@ -453,7 +444,7 @@ export class ShardBridge {
         position: config.level2open
           ? this.config.rewardSpawnPoints2[random(0, this.config.rewardSpawnPoints2.length - 1)]
           : this.config.rewardSpawnPoints[random(0, this.config.rewardSpawnPoints.length - 1)],
-        enabledAt: now,
+        enabledDate: now,
         name: `Early Access Founder's Cube`,
         rarity: 'Unique',
         quantity: 1,
@@ -472,7 +463,7 @@ export class ShardBridge {
         position: config.level2open
           ? this.config.rewardSpawnPoints2[random(0, this.config.rewardSpawnPoints2.length - 1)]
           : this.config.rewardSpawnPoints[random(0, this.config.rewardSpawnPoints.length - 1)],
-        enabledAt: now,
+        enabledDate: now,
         name: 'Trinket',
         rarity: 'Magical',
         quantity: 1,
@@ -489,7 +480,7 @@ export class ShardBridge {
     } else {
       const odds = Array(1000).fill('runes');
 
-      const rewardType = this.realm.rewards[odds[random(0, odds.length - 1)]];
+      const rewardType = this.config.rewards[odds[random(0, odds.length - 1)]];
       if (!rewardType || rewardType.length === 0) {
         return { status: 2 };
       }
@@ -499,7 +490,7 @@ export class ShardBridge {
         return { status: 3 };
       }
 
-      tempReward = { ...reward, id: shortId.generate(), enabledAt: now };
+      tempReward = { ...reward, id: shortId.generate(), enabledDate: now };
       tempReward.position = config.level2open
         ? this.config.rewardSpawnPoints2[random(0, this.config.rewardSpawnPoints2.length - 1)]
         : this.config.rewardSpawnPoints[random(0, this.config.rewardSpawnPoints.length - 1)];
@@ -513,11 +504,14 @@ export class ShardBridge {
 
   bridge(id) {
     const existingShard = this.shards.find((s) => s.id === id);
-    if (existingShard?.socket) {
-      existingShard.socket.close();
+    if (existingShard) {
+      this.shards = this.shards.filter((s) => s.id !== id);
+      if (existingShard?.socket) {
+        existingShard.socket.close();
 
-      clearTimeout(existingShard.infoRequestTimeout);
-      clearTimeout(existingShard.connectTimeout);
+        // clearTimeout(existingShard.infoRequestTimeout);
+        // clearTimeout(existingShard.connectTimeout);
+      }
     }
 
     const shardProxyClient = new ShardProxyClient();
@@ -552,8 +546,9 @@ export class ShardBridge {
       try {
         const ctx = { client: shardProxyClient };
 
-        const createCaller = t.createCallerFactory(this.emit);
+        const createCaller = createCallerFactory(this.emit);
         const caller = createCaller(ctx);
+        // @ts-ignore
         const result = await caller[method](params);
         this.socket.emit('trpcResponse', { id, result });
       } catch (e) {
@@ -580,9 +575,11 @@ export class ShardBridge {
 
 const createShardBridgeRouter = (shardBridge: ShardBridge) => {
   return router({
-    connect: procedure.input(z.object({})).mutation(() => shardBridge.connect()),
+    // @ts-ignore
+    connect: procedure.input(z.object({})).mutation(({ input }, ctx) => shardBridge.connect(input, ctx)),
 
-    disconnect: procedure.input(z.object({})).mutation(() => shardBridge.disconnect()),
+    // @ts-ignore
+    disconnect: procedure.input(z.object({})).mutation(({ input }, ctx) => shardBridge.disconnect(input, ctx)),
 
     init: procedure.input(z.object({ status: z.number() })).mutation(({ input }) => shardBridge.init(input)),
 
@@ -595,10 +592,17 @@ const createShardBridgeRouter = (shardBridge: ShardBridge) => {
         z.object({
           data: z.object({
             status: z.number(),
+            id: z.string(),
+            startedDate: z.number(), // or Date if using Date objects
+            endedAt: z.number().optional(),
+            clients: z.array(z.any()),
+            events: z.array(z.any()),
+            states: z.array(z.any()),
           }),
         })
       )
-      .mutation(({ input }) => shardBridge.saveRound(input)),
+      // @ts-ignore
+      .mutation(({ input }, ctx) => shardBridge.saveRound(input, ctx)),
 
     confirmProfile: procedure
       .input(z.object({ data: z.object({ address: z.string() }) }))
@@ -635,6 +639,7 @@ export async function init(realm) {
 
   // if (!config) {
 
+  shardBridge.config = {} as ShardBridgeConfig;
   shardBridge.config.rewardSpawnPoints = [
     { x: -16.32, y: -15.7774 },
     { x: -9.420004, y: -6.517404 },
@@ -671,19 +676,28 @@ export async function init(realm) {
     { x: -26.44, y: -4.05 },
   ];
 
-  this.config.roundId = 1;
-  this.config.rewardItemAmountPerLegitPlayer = 0;
-  this.config.rewardItemAmountMax = 0;
-  this.config.rewardWinnerAmountPerLegitPlayer = 0;
-  this.config.rewardWinnerAmountMax = 0;
-  this.config.rewardItemAmount = 0;
-  this.config.rewardWinnerAmount = 0;
-  this.config.drops = {
+  // shardBridge.config.roundId = 1;
+  shardBridge.config.rewardItemAmountPerLegitPlayer = 0;
+  shardBridge.config.rewardItemAmountMax = 0;
+  shardBridge.config.rewardWinnerAmountPerLegitPlayer = 0;
+  shardBridge.config.rewardWinnerAmountMax = 0;
+  shardBridge.config.rewardItemAmount = 0;
+  shardBridge.config.rewardWinnerAmount = 0;
+  shardBridge.config.drops = {
     guardian: 1633043139000,
     earlyAccess: 1633043139000,
     trinket: 1641251240764,
     santa: 1633043139000,
   };
 
+  setTimeout(() => {
+    shardBridge.start();
+
+    setTimeout(() => {
+      shardBridge.bridge(shardBridge.shards[0].id);
+    }, 10 * 1000);
+  }, 1000);
   // await config.save();
+
+  return shardBridge;
 }

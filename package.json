@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "description": "",
   "scripts": {
-    "dev": "ARKEN_ENV=local LOG=1 LOG_PREFIX=[RERS*] RS_PORT=4010 RS_SSL_PORT=4011 GS_PORT=4020 GS_SSL_PORT=4021 tsnd --respawn -r dotenv/config -r tsconfig-paths/register ./src/index.ts",
+    "dev": "ARKEN_ENV=local LOG=1 LOG_PREFIX=[RERS*] RS_PORT=4010 RS_SSL_PORT=4011 GS_PORT=4020 GS_SSL_PORT=4021 DEBUG=* tsnd --respawn -r dotenv/config -r tsconfig-paths/register ./src/index.ts",
     "inspect": "NODE_ENV=development yarn build && PORT=3001 NODE_ENV=production node --inspect build/index.js",
     "prod": "NODE_ENV=production yarn run nodemon --config nodemon.production.json",
     "build": "NODE_ENV=production tsc && tsc-alias",
@@ -18,7 +18,8 @@
   },
   "dependencies": {
     "dotenv": "~16.4.5",
-    "zod": "~3.23.8"
+    "zod": "~3.23.8",
+    "dayjs": "~1.11.12"
   },
   "peerDependencies": {
     "@ethersproject/address": "^5.0.2",
