@@ -4,7 +4,7 @@ import { log } from '@arken/node/util';
 import { getAddress, getRandomProvider } from '@arken/node/util/web3';
 import contractInfo from '@arken/node/contractInfo';
 import BEP20Contract from '@arken/node/contracts/BEP20.json';
-import secrets from '../../secrets.json';
+import secrets from '../secrets.json';
 
 function _initProvider(app) {
   try {

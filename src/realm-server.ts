@@ -13,7 +13,7 @@ import cors from 'cors';
 import * as dotenv from 'dotenv';
 // import mongoose from 'mongoose';
 import { catchExceptions } from '@arken/node/util/process';
-import type { Profile } from '@arken/node/types';
+import type * as Arken from '@arken/node/types';
 import { Server as HttpServer } from 'http';
 import { Server as HttpsServer } from 'https';
 import { Server as SocketServer } from 'socket.io';
@@ -47,7 +47,7 @@ export class RealmServer implements Realm.Server {
   version: string;
   endpoint: string;
   shards: ShardBridge[];
-  profiles: Record<string, Profile>;
+  profiles: Record<string, Arken.schema.Profile>;
   web3: any; // Assume web3 is a configured instance
   secrets: any; // Secrets for signing
   emit: Realm.Router;
@@ -58,6 +58,8 @@ export class RealmServer implements Realm.Server {
 
   constructor() {
     this.emit = createRouter(this as Realm.Server);
+
+    this.subProcesses = [];
 
     this.server = express();
     this.server.set('trust proxy', 1);
