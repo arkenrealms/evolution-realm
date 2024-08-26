@@ -3,6 +3,10 @@ import md5 from 'js-md5';
 import dayjs from 'dayjs';
 import jetpack from 'fs-jetpack';
 import { spawn } from 'child_process';
+import { observable } from '@trpc/server/observable';
+import WebSocket from 'isomorphic-ws';
+import { sleep } from '@arken/node/util/time';
+import { generateUuid } from '@arken/node/util/guid';
 import { io as ioClient } from 'socket.io-client';
 import { isValidRequest, getSignedRequest } from '@arken/node/util/web3';
 import { log, logError, random, getTime } from '@arken/node/util';
@@ -11,9 +15,28 @@ import { upgradeGsCodebase, cloneGsCodebase } from '@arken/node/util/codebase';
 import { initTRPC } from '@trpc/server';
 import { z } from 'zod';
 import { createTRPCProxyClient, httpBatchLink, createWSClient, wsLink } from '@trpc/client';
-import { customErrorFormatter, transformer } from '@arken/node/util/rpc';
+import { customErrorFormatter, transformer, dummyTransformer } from '@arken/node/util/rpc';
 import { Realm, Shard } from '@arken/evolution-protocol/types';
 import { RealmServer } from './realm-server';
+import SocketIOWebSocket from './trpc-websocket';
+import { TRPCLink } from '@trpc/client';
+import { AnyRouter } from '@trpc/server';
+
+// Extend the context type to include 'client'
+interface CustomContext {
+  client: ShardProxyClient; // or Shard.Client, depending on your exact type
+}
+
+// class NodeWebSocket extends WebSocket implements WebSocket {
+//   // Add any methods that the `ws` WebSocket lacks
+//   dispatchEvent(event: Event): boolean {
+//     // Implement or mock this method if needed
+//     return false;
+//   }
+// }
+
+// Assign it globally
+(global as any).WebSocket = SocketIOWebSocket as any;
 
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
@@ -46,19 +69,23 @@ export const router = t.router;
 export const procedure = t.procedure;
 export const createCallerFactory = t.createCallerFactory;
 
-function getSocket(endpoint) {
-  log('Connecting to', endpoint);
-  return ioClient(endpoint, {
-    transports: ['websocket'],
-    upgrade: false,
-    autoConnect: false,
-    // pingInterval: 5000,
-    // pingTimeout: 20000
-    // extraHeaders: {
-    //   "my-custom-header": "1234"
-    // }
-  });
-}
+// function getSocket(endpoint: string): WebSocket {
+//   log('Connecting to', endpoint);
+//   return new WebSocket(endpoint);
+// }
+// function getSocket(endpoint) {
+//   log('Connecting to', endpoint);
+//   return ioClient(endpoint, {
+//     transports: ['websocket'],
+//     upgrade: false,
+//     autoConnect: false,
+//     // pingInterval: 5000,
+//     // pingTimeout: 20000
+//     // extraHeaders: {
+//     //   "my-custom-header": "1234"
+//     // }
+//   });
+// }
 
 type Context = { realm: RealmServer };
 
@@ -110,12 +137,16 @@ type ShardBridgeConfig = {
   rewards: Record<string, any>;
 };
 
+export type Event2 = {
+  name: string;
+  args: Array<any>;
+};
 export class ShardBridge {
+  spawnPort: number;
   id: string;
-  emit: any;
+  emit: ReturnType<typeof createShardBridgeRouter>;
   process: any;
   characters: any;
-  spawnPort: any;
   info: any;
   isAuthed: boolean;
   socket: any;
@@ -125,9 +156,15 @@ export class ShardBridge {
   key: string;
   config: ShardBridgeConfig;
   unsavedGames: any;
+  clients: Shard.Client[];
+  ioCallbacks: any;
 
   constructor({ realm }: Context) {
+    console.log('Construct shard bridge');
     this.realm = realm;
+    this.shards = [];
+    this.ioCallbacks = {};
+    this.clients = [];
   }
 
   start() {
@@ -142,19 +179,38 @@ export class ShardBridge {
       //   win32: ''
       // }[process.platform]
 
-      process.env.GS_PORT = this.spawnPort + '';
-
       const env = {
         ...process.env,
-        LOG_PREFIX: '[REGS]',
+        LOG_PREFIX: '[SHARD]',
+        SHARD_PORT: this.spawnPort + '',
       };
 
+      console.log('Start shard bridge', env);
+
       // Start the server
-      this.process = spawn('node', ['-r', 'tsconfig-paths/register', 'build/index.js'], {
-        cwd: path.resolve('../shard'),
-        env,
-        stdio: ['ignore', 'pipe', 'pipe'],
-      });
+      this.process = spawn(
+        'node', // Start the Node.js runtime
+        [
+          '--inspect', // Enable debugging with the inspector
+          '-r',
+          'ts-node/register', // Use ts-node/register to execute TypeScript
+          '-r',
+          'dotenv/config', // Load dotenv config
+          '-r',
+          'tsconfig-paths/register', // Register tsconfig paths
+          'src/index.ts', // Your TypeScript entry file
+        ],
+        {
+          cwd: path.resolve('../shard'), // Set the current working directory
+          env, // Set environment variables
+          stdio: ['ignore', 'pipe', 'pipe'], // Configure stdio streams
+        }
+      );
+      // this.process = spawn('node', ['-r', 'tsconfig-paths/register', 'build/index.js'], {
+      //   cwd: path.resolve('../shard'),
+      //   env,
+      //   stdio: ['ignore', 'pipe', 'pipe'],
+      // });
 
       this.process.stdout.pipe(process.stdout);
       this.process.stderr.pipe(process.stderr);
@@ -166,8 +222,6 @@ export class ShardBridge {
       });
 
       this.realm.subProcesses.push(this.process);
-
-      process.env.GS_PORT = this.spawnPort + 1 + '';
     } catch (e) {
       log('startShardBridge error', e);
     }
@@ -181,14 +235,18 @@ export class ShardBridge {
     return null;
   }
 
-  async connect(input: any, ctx: { client }) {
-    log('Connected: ' + this.config.key);
+  async connect(input: any, { client }: { client: ShardProxyClient }) {
+    log('Connected: ' + client.key, client.id);
 
-    this.id = shortId();
-    const data = { id: this.id };
+    const data = { id: client.id };
     const signature = await getSignedRequest(this.realm.web3, this.realm.secrets, data);
 
-    this.socket.emit('connected', { signature, data });
+    await sleep(5000);
+    console.log(client.emit.connected.mutate);
+    client.emit.connected.mutate(
+      { signature: { hash: signature.hash, address: signature.address }, data }
+      // { context: { client } }
+    );
 
     return { status: 1 };
   }
@@ -224,10 +282,15 @@ export class ShardBridge {
     };
   }
 
-  configure({ clients }: { clients?: any[] }) {
+  configure({ clients }: { clients?: Shard.Client[] }, ctx: any) {
     log('configure');
     const { config } = this;
-    this.realm.clients = clients;
+    // TODO: add them
+    this.clients = clients;
+
+    for (const client of clients) {
+      client.shardId = ctx.client.id;
+    }
 
     config.totalLegitPlayers = 0;
 
@@ -290,7 +353,7 @@ export class ShardBridge {
         roundId: this.realm.config.roundId,
         round: data,
         rewardWinnerAmount: config.rewardWinnerAmount,
-        lastClients: this.realm.clients,
+        lastClients: this.clients,
       });
 
       if (res.status === 1) {
@@ -339,12 +402,14 @@ export class ShardBridge {
     let profile = this.realm.profiles[data.address];
 
     if (!profile) {
-      profile = await this.realm.seer.emit.getProfile(data.address).query();
+      const res = await this.realm.seer.emit.getProfile.query(data.address);
 
-      this.realm.profiles[data.address] = profile;
+      if (res.data) {
+        this.realm.profiles[data.address] = profile;
+      }
     }
 
-    if (this.realm.clients.length > 100) {
+    if (this.clients.length > 100) {
       console.log('Too many clients'); // TODO: add to queue
       return { status: 0 };
     }
@@ -362,6 +427,8 @@ export class ShardBridge {
   }
 
   auth({ data, signature }: { data?: string; signature?: { hash?: string; address?: string } }) {
+    log('ShardBridge.auth', data, signature);
+
     const roles = [];
 
     if (signature.address.length !== 42 || signature.address.slice(0, 2) !== '0x') return { status: 0 };
@@ -516,48 +583,117 @@ export class ShardBridge {
 
     const shardProxyClient = new ShardProxyClient();
 
-    shardProxyClient.emit = createTRPCProxyClient<Shard.Router>({
-      links: [
-        wsLink({
-          client: this.socket.io.engine.transport.ws,
-        }),
-      ],
-      transformer,
-    });
-
     shardProxyClient.id = id;
-    shardProxyClient.endpoint = 'localhost:' + this.realm.spawnPort; // local.isles.arken.gg
     shardProxyClient.key = 'local1';
-    shardProxyClient.socket = getSocket((this.realm.isHttps ? 'https://' : 'http://') + this.endpoint);
-    shardProxyClient.socket.io.engine.on('upgrade', () => {
-      console.log('Connection upgraded to WebSocket');
-      console.log('WebSocket object:', this.socket.io.engine.transport.ws);
+
+    shardProxyClient.endpoint = (this.realm.isHttps ? 'https://' : 'http://') + 'localhost:' + this.spawnPort;
+
+    shardProxyClient.socket = ioClient(shardProxyClient.endpoint, {
+      transports: ['websocket'],
+      upgrade: false,
+      autoConnect: false,
+      // pingInterval: 5000,
+      // pingTimeout: 20000
+      // extraHeaders: {
+      //   "my-custom-header": "1234"
+      // }
+    });
+    const customLink: TRPCLink<Shard.Router> =
+      () =>
+      ({ op, next }) => {
+        return observable((observer) => {
+          const { input, context } = op;
+          const client = shardProxyClient;
+
+          if (!client) {
+            console.log('Emit Direct failed, no client', op);
+            observer.complete();
+            return;
+          }
+
+          if (!client.socket || !client.socket.emit) {
+            console.log('Emit Direct failed, bad socket', op);
+            observer.complete();
+            return;
+          }
+          console.log('Emit Direct', op);
+
+          client.socket.emit('trpc', { id: op.id, method: op.path, type: op.type, params: input });
+
+          observer.complete();
+        });
+      };
+
+    shardProxyClient.emit = createTRPCProxyClient<Shard.Router>({
+      links: [customLink],
+      transformer: dummyTransformer,
     });
 
-    // Create WebSocket client for tRPC
-    // const wsClient = createWSClient({
-    //   url: (app.isHttps ? 'https://' : 'http://') + this.endpoint,
-    //   // connectionParams: {}, // Optional: any params you want to pass during connection
-    // });
-
-    shardProxyClient.socket.on('trpc', async (message) => {
-      const { id, method, params } = message;
-
+    shardProxyClient.socket.onAny(async (eventName, res) => {
       try {
-        const ctx = { client: shardProxyClient };
+        log('shardProxyClient.socket.onAny', eventName, res);
+        if (eventName === 'Events') return;
 
-        const createCaller = createCallerFactory(this.emit);
-        const caller = createCaller(ctx);
-        // @ts-ignore
-        const result = await caller[method](params);
-        this.socket.emit('trpcResponse', { id, result });
+        if (res.id) {
+          const { data } = res;
+
+          log(`Callback ${this.ioCallbacks[id] ? 'Exists' : 'Doesnt Exist'}`, eventName);
+
+          if (this.ioCallbacks[id]) {
+            clearTimeout(this.ioCallbacks[id].timeout);
+
+            this.ioCallbacks[id].resolve(data);
+
+            delete this.ioCallbacks[id];
+          }
+        } else {
+          const { method, params } = res;
+
+          log('Shard bridge called', method, params);
+
+          try {
+            const ctx = { client: shardProxyClient };
+
+            const createCaller = createCallerFactory(this.emit);
+            const caller = createCaller(ctx);
+            // @ts-ignore
+            const result = await caller[method](params);
+            // socket.emit('trpcResponse', { id, result });
+            shardProxyClient.socket.emit('trpcResponse', { id, result });
+          } catch (e) {
+            shardProxyClient.socket.emit('trpcResponse', { id, error: e.message });
+          }
+        }
       } catch (e) {
-        this.socket.emit('trpcResponse', { id, error: e.message });
+        logError(e);
       }
     });
 
-    shardProxyClient.socket.on('disconnect', async () => {
-      log('Room has disconnected');
+    // shardProxyClient.socket.addEventListener('message', async (message) => {
+    //   const { type, id, method, params } = JSON.parse(message.data);
+
+    //   if (type === 'trpc') {
+    //     try {
+    //       const ctx = { client: shardProxyClient };
+
+    //       const createCaller = createCallerFactory(this.emit);
+    //       const caller = createCaller(ctx);
+    //       // @ts-ignore
+    //       const result = await caller[method](params);
+    //       // socket.emit('trpcResponse', { id, result });
+    //       socket.send(JSON.stringify({ type: 'trpcResponse', id, result }));
+    //     } catch (e) {
+    //       socket.send(JSON.stringify({ type: 'trpcResponse', id, error: e.message }));
+    //     }
+    //   }
+    // });
+
+    shardProxyClient.socket.addEventListener('connect', async () => {
+      this.connect(null, { client: shardProxyClient });
+    });
+
+    shardProxyClient.socket.addEventListener('disconnect', async () => {
+      log('Shard has disconnected');
 
       // if (client.isAdmin) {
       //   await this.seerDisconnected.mutate(await getSignedRequest(app.web3, app.secrets, {}), {});
@@ -566,26 +702,30 @@ export class ShardBridge {
       // client.log.clientDisconnected += 1;
       // delete app.sockets[client.id];
       // delete app.clientLookup[client.id];
-      this.realm.clients = this.realm.clients.filter((c) => c.id !== shardProxyClient.id);
+      this.clients = this.clients.filter((c) => c.shardId !== shardProxyClient.id);
     });
 
+    shardProxyClient.socket.connect();
+
     this.shards.push(shardProxyClient);
+
+    this.spawnPort += 1; // TODO: just have the shard tell us what it is via discovery
   }
 }
 
 const createShardBridgeRouter = (shardBridge: ShardBridge) => {
   return router({
     // @ts-ignore
-    connect: procedure.input(z.object({})).mutation(({ input }, ctx) => shardBridge.connect(input, ctx)),
+    connect: procedure.input(z.object({})).mutation(({ input, ctx }) => shardBridge.connect(input, ctx)),
 
     // @ts-ignore
-    disconnect: procedure.input(z.object({})).mutation(({ input }, ctx) => shardBridge.disconnect(input, ctx)),
+    disconnect: procedure.input(z.object({})).mutation(({ input, ctx }) => shardBridge.disconnect(input, ctx)),
 
     init: procedure.input(z.object({ status: z.number() })).mutation(({ input }) => shardBridge.init(input)),
 
     configure: procedure
       .input(z.object({ clients: z.array(z.any()) }))
-      .mutation(({ input }) => shardBridge.configure(input)),
+      .mutation(({ input, ctx }) => shardBridge.configure(input, ctx)),
 
     saveRound: procedure
       .input(
@@ -602,7 +742,7 @@ const createShardBridgeRouter = (shardBridge: ShardBridge) => {
         })
       )
       // @ts-ignore
-      .mutation(({ input }, ctx) => shardBridge.saveRound(input, ctx)),
+      .mutation(({ input, ctx }) => shardBridge.saveRound(input, ctx)),
 
     confirmProfile: procedure
       .input(z.object({ data: z.object({ address: z.string() }) }))
@@ -622,22 +762,12 @@ const createShardBridgeRouter = (shardBridge: ShardBridge) => {
   });
 };
 
-export type Router = typeof createShardBridgeRouter;
-
-export async function init(realm) {
+export async function init(realm, spawnPort) {
   const shardBridge = new ShardBridge({ realm });
 
+  shardBridge.spawnPort = spawnPort;
+
   shardBridge.emit = createShardBridgeRouter(shardBridge);
-
-  // // TODO: REMOVE, REPLACE WITH SEER
-  // await mongoose.connect('mongodb://localhost:27017/yourDatabase', {
-  //   useNewUrlParser: true,
-  //   useUnifiedTopology: true,
-  // });
-
-  // let config = await Config.findOne();
-
-  // if (!config) {
 
   shardBridge.config = {} as ShardBridgeConfig;
   shardBridge.config.rewardSpawnPoints = [
@@ -676,7 +806,6 @@ export async function init(realm) {
     { x: -26.44, y: -4.05 },
   ];
 
-  // shardBridge.config.roundId = 1;
   shardBridge.config.rewardItemAmountPerLegitPlayer = 0;
   shardBridge.config.rewardItemAmountMax = 0;
   shardBridge.config.rewardWinnerAmountPerLegitPlayer = 0;
@@ -694,10 +823,9 @@ export async function init(realm) {
     shardBridge.start();
 
     setTimeout(() => {
-      shardBridge.bridge(shardBridge.shards[0].id);
-    }, 10 * 1000);
+      shardBridge.bridge(generateUuid());
+    }, 20 * 1000);
   }, 1000);
-  // await config.save();
 
   return shardBridge;
 }

@@ -21,10 +21,10 @@ import path from 'path';
 import packageJson from '../package.json';
 // import { z } from 'zod';
 import { createRouter, createCallerFactory } from '@arken/evolution-protocol/realm/server';
-import { initWebServer } from './web-server';
+import { initWeb3 } from './web3';
 import { initMonitor } from './monitor';
 import { schema } from '@arken/node/types';
-import type { Realm } from '@arken/evolution-protocol/types';
+import type { Realm, Shard } from '@arken/evolution-protocol/types';
 import { init as initShardbridge, ShardBridge } from './shard-bridge';
 
 dotenv.config();
@@ -54,9 +54,11 @@ export class RealmServer implements Realm.Server {
   seer: Realm.Seer;
   clients: Realm.Client[];
   playerRewards: Record<string, any>;
-  spawnPort: string | number;
+  spawnPort: number;
 
   constructor() {
+    log('Process running on PID: ' + process.pid);
+
     this.emit = createRouter(this as Realm.Server);
 
     this.subProcesses = [];
@@ -77,7 +79,7 @@ export class RealmServer implements Realm.Server {
       })
     );
 
-    this.isHttps = process.env.ARKEN_ENV !== 'local';
+    this.isHttps = false; // process.env.ARKEN_ENV !== 'local';
 
     if (this.isHttps) {
       this.https = require('https').createServer(
@@ -117,15 +119,15 @@ export class RealmServer implements Realm.Server {
       // });
 
       if (this.isHttps) {
-        const sslPort = process.env.RS_SSL_PORT || 443;
+        const sslPort = process.env.REALM_SSL_PORT || 443;
         this.https.listen(sslPort, function () {
-          log(`:: Backend ready and listening on *:${sslPort} (https)`);
+          log(`:: Server ready and listening on *:${sslPort} (https)`);
         });
       } else {
         // Finalize
-        const port = process.env.RS_PORT || 80;
+        const port = process.env.REALM_PORT || 80;
         this.http.listen(port, function () {
-          log(`:: Backend ready and listening on *:${port} (http)`);
+          log(`:: Server ready and listening on *:${port} (http)`);
         });
       }
 
@@ -152,7 +154,9 @@ export class RealmServer implements Realm.Server {
         '0xeb3fCb993dDe8a2Cd081FbE36238E4d64C286AC0',
       ];
       this.playerRewards = {} as any;
-      this.spawnPort = this.isHttps ? process.env.GS_SSL_PORT || 8443 : process.env.GS_PORT || 8080;
+      this.spawnPort = this.isHttps
+        ? parseInt(process.env.SHARD_SSL_PORT || '8443')
+        : parseInt(process.env.SHARD_PORT || '8080');
 
       this.initShard();
       // Override because we didnt get response from RS yet
@@ -353,14 +357,18 @@ export class RealmServer implements Realm.Server {
       // this.call = sendEventToObshards.bind(null, app);
 
       if (process.env.ARKEN_ENV !== 'local') await initMonitor(this);
-      await initWebServer(this);
+
+      await initWeb3(this);
+      // await initWebServer(this);
     } catch (e) {
       logError(e);
     }
   }
 
   async initShard() {
-    const shard = await initShardbridge(this);
+    const shard = await initShardbridge(this, this.spawnPort);
+
+    this.spawnPort += 1;
 
     this.shards.push(shard);
   }

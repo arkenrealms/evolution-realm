@@ -3,11 +3,11 @@
   "version": "2.0.0",
   "description": "",
   "scripts": {
-    "dev": "cd ../shard && rushx build && ARKEN_ENV=local LOG=1 LOG_PREFIX=[RERS*] RS_PORT=4010 RS_SSL_PORT=4011 GS_PORT=4020 GS_SSL_PORT=4021 DEBUG=* tsnd --respawn -r dotenv/config -r tsconfig-paths/register ./src/index.ts",
+    "dev": "ARKEN_ENV=local LOG=1 LOG_PREFIX=[REALM] REALM_PORT=4010 REALM_SSL_PORT=4011 SHARD_PORT=4020 SHARD_SSL_PORT=4021 DEBUG=* ts-node-dev --respawn -r dotenv/config -r tsconfig-paths/register ./src/index.ts",
     "inspect": "NODE_ENV=development yarn build && PORT=3001 NODE_ENV=production node --inspect build/index.js",
     "prod": "NODE_ENV=production yarn run nodemon --config nodemon.production.json",
     "build": "NODE_ENV=production tsc && tsc-alias",
-    "start": "ARKEN_ENV=local LOG=1 LOG_PREFIX=[RERS] RS_PORT=4010 RS_SSL_PORT=4011 GS_PORT=4020 GS_SSL_PORT=4021 NODE_ENV=production node -r tsconfig-paths/register --max_semi_space_size=30000 --max-old-space-size=30000 --initial-old-space-size=8000 --optimize-for-size --experimental-modules --experimental-json-modules build/src/index.js",
+    "start": "ARKEN_ENV=local LOG=1 LOG_PREFIX=[REALM] REALM_PORT=4010 REALM_SSL_PORT=4011 SHARD_PORT=4020 SHARD_SSL_PORT=4021 NODE_ENV=production node -r tsconfig-paths/register --max_semi_space_size=30000 --max-old-space-size=30000 --initial-old-space-size=8000 --optimize-for-size --experimental-modules --experimental-json-modules build/src/index.js",
     "forever": "NODE_ENV=production yarn build && sudo nohup forever start forever-config.json &",
     "config": "sudo /opt/bitnami/ctlscript.sh stop apache",
     "kill": "sudo pkill -f node",
@@ -19,7 +19,8 @@
   "dependencies": {
     "dotenv": "~16.4.5",
     "zod": "~3.23.8",
-    "dayjs": "~1.11.12"
+    "dayjs": "~1.11.12",
+    "isomorphic-ws": "~5.0.0"
   },
   "peerDependencies": {
     "@ethersproject/address": "^5.0.2",
@@ -75,8 +76,8 @@
     "socket.io-client": "~4.7.5",
     "ts-node-dev": "~2.0.0",
     "jest": "~29.7.0",
-    "@trpc/client": "~10.45.2",
-    "@trpc/server": "~10.45.2",
+    "@trpc/client": "next",
+    "@trpc/server": "next",
     "mongoose": "~8.5.1",
     "supertest": "~7.0.0",
     "rune-backend-sdk": "^1.0.6",
