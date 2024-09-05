@@ -157,6 +157,8 @@ export class RealmServer implements Realm.Server {
         ? parseInt(process.env.SHARD_SSL_PORT || '8443')
         : parseInt(process.env.SHARD_PORT || '8080');
 
+      await initWeb3(this);
+
       this.initShard();
       // Override because we didnt get response from RS yet
       // this.config = {
@@ -358,7 +360,6 @@ export class RealmServer implements Realm.Server {
 
       if (process.env.ARKEN_ENV !== 'local') await initMonitor(this);
 
-      await initWeb3(this);
       // await initWebServer(this);
     } catch (e) {
       logError(e);
