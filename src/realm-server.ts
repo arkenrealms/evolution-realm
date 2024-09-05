@@ -132,7 +132,7 @@ export class RealmServer implements Realm.Server {
       }
 
       this.version = packageJson.version;
-      this.endpoint = 'ptr1.isles.arken.gg';
+      this.endpoint = 'rs1.evolution.arken.asi.sh';
       this.clients = [];
       // this.sockets = {};
       this.shards = [];
