@@ -21,6 +21,7 @@ import { RealmServer } from './realm-server';
 import SocketIOWebSocket from './trpc-websocket';
 import { TRPCLink } from '@trpc/client';
 import { AnyRouter } from '@trpc/server';
+import { seerDisconnected } from '@arken/evolution-protocol/shard/schema';
 
 // Extend the context type to include 'client'
 interface CustomContext {
@@ -720,6 +721,9 @@ const createShardBridgeRouter = (shardBridge: ShardBridge) => {
 
     // @ts-ignore
     disconnect: procedure.input(z.object({})).mutation(({ input, ctx }) => shardBridge.disconnect(input, ctx)),
+
+    // @ts-ignore
+    seerDisconnected: procedure.query(({ input, ctx }) => shardBridge.seerDisconnected(input, ctx)),
 
     init: procedure.input(z.object({ status: z.number() })).mutation(({ input }) => shardBridge.init(input)),
 

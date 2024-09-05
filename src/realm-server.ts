@@ -23,7 +23,6 @@ import packageJson from '../package.json';
 import { createRouter, createCallerFactory } from '@arken/evolution-protocol/realm/server';
 import { initWeb3 } from './web3';
 import { initMonitor } from './monitor';
-import { schema } from '@arken/node/types';
 import type { Realm, Shard } from '@arken/evolution-protocol/types';
 import { init as initShardbridge, ShardBridge } from './shard-bridge';
 
@@ -31,7 +30,7 @@ dotenv.config();
 
 export class RealmServer implements Realm.Server {
   client: Realm.Client;
-  state: schema.Data;
+  state: Arken.Core.Types.Data;
   server: Express;
   isHttps: boolean;
   https?: HttpsServer;
@@ -47,7 +46,7 @@ export class RealmServer implements Realm.Server {
   version: string;
   endpoint: string;
   shards: ShardBridge[];
-  profiles: Record<string, Arken.schema.Profile>;
+  profiles: Record<string, Arken.Profile.Types.Profile>;
   web3: any; // Assume web3 is a configured instance
   secrets: any; // Secrets for signing
   emit: Realm.Router;
@@ -340,11 +339,12 @@ export class RealmServer implements Realm.Server {
         socket.on('disconnect', async () => {
           log('Client has disconnected');
 
-          if (client.isSeer) {
-            for (const shard of this.shards) {
-              await shard.emit.seerDisconnected.mutate(); // await getSignedRequest(this.web3, this.secrets, {}), {});
-            }
-          }
+          // TODO
+          // if (client.isSeer) {
+          //   for (const shard of this.shards) {
+          //     await shard.emit.seerDisconnected.query(); // await getSignedRequest(this.web3, this.secrets, {}), {});
+          //   }
+          // }
 
           // client.log.clientDisconnected += 1;
           // delete this.sockets[client.id];
@@ -510,7 +510,7 @@ export class RealmServer implements Realm.Server {
   async matchShard() {
     for (const shard of Object.values(this.shards)) {
       if (shard.info.clientCount < this.config.maxClients) {
-        return { status: 1, endpoint: shard.endpoint, port: 4020 };
+        return { status: 1, endpoint: shard.endpoint, port: 80 };
       }
     }
     return { status: 0, message: 'Failed to find shard' };
