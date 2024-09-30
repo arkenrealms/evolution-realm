@@ -1,18 +1,24 @@
 // import axios from 'axios';
 import { getSignedRequest } from '@arken/node/util/web3';
 import { log, logError, getTime } from '@arken/node/util';
+import { observable } from '@trpc/server/observable';
 // import { emitDirect } from '@arken/node/util/websocket';
 // import { upgradeCodebase } from '@arken/node/util/codebase';
 // import { initTRPC, TRPCError } from '@trpc/server';
 // import { customErrorFormatter, transformer, hasRole, validateRequest } from '@arken/node/util/rpc';
 // import shortId from 'shortId';
 import fs from 'fs';
+import { createTRPCProxyClient, TRPCClientError, httpBatchLink, createWSClient, wsLink } from '@trpc/client';
 import express, { Express } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import { io as ioClient } from 'socket.io-client';
+import { generateShortId } from '@arken/node/util/db';
 import * as dotenv from 'dotenv';
+import type { Router as SeerRouter } from '@arken/evolution-protocol/realm/seer.router';
 // import mongoose from 'mongoose';
 import { catchExceptions } from '@arken/node/util/process';
+import { dummyTransformer } from '@arken/node/util/rpc';
 import type * as Arken from '@arken/node/types';
 import { Server as HttpServer } from 'http';
 import { Server as HttpsServer } from 'https';
@@ -20,7 +26,7 @@ import { Server as SocketServer } from 'socket.io';
 import path from 'path';
 import packageJson from '../package.json';
 // import { z } from 'zod';
-import { createRouter, createCallerFactory } from '@arken/evolution-protocol/realm/server';
+import { createRouter, createCallerFactory } from '@arken/evolution-protocol/realm/realm.router';
 import { initWeb3 } from './web3';
 import { initMonitor } from './monitor';
 import type { Realm, Shard } from '@arken/evolution-protocol/types';
@@ -28,7 +34,7 @@ import { init as initShardbridge, ShardBridge } from './shard-bridge';
 
 dotenv.config();
 
-export class RealmServer implements Realm.Server {
+export class RealmServer implements Realm.Service {
   client: Realm.Client;
   state: Arken.Core.Types.Data;
   server: Express;
@@ -58,7 +64,7 @@ export class RealmServer implements Realm.Server {
   constructor() {
     log('Process running on PID: ' + process.pid);
 
-    this.emit = createRouter(this as Realm.Server);
+    this.emit = createRouter(this as Realm.Service);
 
     this.subProcesses = [];
 
@@ -159,154 +165,15 @@ export class RealmServer implements Realm.Server {
 
       await initWeb3(this);
 
-      this.initShard();
+      // this.connectSeer()
+      // this.initShard();
       // Override because we didnt get response from RS yet
-      // this.config = {
-      //   maxClients: 100;
-      //   roundId: 1;
-      //   rewardItemAmount: 0,
-      //   rewardWinnerAmount: 0,
-      //   rewardItemAmountPerLegitPlayer: 0;
-      //   rewardItemAmountMax: 0;
-      //   rewardWinnerAmountPerLegitPlayer: 0;
-      //   rewardWinnerAmountMax: 0;
-      //   rewardItemAmount: 0;
-      //   rewardWinnerAmount: 0;
-      //   drops: {
-      //     guardian: 0;
-      //     earlyAccess: 0;
-      //     trinket: 0;
-      //     santa: 0;
-      //   };
-      //   totalLegitPlayers: 0;
-      //   isBattleRoyale: boolean;
-      //   isGodParty: boolean;
-      //   level2open: boolean;
-      //   isRoundPaused: boolean;
-      //   gameMode: string;
-      //   maxEvolves: 0;
-      //   pointsPerEvolve: 0;
-      //   pointsPerKill: 0;
-      //   decayPower: 0;
-      //   dynamicDecayPower: boolean;
-      //   baseSpeed: 0;
-      //   avatarSpeedMultiplier: Record<0, 0>;
-      //   avatarDecayPower: Record<0, 0>;
-      //   preventBadKills: boolean;
-      //   antifeed1: boolean;
-      //   antifeed2: boolean;
-      //   antifeed3: boolean;
-      //   noDecay: boolean;
-      //   noBoot: boolean;
-      //   rewardSpawnLoopSeconds: 0;
-      //   orbOnDeathPercent: 0;
-      //   orbTimeoutSeconds: 0;
-      //   orbCutoffSeconds: 0;
-      //   orbLookup: Record<string, any>;
-      //   roundLoopSeconds: 0;
-      //   fastLoopSeconds: 0;
-      //   leadercap: boolean;
-      //   hideMap: boolean;
-      //   checkPositionDistance: 0;
-      //   checkInterval: 0;
-      //   resetInterval: 0;
-      //   loggableEvents: string[];
-      //   mapBoundary: {
-      //     x: { min: number; max: number };
-      //     y: { min: number; max: number };
-      //   },
-      //   spawnBoundary1: {
-      //     x: { min: number; max: number };
-      //     y: { min: number; max: number };
-      //   },
-      //   spawnBoundary2: {
-      //     x: { min: number; max: number };
-      //     y: { min: number; max: number };
-      //   },
-      //   rewards: {
-
-      //   runes: [
-      //     {
-      //       type: 'rune',
-      //       symbol: 'solo',
-      //       quantity: 10000,
-      //     },
-      //     // {
-      //     //   type: 'rune',
-      //     //   symbol: 'tyr',
-      //     //   quantity: 100,
-      //     // },
-      //     // {
-      //     //   type: 'rune',
-      //     //   symbol: 'nen',
-      //     //   quantity: 100,
-      //     // },
-      //     // {
-      //     //   type: 'rune',
-      //     //   symbol: 'isa',
-      //     //   quantity: 10000,
-      //     // },
-      //     // {
-      //     //   type: 'rune',
-      //     //   symbol: 'han',
-      //     //   quantity: 100,
-      //     // },
-      //     // {
-      //     //   type: 'rune',
-      //     //   symbol: 'ro',
-      //     //   quantity: 10000,
-      //     // },
-      //     // {
-      //     //   type: 'rune',
-      //     //   symbol: 'thal',
-      //     //   quantity: 10000,
-      //     // },
-      //     // {
-      //     //   type: 'rune',
-      //     //   symbol: 'ash',
-      //     //   quantity: 10000,
-      //     // },
-      //     // {
-      //     //   type: 'rune',
-      //     //   symbol: 'ore',
-      //     //   quantity: 10000,
-      //     // },
-      //     // {
-      //     //   type: 'rune',
-      //     //   symbol: 'sen',
-      //     //   quantity: 100,
-      //     // },
-      //     // {
-      //     //   type: 'rune',
-      //     //   symbol: 'tai',
-      //     //   quantity: 10000,
-      //     // },
-      //     // {
-      //     //   type: 'rune',
-      //     //   symbol: 'da',
-      //     //   quantity: 100,
-      //     // },
-      //     // {
-      //     //   type: 'rune',
-      //     //   symbol: 'zel',
-      //     //   quantity: 0,
-      //     // },
-      //   ],
-      //   items: [],
-      //   characters: [
-      //     {
-      //       type: 'character',
-      //       tokenId: '1',
-      //     },
-      //   ],
-      //   },
-      //   maxClients: 100,
-      // }
 
       this.io.on('connection', (socket) => {
         const ip = 'HIDDEN';
         log('Client connected from ' + ip);
 
+        // @ts-ignore
         const client: Realm.Client = {
           id: socket.id,
           name: 'Unknown' + Math.floor(Math.random() * 999),
@@ -332,9 +199,40 @@ export class RealmServer implements Realm.Server {
             const createCaller = createCallerFactory(this.emit);
             const caller = createCaller(ctx);
             const result = await caller[method](params);
+            console.log('Realm sending trpc response', result);
             socket.emit('trpcResponse', { id, result });
           } catch (error) {
             socket.emit('trpcResponse', { id, error: error.message });
+          }
+        });
+
+        socket.on('trpcResponse', async (message) => {
+          log('Shard client trpcResponse message', message);
+          const pack = message;
+          console.log('Shard client trpcResponse pack', pack);
+          const { id } = pack;
+
+          if (pack.error) {
+            console.log(
+              'Shard client callback - error occurred',
+              pack,
+              client.ioCallbacks[id] ? client.ioCallbacks[id].request : ''
+            );
+            return;
+          }
+
+          try {
+            log(`Shard client callback ${client.ioCallbacks[id] ? 'Exists' : 'Doesnt Exist'}`);
+
+            if (client.ioCallbacks[id]) {
+              clearTimeout(client.ioCallbacks[id].timeout);
+
+              client.ioCallbacks[id].resolve(pack.result);
+
+              delete client.ioCallbacks[id];
+            }
+          } catch (e) {
+            console.log('Shard client trpcResponse error', id, e);
           }
         });
 
@@ -355,6 +253,8 @@ export class RealmServer implements Realm.Server {
         });
       });
 
+      // await this.connectSeer();
+
       // this.upgrade = upgradeCodebase;
       // this.call = sendEventToObshards.bind(null, app);
 
@@ -362,16 +262,176 @@ export class RealmServer implements Realm.Server {
 
       // await initWebServer(this);
     } catch (e) {
-      logError(e);
+      console.error(e);
     }
   }
 
-  async initShard() {
+  async createShard(
+    input: Realm.RouterInput['createShard'],
+    ctx: Realm.ServiceContext
+  ): Promise<Realm.RouterOutput['createShard']> {
+    if (!this.seer) {
+      return {
+        status: 0,
+        error: 'Seer not connected',
+      };
+    }
+
     const shard = await initShardbridge(this, this.spawnPort);
 
     this.spawnPort += 1;
 
     this.shards.push(shard);
+
+    return {
+      status: 1,
+      data: shard,
+    };
+  }
+
+  async getShards(
+    input: Realm.RouterInput['getShards'],
+    ctx: Realm.ServiceContext
+  ): Promise<Realm.RouterOutput['getShards']> {
+    return {
+      status: 1,
+      data: [],
+    };
+  }
+
+  async connectSeer() {
+    // @ts-ignore
+    const client: Realm.Client = {};
+
+    client.ioCallbacks = {};
+
+    client.endpoint = process.env.SEER_ENDPOINT;
+
+    client.socket = ioClient(client.endpoint, {
+      transports: ['websocket'],
+      upgrade: true,
+      autoConnect: false,
+      // pingInterval: 5000,
+      // pingTimeout: 20000
+      // extraHeaders: {
+      //   "my-custom-header": "1234"
+      // }
+    });
+
+    this.seer = {
+      client,
+      emit: createTRPCProxyClient<SeerRouter>({
+        links: [
+          () =>
+            ({ op, next }) => {
+              const uuid = generateShortId();
+              return observable((observer) => {
+                const { input } = op;
+
+                op.context.client = client;
+                // @ts-ignore
+                op.context.client.roles = ['admin', 'user', 'guest'];
+
+                if (!client) {
+                  console.log('Realm -> Seer: Emit Direct failed, no client', op);
+                  observer.complete();
+                  return;
+                }
+
+                if (!client.socket || !client.socket.emit) {
+                  console.log('Realm -> Seer: Emit Direct failed, bad socket', op);
+                  observer.complete();
+                  return;
+                }
+                console.log('Realm -> Seer: Emit Direct', op, client.socket);
+
+                const request = { id: uuid, method: op.path, type: op.type, params: input };
+                client.socket.emit('trpc', request);
+
+                // save the ID and callback when finished
+                const timeout = setTimeout(() => {
+                  console.log('Realm -> Seer: Request timed out', op);
+                  delete client.ioCallbacks[uuid];
+                  observer.error(new TRPCClientError('Realm -> Seer: Request timeout'));
+                }, 15000); // 15 seconds timeout
+
+                client.ioCallbacks[uuid] = {
+                  request,
+                  timeout,
+                  resolve: (response) => {
+                    console.log('Realm -> Seer: ioCallbacks.resolve', uuid, response);
+                    clearTimeout(timeout);
+                    observer.next(response);
+                    observer.complete();
+                    delete client.ioCallbacks[uuid]; // Cleanup after completion
+                  },
+                  reject: (error) => {
+                    console.log('Realm -> Seer: ioCallbacks.reject', error);
+                    clearTimeout(timeout);
+                    observer.error(error);
+                    delete client.ioCallbacks[uuid]; // Cleanup on error
+                  },
+                };
+              });
+            },
+        ],
+        transformer: dummyTransformer,
+      }),
+    };
+
+    client.socket.on('trpcResponse', async (message) => {
+      log('Shard seer client trpcResponse message', message);
+      const pack = message;
+      console.log('Shard client trpcResponse pack', pack);
+      const { id } = pack;
+
+      if (pack.error) {
+        console.log(
+          'Shard seer client callback - error occurred',
+          pack,
+          client.ioCallbacks[id] ? client.ioCallbacks[id].request : ''
+        );
+        return;
+      }
+
+      try {
+        log(`Shard  seerclient callback ${client.ioCallbacks[id] ? 'Exists' : 'Doesnt Exist'}`);
+
+        if (client.ioCallbacks[id]) {
+          clearTimeout(client.ioCallbacks[id].timeout);
+
+          client.ioCallbacks[id].resolve(pack.result);
+
+          delete client.ioCallbacks[id];
+        }
+      } catch (e) {
+        console.log('Shard seer client trpcResponse error', id, e);
+      }
+    });
+
+    client.socket.connect();
+
+    // Initialize the realm server with status 1
+    const data = { address: this.secrets.address }; // TODO: timestamp
+    const signature = await getSignedRequest(this.web3, this.secrets, data);
+
+    const res = await this.seer.emit.auth.mutate({
+      data,
+      signature: { hash: signature.hash, address: signature.address },
+    });
+
+    // Check if initialization was successful
+    if (res?.status !== 1) {
+      console.error('Could not connect to seer');
+      return { status: 0 };
+    }
+
+    this.config = {
+      ...this.config,
+      ...(res.config as any),
+    };
+
+    log('Seer connected', res);
   }
 
   async auth({ signature }: { signature: { address: string; hash: string } }) {

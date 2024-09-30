@@ -2,7 +2,7 @@ FROM node:20
 
 WORKDIR /usr/src/app
 RUN apt-get update
-RUN apt-get install nano
+RUN apt-get install vim
 RUN npm install -g @microsoft/rush ts-node-dev
 
 COPY . .
