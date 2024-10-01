@@ -649,8 +649,12 @@ export class ShardBridge implements Bridge.Service {
                 resolve: (response) => {
                   console.log('ioCallbacks.resolve', uuid, response);
                   clearTimeout(timeout);
-                  observer.next(response);
-                  observer.complete();
+                  if (response.error) {
+                    observer.error(response.error);
+                  } else {
+                    observer.next(response);
+                    observer.complete();
+                  }
                   delete client.ioCallbacks[uuid]; // Cleanup after completion
                 },
                 reject: (error) => {
