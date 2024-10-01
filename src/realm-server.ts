@@ -195,9 +195,10 @@ export class RealmServer implements Realm.Service {
           const { id, method, params } = message;
 
           try {
-            const ctx = { client };
+            const ctx = { client, app: this };
             const createCaller = createCallerFactory(this.emit);
             const caller = createCaller(ctx);
+            console.log('Realm calling trpc service', id, method, params);
             const result = await caller[method](params);
             console.log('Realm sending trpc response', result);
             socket.emit('trpcResponse', { id, result });
@@ -434,26 +435,28 @@ export class RealmServer implements Realm.Service {
     log('Seer connected', res);
   }
 
-  async auth({ signature }: { signature: { address: string; hash: string } }) {
-    const { address } = signature;
+  async auth(input: Realm.RouterInput['auth'], ctx: Realm.ServiceContext) {
+    if (!input) throw new Error('Input should not be void');
 
-    if (this.seerList.includes(address)) {
-      this.client.isSeer = true;
-      this.client.isAdmin = true;
-      this.client.isMod = true;
+    const { signature } = input;
+
+    if (this.seerList.includes(signature.address)) {
+      ctx.client.isSeer = true;
+      ctx.client.isAdmin = true;
+      ctx.client.isMod = true;
       // await this.onSeerConnected();
-    } else if (this.adminList.includes(address)) {
-      this.client.isSeer = false;
-      this.client.isAdmin = true;
-      this.client.isMod = true;
-    } else if (this.modList.includes(address)) {
-      this.client.isSeer = false;
-      this.client.isAdmin = false;
-      this.client.isMod = true;
+    } else if (this.adminList.includes(signature.address)) {
+      ctx.client.isSeer = false;
+      ctx.client.isAdmin = true;
+      ctx.client.isMod = true;
+    } else if (this.modList.includes(signature.address)) {
+      ctx.client.isSeer = false;
+      ctx.client.isAdmin = false;
+      ctx.client.isMod = true;
     } else {
-      this.client.isSeer = false;
-      this.client.isAdmin = false;
-      this.client.isMod = false;
+      ctx.client.isSeer = false;
+      ctx.client.isAdmin = false;
+      ctx.client.isMod = false;
     }
 
     return { status: 1 };
