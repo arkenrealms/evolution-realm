@@ -30,6 +30,7 @@ import { createRouter, createCallerFactory } from '@arken/evolution-protocol/rea
 import { initWeb3 } from './web3';
 import { initMonitor } from './monitor';
 import type { Realm, Shard } from '@arken/evolution-protocol/types';
+import { serialize, deserialize } from '@arken/node/util/rpc';
 import { init as initShardbridge, ShardBridge } from './shard-bridge';
 
 dotenv.config();
@@ -55,7 +56,8 @@ export class RealmServer implements Realm.Service {
   profiles: Record<string, Arken.Profile.Types.Profile>;
   web3: any; // Assume web3 is a configured instance
   secrets: any; // Secrets for signing
-  emit: Realm.Router;
+  // emit: Realm.Router;
+  router: Realm.Router;
   seer: Realm.Seer;
   clients: Realm.Client[];
   playerRewards: Record<string, any>;
@@ -64,7 +66,7 @@ export class RealmServer implements Realm.Service {
   constructor() {
     log('Process running on PID: ' + process.pid);
 
-    this.emit = createRouter(this as Realm.Service);
+    this.router = createRouter(this as Realm.Service);
 
     this.subProcesses = [];
 
@@ -196,14 +198,14 @@ export class RealmServer implements Realm.Service {
 
           try {
             const ctx = { client, app: this };
-            const createCaller = createCallerFactory(this.emit);
+            const createCaller = createCallerFactory(this.router);
             const caller = createCaller(ctx);
             console.log('Realm calling trpc service', id, method, params);
-            const result = await caller[method](params);
+            const result = params ? await caller[method](deserialize(params)) : await caller[method]();
             console.log('Realm sending trpc response', result);
-            socket.emit('trpcResponse', { id, result });
+            socket.emit('trpcResponse', { id, result: serialize(result) });
           } catch (error) {
-            socket.emit('trpcResponse', { id, error: error.message });
+            socket.emit('trpcResponse', { id, result: {}, error: error.message });
           }
         });
 
@@ -301,138 +303,148 @@ export class RealmServer implements Realm.Service {
   }
 
   async connectSeer() {
-    // @ts-ignore
-    const client: Realm.Client = {};
+    return new Promise((resolve, reject) => {
+      // @ts-ignore
+      const client: Realm.Client = {};
 
-    client.ioCallbacks = {};
+      client.ioCallbacks = {};
 
-    client.endpoint = process.env.SEER_ENDPOINT;
+      client.endpoint = process.env.SEER_ENDPOINT;
 
-    client.socket = ioClient(client.endpoint, {
-      transports: ['websocket'],
-      upgrade: true,
-      autoConnect: false,
-      // pingInterval: 5000,
-      // pingTimeout: 20000
-      // extraHeaders: {
-      //   "my-custom-header": "1234"
-      // }
-    });
+      client.socket = ioClient(client.endpoint, {
+        transports: ['websocket'],
+        upgrade: false,
+        autoConnect: false,
+        // pingInterval: 5000,
+        // pingTimeout: 20000
+        // extraHeaders: {
+        //   "my-custom-header": "1234"
+        // }
+      });
 
-    this.seer = {
-      client,
-      emit: createTRPCProxyClient<SeerRouter>({
-        links: [
-          () =>
-            ({ op, next }) => {
-              const uuid = generateShortId();
-              return observable((observer) => {
-                const { input } = op;
+      this.seer = {
+        client,
+        emit: createTRPCProxyClient<SeerRouter>({
+          links: [
+            () =>
+              ({ op, next }) => {
+                const uuid = generateShortId();
+                return observable((observer) => {
+                  const { input } = op;
 
-                op.context.client = client;
-                // @ts-ignore
-                op.context.client.roles = ['admin', 'user', 'guest'];
+                  op.context.client = client;
+                  // @ts-ignore
+                  op.context.client.roles = ['admin', 'user', 'guest'];
 
-                if (!client) {
-                  console.log('Realm -> Seer: Emit Direct failed, no client', op);
-                  observer.complete();
-                  return;
-                }
-
-                if (!client.socket || !client.socket.emit) {
-                  console.log('Realm -> Seer: Emit Direct failed, bad socket', op);
-                  observer.complete();
-                  return;
-                }
-                console.log('Realm -> Seer: Emit Direct', op, client.socket);
-
-                const request = { id: uuid, method: op.path, type: op.type, params: input };
-                client.socket.emit('trpc', request);
-
-                // save the ID and callback when finished
-                const timeout = setTimeout(() => {
-                  console.log('Realm -> Seer: Request timed out', op);
-                  delete client.ioCallbacks[uuid];
-                  observer.error(new TRPCClientError('Realm -> Seer: Request timeout'));
-                }, 15000); // 15 seconds timeout
-
-                client.ioCallbacks[uuid] = {
-                  request,
-                  timeout,
-                  resolve: (response) => {
-                    console.log('Realm -> Seer: ioCallbacks.resolve', uuid, response);
-                    clearTimeout(timeout);
-                    observer.next(response);
+                  if (!client) {
+                    console.log('Realm -> Seer: Emit Direct failed, no client', op);
                     observer.complete();
-                    delete client.ioCallbacks[uuid]; // Cleanup after completion
-                  },
-                  reject: (error) => {
-                    console.log('Realm -> Seer: ioCallbacks.reject', error);
-                    clearTimeout(timeout);
-                    observer.error(error);
-                    delete client.ioCallbacks[uuid]; // Cleanup on error
-                  },
-                };
-              });
-            },
-        ],
-        transformer: dummyTransformer,
-      }),
-    };
+                    return;
+                  }
 
-    client.socket.on('trpcResponse', async (message) => {
-      log('Shard seer client trpcResponse message', message);
-      const pack = message;
-      console.log('Shard client trpcResponse pack', pack);
-      const { id } = pack;
+                  if (!client.socket || !client.socket.emit) {
+                    console.log('Realm -> Seer: Emit Direct failed, bad socket', op);
+                    observer.complete();
+                    return;
+                  }
+                  console.log('Realm -> Seer: Emit Direct', op, client.socket);
 
-      if (pack.error) {
-        console.log(
-          'Shard seer client callback - error occurred',
-          pack,
-          client.ioCallbacks[id] ? client.ioCallbacks[id].request : ''
-        );
-        return;
-      }
+                  const request = { id: uuid, method: op.path, type: op.type, params: serialize(input) };
+                  client.socket.emit('trpc', request);
 
-      try {
-        log(`Shard  seerclient callback ${client.ioCallbacks[id] ? 'Exists' : 'Doesnt Exist'}`);
+                  // save the ID and callback when finished
+                  const timeout = setTimeout(() => {
+                    console.log('Realm -> Seer: Request timed out', op);
+                    delete client.ioCallbacks[uuid];
+                    observer.error(new TRPCClientError('Realm -> Seer: Request timeout'));
+                  }, 15000); // 15 seconds timeout
 
-        if (client.ioCallbacks[id]) {
-          clearTimeout(client.ioCallbacks[id].timeout);
+                  client.ioCallbacks[uuid] = {
+                    request,
+                    timeout,
+                    resolve: (response) => {
+                      console.log('Realm -> Seer: ioCallbacks.resolve', uuid, response);
+                      clearTimeout(timeout);
+                      if (response.error) {
+                        observer.error(response.error);
+                      } else {
+                        observer.next(response);
+                        observer.complete();
+                      }
+                      delete client.ioCallbacks[uuid]; // Cleanup after completion
+                    },
+                    reject: (error) => {
+                      console.log('Realm -> Seer: ioCallbacks.reject', error);
+                      clearTimeout(timeout);
+                      observer.error(error);
+                      delete client.ioCallbacks[uuid]; // Cleanup on error
+                    },
+                  };
+                });
+              },
+          ],
+          // transformer: dummyTransformer,
+        }),
+      };
 
-          client.ioCallbacks[id].resolve(pack.result);
+      client.socket.on('trpcResponse', async (message) => {
+        log('Shard seer client trpcResponse message', message);
+        const pack = message;
+        console.log('Shard client trpcResponse pack', pack);
+        const { id } = pack;
 
-          delete client.ioCallbacks[id];
+        if (pack.error) {
+          console.log(
+            'Shard seer client callback - error occurred',
+            pack,
+            client.ioCallbacks[id] ? client.ioCallbacks[id].request : ''
+          );
+          return;
         }
-      } catch (e) {
-        console.log('Shard seer client trpcResponse error', id, e);
-      }
+
+        try {
+          log(`Shard  seerclient callback ${client.ioCallbacks[id] ? 'Exists' : 'Doesnt Exist'}`);
+
+          if (client.ioCallbacks[id]) {
+            clearTimeout(client.ioCallbacks[id].timeout);
+
+            client.ioCallbacks[id].resolve({ result: { data: deserialize(pack.result) } });
+
+            delete client.ioCallbacks[id];
+          }
+        } catch (e) {
+          console.log('Shard seer client trpcResponse error', id, e);
+        }
+      });
+
+      client.socket.addEventListener('connect', async () => {
+        // Initialize the realm server with status 1
+        const data = { address: this.secrets.address }; // TODO: timestamp
+        const signature = await getSignedRequest(this.web3, this.secrets, data);
+
+        const res = await this.seer.emit.auth.mutate({
+          data,
+          signature: { hash: signature.hash, address: signature.address },
+        });
+        console.log('Seer auth res', res);
+        // Check if initialization was successful
+        if (res?.status !== 1) {
+          console.error('Could not connect to seer');
+          resolve({ status: 0 });
+          return;
+        }
+
+        this.config = {
+          ...this.config,
+          ...(res.data as any),
+        };
+
+        log('Seer connected', res);
+        resolve({ status: 1 });
+      });
+
+      client.socket.connect();
     });
-
-    client.socket.connect();
-
-    // Initialize the realm server with status 1
-    const data = { address: this.secrets.address }; // TODO: timestamp
-    const signature = await getSignedRequest(this.web3, this.secrets, data);
-
-    const res = await this.seer.emit.auth.mutate({
-      data,
-      signature: { hash: signature.hash, address: signature.address },
-    });
-
-    // Check if initialization was successful
-    if (res?.status !== 1) {
-      console.error('Could not connect to seer');
-      return { status: 0 };
-    }
-
-    this.config = {
-      ...this.config,
-      ...(res.config as any),
-    };
-
-    log('Seer connected', res);
   }
 
   async auth(input: Realm.RouterInput['auth'], ctx: Realm.ServiceContext) {
@@ -485,6 +497,13 @@ export class RealmServer implements Realm.Service {
     const playerCount = games.reduce((total, game) => total + game.playerCount, 0);
     const speculatorCount = games.reduce((total, game) => total + game.speculatorCount, 0);
 
+    if (!this.config) {
+      return {
+        status: 0,
+        error: 'Config is not setup.',
+      };
+    }
+
     return {
       status: 1,
       data: {
@@ -492,6 +511,13 @@ export class RealmServer implements Realm.Service {
         speculatorCount,
         version: this.version,
         games,
+        isSeerConnected: !!this.seer, // TODO: improve with heartbeat check
+        roundId: this.config.roundId,
+        gameMode: this.config.gameMode,
+        isRoundPaused: this.config.isRoundPaused,
+        isBattleRoyale: this.config.isBattleRoyale,
+        isGodParty: this.config.isGodParty,
+        level2open: this.config.level2open,
       },
     };
   }

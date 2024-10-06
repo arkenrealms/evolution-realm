@@ -5,7 +5,7 @@
   "scripts": {
     "build": "NODE_ENV=production tsc && tsc-alias",
     "config": "sudo /opt/bitnami/ctlscript.sh stop apache",
-    "dev": "ARKEN_ENV=local LOG=1 LOG_PREFIX=[REALM] REALM_PORT=4010 REALM_SSL_PORT=4011 SHARD_PORT=4020 SHARD_SSL_PORT=4021 DEBUG=* ts-node-dev --respawn -r dotenv/config -r tsconfig-paths/register ./src/index.ts",
+    "dev": "ARKEN_ENV=local LOG=1 LOG_PREFIX=[REALM] REALM_PORT=4010 REALM_SSL_PORT=4011 SHARD_PORT=4020 SHARD_SSL_PORT=4021 ts-node-dev --respawn -r dotenv/config -r tsconfig-paths/register ./src/index.ts",
     "forever": "NODE_ENV=production yarn build && sudo nohup forever start forever-config.json &",
     "inspect": "NODE_ENV=development yarn build && PORT=3001 NODE_ENV=production node --inspect build/index.js",
     "kill": "sudo pkill -f node",
