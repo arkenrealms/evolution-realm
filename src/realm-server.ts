@@ -62,10 +62,12 @@ export class RealmServer implements Realm.Service {
   clients: Realm.Client[];
   playerRewards: Record<string, any>;
   spawnPort: number;
+  id: string;
 
   constructor() {
     log('Process running on PID: ' + process.pid);
 
+    this.id = generateShortId();
     this.router = createRouter(this as Realm.Service);
 
     this.subProcesses = [];
@@ -205,6 +207,7 @@ export class RealmServer implements Realm.Service {
             console.log('Realm sending trpc response', result);
             socket.emit('trpcResponse', { id, result: serialize(result) });
           } catch (error) {
+            log('Error while sending trpc message', error);
             socket.emit('trpcResponse', { id, result: {}, error: error.message });
           }
         });
@@ -280,15 +283,26 @@ export class RealmServer implements Realm.Service {
       };
     }
 
+    log('Creating shard');
+
     const shard = await initShardbridge(this, this.spawnPort);
 
     this.spawnPort += 1;
 
     this.shards.push(shard);
 
+    const data = {
+      id: shard.id,
+      name: shard.name,
+      realmId: shard.realmId,
+      // endpoint: shard.endpoint,
+    };
+
+    log('Created shard', data);
+
     return {
       status: 1,
-      data: shard,
+      data,
     };
   }
 
@@ -328,7 +342,6 @@ export class RealmServer implements Realm.Service {
           links: [
             () =>
               ({ op, next }) => {
-                const uuid = generateShortId();
                 return observable((observer) => {
                   const { input } = op;
 
@@ -348,6 +361,8 @@ export class RealmServer implements Realm.Service {
                     return;
                   }
                   console.log('Realm -> Seer: Emit Direct', op, client.socket);
+
+                  const uuid = generateShortId();
 
                   const request = { id: uuid, method: op.path, type: op.type, params: serialize(input) };
                   client.socket.emit('trpc', request);
@@ -492,8 +507,8 @@ export class RealmServer implements Realm.Service {
     return { status: 1 };
   }
 
-  async info() {
-    const games = this.clients.map((client) => client.info).filter((info) => !!info);
+  async info(input: Realm.RouterInput['info'], { client }: Realm.ServiceContext): Promise<Realm.RouterOutput['info']> {
+    const games = this.shards.map((shard) => shard.info).filter((info) => !!info);
     const playerCount = games.reduce((total, game) => total + game.playerCount, 0);
     const speculatorCount = games.reduce((total, game) => total + game.speculatorCount, 0);
 
@@ -504,22 +519,29 @@ export class RealmServer implements Realm.Service {
       };
     }
 
-    return {
+    const res = {
       status: 1,
       data: {
-        playerCount,
-        speculatorCount,
+        playerCount: playerCount || 0,
+        speculatorCount: speculatorCount || 0,
         version: this.version,
-        games,
+        authorizedProfile: {
+          id: client.id,
+        },
+        games: games.map((game: any) => ({ id: game.id, gameMode: game.gameMode })),
         isSeerConnected: !!this.seer, // TODO: improve with heartbeat check
-        roundId: this.config.roundId,
-        gameMode: this.config.gameMode,
-        isRoundPaused: this.config.isRoundPaused,
-        isBattleRoyale: this.config.isBattleRoyale,
-        isGodParty: this.config.isGodParty,
-        level2open: this.config.level2open,
+        // roundId: this.config.roundId,
+        // gameMode: this.config.gameMode,
+        // isRoundPaused: this.config.isRoundPaused,
+        // isBattleRoyale: this.config.isBattleRoyale,
+        // isGodParty: this.config.isGodParty,
+        // level2open: this.config.level2open,
       },
     };
+
+    console.log('info res', res);
+
+    return res;
   }
 
   async addMod({

@@ -163,6 +163,7 @@ export class ShardBridge implements Bridge.Service {
   unsavedGames: any;
   clients: Shard.Client[];
   ioCallbacks: any;
+  realmId: string;
 
   constructor({ realm }: Context) {
     console.log('Construct shard bridge');
@@ -249,11 +250,21 @@ export class ShardBridge implements Bridge.Service {
     const signature = await getSignedRequest(this.realm.web3, this.realm.secrets, data);
 
     await sleep(5000);
-    console.log(client.emit.connected.mutate);
-    client.emit.connected.mutate(
+
+    await client.emit.connected.mutate(
       { signature: { hash: signature.hash, address: signature.address }, data }
       // { context: { client } }
     );
+
+    const info = await client.emit.info.mutate();
+
+    if (!info || typeof info !== 'object') {
+      console.log('[SHARD.BRIDGE] invalid shard info', info);
+      return { status: 0 };
+    }
+    for (const key of Object.keys(info)) {
+      this.info[key] = info[key];
+    }
 
     return { status: 1 };
   }
@@ -271,20 +282,21 @@ export class ShardBridge implements Bridge.Service {
 
     log('Shard instance initialized');
     log('Getting seer info');
-    const info = await this.getSeerInfo();
+    const info = { ...(await this.getSeerInfo()) };
 
     if (!info) {
       logError('Could not fetch info');
       return { status: 0 };
     }
 
+    this.id = generateShortId();
     this.info = info;
     this.isAuthed = true;
 
     return {
       status: 1,
       data: {
-        id: generateShortId(),
+        id: this.id,
         roundId: this.realm.config.roundId,
       },
     };
@@ -654,7 +666,7 @@ export class ShardBridge implements Bridge.Service {
                   if (response.error) {
                     observer.error(response.error);
                   } else {
-                    observer.next({ result: deserialize(response) });
+                    observer.next({ result: { data: deserialize(response.result) } });
                     observer.complete();
                   }
                   delete client.ioCallbacks[id]; // Cleanup after completion
@@ -694,25 +706,29 @@ export class ShardBridge implements Bridge.Service {
 
     client.socket.onAny(async (eventName, res) => {
       try {
+        if (eventName === 'onEvents') return;
+
         log('client.socket.onAny', eventName, res);
-        if (eventName === 'Events') return;
 
         if (eventName === 'trpcResponse') {
-          const { data, oid } = res;
+          const { oid } = res;
 
-          log(`Callback ${this.ioCallbacks[oid] ? 'Exists' : 'Doesnt Exist'}`, eventName);
+          console.log(
+            `[REALM.SHARD_BRIDGE] Callback ${client.ioCallbacks[oid] ? 'Exists' : 'Doesnt Exist'}`,
+            eventName
+          );
 
-          if (this.ioCallbacks[oid]) {
-            clearTimeout(this.ioCallbacks[oid].timeout);
+          if (client.ioCallbacks[oid]) {
+            clearTimeout(client.ioCallbacks[oid].timeout);
 
-            this.ioCallbacks[oid].resolve(data);
+            client.ioCallbacks[oid].resolve({ result: { data: deserialize(res.result) } });
 
-            delete this.ioCallbacks[oid];
+            delete client.ioCallbacks[oid];
           }
         } else if (eventName === 'trpc') {
           const { method } = res;
 
-          log('Shard bridge called', method, res.params);
+          console.log('[REALM.SHARD_BRIDGE] Shard bridge called', method, res.params);
 
           const id = generateShortId();
 
@@ -726,7 +742,7 @@ export class ShardBridge implements Bridge.Service {
             // socket.emit('trpcResponse', { id, result });
             client.socket.emit('trpcResponse', { id, oid: res.id, result: serialize(result) });
           } catch (e) {
-            client.socket.emit('trpcResponse', { id, error: e.message });
+            client.socket.emit('trpcResponse', { id, oid: res.id, error: e.message });
           }
         }
       } catch (e) {
@@ -787,8 +803,10 @@ export class ShardBridge implements Bridge.Service {
 export async function init(realm, spawnPort) {
   const shardBridge = new ShardBridge({ realm });
 
+  shardBridge.id = generateShortId();
   shardBridge.name = randomName();
   shardBridge.spawnPort = spawnPort;
+  shardBridge.realmId = realm.id;
 
   shardBridge.router = createBridgeRouter(shardBridge);
 
@@ -846,7 +864,7 @@ export async function init(realm, spawnPort) {
     shardBridge.start();
 
     setTimeout(() => {
-      shardBridge.bridge(generateUuid());
+      shardBridge.bridge(generateShortId());
     }, 20 * 1000);
   }, 1000);
 
