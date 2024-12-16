@@ -13,7 +13,7 @@ COPY ssh_config /root/.ssh/config
 RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
 
 WORKDIR /usr/src/app
-RUN git clone git@arkenbot:arken-engineering/arken.git
+RUN git clone git@arkenbot:arkenrealms/arken.git
 WORKDIR /usr/src/app/arken
 RUN git submodule init
 RUN git submodule update --remote --recursive

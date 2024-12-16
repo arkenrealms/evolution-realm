@@ -19,7 +19,12 @@ import { generateShortId } from '@arken/node/util/db';
 import { customErrorFormatter, transformer, dummyTransformer } from '@arken/node/util/rpc';
 import { randomName } from '@arken/node/util/string';
 import { Realm, Shard } from '@arken/evolution-protocol/types';
-import { createRouter as createBridgeRouter } from '@arken/evolution-protocol/bridge/bridge.router';
+import {
+  createRouter as createBridgeRouter,
+  RouterInput,
+  RouterOutput,
+  RouterContext,
+} from '@arken/evolution-protocol/bridge/bridge.router';
 import type * as Bridge from '@arken/evolution-protocol/bridge/bridge.types';
 import { serialize, deserialize } from '@arken/node/util/rpc';
 import { RealmServer } from './realm-server';
@@ -164,6 +169,8 @@ export class ShardBridge implements Bridge.Service {
   clients: Shard.Client[];
   ioCallbacks: any;
   realmId: string;
+  clientCount: number;
+  status: string;
 
   constructor({ realm }: Context) {
     console.log('Construct shard bridge');
@@ -233,23 +240,13 @@ export class ShardBridge implements Bridge.Service {
     }
   }
 
-  async getSeerInfo(): Promise<any> {
-    // const res = await this.realm.seer.emit.info.query();
-    const res = { status: 1, data: {} };
-
-    if (res?.status === 1) {
-      return res.data;
-    }
-    return { status: 0, error: 'Realm: seer error.' };
-  }
-
-  async connect(input: any, { client }: { client: ShardProxyClient }) {
+  async connect(input: RouterInput['connect'], { client }: RouterContext): Promise<RouterOutput['connect']> {
     log('Connected: ' + client.key, client.id);
 
     const data = { id: client.id };
     const signature = await getSignedRequest(this.realm.web3, this.realm.secrets, data);
 
-    await sleep(5000);
+    await sleep(2000);
 
     await client.emit.connected.mutate(
       { signature: { hash: signature.hash, address: signature.address }, data }
@@ -259,14 +256,12 @@ export class ShardBridge implements Bridge.Service {
     const info = await client.emit.info.mutate();
 
     if (!info || typeof info !== 'object') {
-      console.log('[SHARD.BRIDGE] invalid shard info', info);
-      return { status: 0 };
+      throw new Error('[SHARD.BRIDGE] invalid shard info' + info);
     }
+
     for (const key of Object.keys(info)) {
       this.info[key] = info[key];
     }
-
-    return { status: 1 };
   }
 
   async disconnect(input: any, { client }: any) {
@@ -274,47 +269,47 @@ export class ShardBridge implements Bridge.Service {
     return { status: 1 };
   }
 
-  async init({ status }: { status?: number }) {
-    if (status !== 1) {
-      logError('Could not init');
-      return { status: 0 };
-    }
+  async init(input: RouterInput['init'], ctx: RouterContext): Promise<RouterOutput['init']> {
+    // if (!input) throw new Error('Input should not be void');
+
+    // if (input?.status !== 1) {
+    //   throw new Error('Could not init');
+    // }
 
     log('Shard instance initialized');
     log('Getting seer info');
-    const info = { ...(await this.getSeerInfo()) };
+    const res = await this.realm.seer.emit.evolution.info.query();
 
-    if (!info) {
-      logError('Could not fetch info');
-      return { status: 0 };
-    }
+    if (!res) throw new Error('Could not fetch info');
 
     this.id = generateShortId();
-    this.info = info;
+    this.info = { ...res };
     this.isAuthed = true;
 
+    log('Seer info', this.info);
+
     return {
-      status: 1,
-      data: {
-        id: this.id,
-        roundId: this.realm.config.roundId,
-      },
+      id: this.id,
+      roundId: this.info.roundId,
+      rewards: this.info.rewards,
     };
   }
 
-  async configure({ clients }: { clients?: Shard.Client[] }, ctx: any) {
+  async configure(input: RouterInput['configure'], ctx: RouterContext): Promise<RouterOutput['configure']> {
+    if (!input) throw new Error('Input should not be void');
+
     log('configure');
     const { config } = this;
     // TODO: add them
-    this.clients = clients;
+    this.clients = input;
 
-    for (const client of clients) {
+    for (const client of input) {
       client.shardId = ctx.client.id;
     }
 
     config.totalLegitPlayers = 0;
 
-    for (const client of clients) {
+    for (const client of input) {
       if (client.isGuest) continue;
 
       try {
@@ -352,39 +347,30 @@ export class ShardBridge implements Bridge.Service {
     );
 
     return {
-      status: 1,
-      data: {
-        rewardWinnerAmount: config.rewardWinnerAmount,
-        rewardItemAmount: config.rewardItemAmount,
-      },
+      rewardWinnerAmount: config.rewardWinnerAmount,
+      rewardItemAmount: config.rewardItemAmount,
     };
   }
 
-  async saveRound({ data }: { data?: any }, { client }: any) {
+  async saveRound(input: RouterInput['saveRound'], ctx: RouterContext): Promise<RouterOutput['saveRound']> {
+    if (!input) throw new Error('Input should not be void');
+
     const { config } = this;
 
     let failed = false;
 
     try {
-      log('saveRound', data);
+      log('saveRound', input);
 
-      const res = await this.realm.seer.emit.saveRound.mutate({
-        shardId: client.id,
+      const res = await this.realm.seer.emit.evolution.saveRound.mutate({
+        shardId: ctx.client.id,
         roundId: this.realm.config.roundId,
-        round: data,
+        round: input,
         rewardWinnerAmount: config.rewardWinnerAmount,
         lastClients: this.clients,
       });
 
-      if (res.status === 1) {
-        return {
-          status: 1,
-          data: res,
-        };
-      } else {
-        failed = true;
-        log('Save round failed', res);
-      }
+      return res;
     } catch (e) {
       logError('Save round failed', e);
       failed = true;
@@ -394,17 +380,14 @@ export class ShardBridge implements Bridge.Service {
       this.unsavedGames.push({
         gsid: this.id,
         roundId: this.realm.config.roundId,
-        round: data,
+        round: input,
         rewardWinnerAmount: config.rewardWinnerAmount,
       });
 
-      return {
-        status: 0,
-        data: { rewardWinnerAmount: 0, rewardItemAmount: 0 },
-      };
+      return { rewardWinnerAmount: 0, rewardItemAmount: 0 };
     } else {
       for (const game of this.unsavedGames.filter((g) => g.status === undefined)) {
-        const res = await this.realm.seer.emit.saveRound.mutate(game);
+        const res = await this.realm.seer.emit.evolution.saveRound.mutate(game);
         game.status = res.status;
       }
 
@@ -412,72 +395,72 @@ export class ShardBridge implements Bridge.Service {
     }
 
     this.realm.config.roundId++;
-
-    return { status: 1 };
   }
 
-  async confirmProfile({ data }: { data?: { address?: string } }) {
-    log('confirmProfile', data);
+  async confirmProfile(
+    input: RouterInput['confirmProfile'],
+    { client }: RouterContext
+  ): Promise<RouterOutput['confirmProfile']> {
+    if (!input) throw new Error('Input should not be void');
 
-    let profile = this.realm.profiles[data.address];
+    log('confirmProfile', input.address);
 
-    if (!profile) {
-      const res = await this.realm.seer.emit.getProfile.query(data.address);
-
-      if (res.data) {
-        this.realm.profiles[data.address] = profile;
-      }
+    if (!this.realm.profiles[input.address]) {
+      this.realm.profiles[input.address] = await this.realm.seer.emit.profile.getProfile.query({
+        where: { address: { equals: input.address } },
+      });
     }
 
+    const profile = this.realm.profiles[input.address];
+    if (!profile) throw new Error('Profile not found');
+
     if (this.clients.length > 100) {
-      console.log('Too many clients'); // TODO: add to queue
-      return { status: 0 };
+      throw new Error('Too many clients'); // TODO: add to queue
     }
 
     const now = dayjs();
 
     if (profile.isBanned && dayjs(profile.banExpireDate).isAfter(now)) {
-      return { status: 0 };
+      throw new Error('Banned');
     }
 
     return {
-      status: 1,
-      isMod: this.realm.modList.includes(data.address) || this.realm.adminList.includes(data.address),
+      isMod: this.realm.modList.includes(input.address) || this.realm.adminList.includes(input.address),
     };
   }
 
-  async auth({ data, signature }: { data?: string; signature?: { hash?: string; address?: string } }) {
-    log('ShardBridge.auth', data, signature);
+  async auth(input: RouterInput['auth'], { client }: RouterContext): Promise<RouterOutput['auth']> {
+    if (!input) throw new Error('Input should not be void');
+
+    // async auth({ data, signature }: { data?: string; signature?: { hash?: string; address?: string } }) {
+    log('ShardBridge.auth', input);
 
     const roles = [];
 
-    if (signature.address.length !== 42 || signature.address.slice(0, 2) !== '0x') return { status: 0 };
+    if (input.signature.address.length !== 42 || input.signature.address.slice(0, 2) !== '0x') return { status: 0 };
 
-    const normalizedAddress = this.realm.web3.utils.toChecksumAddress(signature.address.trim());
+    const normalizedAddress = this.realm.web3.utils.toChecksumAddress(input.signature.address.trim());
 
     if (!normalizedAddress) return { status: 0 };
 
-    if (this.realm.web3.eth.accounts.recover(data, signature.hash).toLowerCase() !== signature.address.toLowerCase())
+    if (
+      this.realm.web3.eth.accounts.recover(input.data, input.signature.hash).toLowerCase() !==
+      input.signature.address.toLowerCase()
+    )
       return { status: 0 };
 
     if (this.realm.seerList.includes(normalizedAddress)) roles.push('seer');
     if (this.realm.adminList.includes(normalizedAddress)) roles.push('admin');
     if (this.realm.modList.includes(normalizedAddress)) roles.push('mod');
 
-    return {
-      status: 1,
-      data: { roles },
-    };
+    return { roles };
   }
 
-  async normalizeAddress({ address }: { address?: string }) {
-    return {
-      status: 1,
-      data: { address: this.realm.web3.utils.toChecksumAddress(address.trim()) },
-    };
+  async normalizeAddress(address: string) {
+    return this.realm.web3.utils.toChecksumAddress(address.trim());
   }
 
-  async getRandomReward({ data }: { data?: any }) {
+  async getRandomReward() {
     const now = getTime();
     const { config } = this;
 
@@ -565,16 +548,16 @@ export class ShardBridge implements Bridge.Service {
       tempReward.rewardItemName = `${tempReward.rarity} ${tempReward.name}`;
       config.drops.trinket = now;
     } else {
-      const odds = Array(1000).fill('runes');
+      const odds = Array(1000).fill('tokens');
 
-      const rewardType = this.config.rewards[odds[random(0, odds.length - 1)]];
+      const rewardType = this.info.rewards[odds[random(0, odds.length - 1)]];
       if (!rewardType || rewardType.length === 0) {
-        return { status: 2 };
+        throw new Error('Reward doesnt exist');
       }
 
       const reward = rewardType[random(0, rewardType.length - 1)];
       if (reward.type === 'rune' && reward.quantity <= 0) {
-        return { status: 3 };
+        throw new Error('No tokens left');
       }
 
       tempReward = { ...reward, id: generateShortId(), enabledDate: now };
@@ -583,10 +566,7 @@ export class ShardBridge implements Bridge.Service {
         : this.config.rewardSpawnPoints[random(0, this.config.rewardSpawnPoints.length - 1)];
     }
 
-    return {
-      status: 1,
-      reward: tempReward,
-    };
+    return tempReward;
   }
 
   bridge(bid) {
@@ -645,7 +625,7 @@ export class ShardBridge implements Bridge.Service {
                 observer.error(new TRPCClientError('Emit Direct failed, bad socket'));
                 return;
               }
-              console.log('[REALM.SHARD_BRIDGE] Emit Direct', op, client.socket);
+              console.log('[REALM.SHARD_BRIDGE] Emit Direct', op);
 
               const id = generateShortId();
 
@@ -660,13 +640,22 @@ export class ShardBridge implements Bridge.Service {
 
               client.ioCallbacks[id] = {
                 timeout,
-                resolve: (response) => {
-                  console.log('[REALM.SHARD_BRIDGE] ioCallbacks.resolve', id, response);
+                resolve: (pack) => {
+                  log('[REALM.SHARD_BRIDGE] ioCallbacks.resolve', id, pack);
                   clearTimeout(timeout);
-                  if (response.error) {
-                    observer.error(response.error);
+                  if (pack.error) {
+                    observer.error(pack.error);
                   } else {
-                    observer.next({ result: { data: deserialize(response.result) } });
+                    const result = deserialize(pack.result);
+                    console.log(443332, result);
+
+                    if (result?.status !== undefined && result?.status !== 1)
+                      throw new Error('[REALM.SHARD_BRIDGE] callback status error' + result);
+
+                    observer.next({
+                      result: result ? result : { data: undefined },
+                    });
+
                     observer.complete();
                   }
                   delete client.ioCallbacks[id]; // Cleanup after completion
@@ -706,8 +695,6 @@ export class ShardBridge implements Bridge.Service {
 
     client.socket.onAny(async (eventName, res) => {
       try {
-        if (eventName === 'onEvents') return;
-
         log('client.socket.onAny', eventName, res);
 
         if (eventName === 'trpcResponse') {
@@ -728,6 +715,8 @@ export class ShardBridge implements Bridge.Service {
         } else if (eventName === 'trpc') {
           const { method } = res;
 
+          if (method === 'onEvents') return;
+
           console.log('[REALM.SHARD_BRIDGE] Shard bridge called', method, res.params);
 
           const id = generateShortId();
@@ -742,7 +731,7 @@ export class ShardBridge implements Bridge.Service {
             // socket.emit('trpcResponse', { id, result });
             client.socket.emit('trpcResponse', { id, oid: res.id, result: serialize(result) });
           } catch (e) {
-            client.socket.emit('trpcResponse', { id, oid: res.id, error: e.message });
+            client.socket.emit('trpcResponse', { id, oid: res.id, error: e.stack + '' });
           }
         }
       } catch (e) {
@@ -793,11 +782,10 @@ export class ShardBridge implements Bridge.Service {
     client.socket.connect();
   }
 
-  async seerDisconnected(input: any) {
-    return {
-      status: 0,
-    };
-  }
+  async seerDisconnected(
+    input: RouterInput['seerDisconnected'],
+    ctx: RouterContext
+  ): Promise<RouterOutput['seerDisconnected']> {}
 }
 
 export async function init(realm, spawnPort) {
@@ -807,6 +795,9 @@ export async function init(realm, spawnPort) {
   shardBridge.name = randomName();
   shardBridge.spawnPort = spawnPort;
   shardBridge.realmId = realm.id;
+  shardBridge.clientCount = 0;
+  shardBridge.endpoint = 'localhost:' + spawnPort;
+  shardBridge.status = 'Active';
 
   shardBridge.router = createBridgeRouter(shardBridge);
 

@@ -15,7 +15,7 @@ import cors from 'cors';
 import { io as ioClient } from 'socket.io-client';
 import { generateShortId } from '@arken/node/util/db';
 import * as dotenv from 'dotenv';
-import type { Router as SeerRouter } from '@arken/evolution-protocol/realm/seer.router';
+import type { Types as SeerTypes } from '@arken/seer-protocol';
 // import mongoose from 'mongoose';
 import { catchExceptions } from '@arken/node/util/process';
 import { dummyTransformer } from '@arken/node/util/rpc';
@@ -202,43 +202,39 @@ export class RealmServer implements Realm.Service {
             const ctx = { client, app: this };
             const createCaller = createCallerFactory(this.router);
             const caller = createCaller(ctx);
-            console.log('Realm calling trpc service', id, method, params);
+            log('Realm calling trpc service', id, method, params);
             const result = params ? await caller[method](deserialize(params)) : await caller[method]();
-            console.log('Realm sending trpc response', result);
+            log('Realm sending trpc response', method, params, result);
             socket.emit('trpcResponse', { id, result: serialize(result) });
           } catch (error) {
             log('Error while sending trpc message', error);
-            socket.emit('trpcResponse', { id, result: {}, error: error.message });
+            socket.emit('trpcResponse', { id, result: {}, error: error.stack + '' });
           }
         });
 
         socket.on('trpcResponse', async (message) => {
-          log('Shard client trpcResponse message', message);
+          log('Realm trpcResponse message', message);
           const pack = message;
-          console.log('Shard client trpcResponse pack', pack);
+          log('Realm trpcResponse pack', pack);
           const { id } = pack;
 
           if (pack.error) {
-            console.log(
-              'Shard client callback - error occurred',
-              pack,
-              client.ioCallbacks[id] ? client.ioCallbacks[id].request : ''
-            );
+            log('Realm callback - error occurred', pack, client.ioCallbacks[id] ? client.ioCallbacks[id].request : '');
             return;
           }
 
           try {
-            log(`Shard client callback ${client.ioCallbacks[id] ? 'Exists' : 'Doesnt Exist'}`);
+            log(`Realm callback ${client.ioCallbacks[id] ? 'Exists' : 'Doesnt Exist'}`);
 
             if (client.ioCallbacks[id]) {
               clearTimeout(client.ioCallbacks[id].timeout);
 
-              client.ioCallbacks[id].resolve(pack.result);
+              client.ioCallbacks[id].resolve(pack);
 
               delete client.ioCallbacks[id];
             }
           } catch (e) {
-            console.log('Shard client trpcResponse error', id, e);
+            log('Realm trpcResponse error', id, e);
           }
         });
 
@@ -277,10 +273,7 @@ export class RealmServer implements Realm.Service {
     ctx: Realm.ServiceContext
   ): Promise<Realm.RouterOutput['createShard']> {
     if (!this.seer) {
-      return {
-        status: 0,
-        error: 'Seer not connected',
-      };
+      throw new Error('Seer not connected');
     }
 
     log('Creating shard');
@@ -298,22 +291,47 @@ export class RealmServer implements Realm.Service {
       // endpoint: shard.endpoint,
     };
 
-    log('Created shard', data);
+    log(
+      'Creating shard',
+      JSON.stringify({
+        where: { id: { equals: '66f104dace637115159e29a0' } },
+        data: {
+          status: 'Online',
+          regionCode: 'EU',
+          clientCount: 1,
+          realmShards: this.shards.map((shard: any) => ({
+            endpoint: shard.endpoint,
+            status: shard.status,
+            clientCount: shard.clientCount,
+          })),
+        },
+      })
+    );
 
-    return {
-      status: 1,
-      data,
-    };
+    await this.seer.emit.core.updateRealm.mutate({
+      where: { id: { equals: '66f104dace637115159e29a0' } },
+      data: {
+        status: 'Online',
+        regionCode: 'EU',
+        clientCount: 1,
+        realmShards: this.shards
+          .filter((shard: any) => !!shard)
+          .map((shard: any) => ({
+            endpoint: shard.endpoint,
+            status: shard.status,
+            clientCount: shard.clientCount,
+          })),
+      },
+    });
+
+    return data;
   }
 
   async getShards(
     input: Realm.RouterInput['getShards'],
     ctx: Realm.ServiceContext
   ): Promise<Realm.RouterOutput['getShards']> {
-    return {
-      status: 1,
-      data: [],
-    };
+    return [];
   }
 
   async connectSeer() {
@@ -324,6 +342,8 @@ export class RealmServer implements Realm.Service {
       client.ioCallbacks = {};
 
       client.endpoint = process.env.SEER_ENDPOINT;
+
+      log('Connecting to Seer');
 
       client.socket = ioClient(client.endpoint, {
         transports: ['websocket'],
@@ -338,7 +358,7 @@ export class RealmServer implements Realm.Service {
 
       this.seer = {
         client,
-        emit: createTRPCProxyClient<SeerRouter>({
+        emit: createTRPCProxyClient<SeerTypes.Router>({
           links: [
             () =>
               ({ op, next }) => {
@@ -350,17 +370,17 @@ export class RealmServer implements Realm.Service {
                   op.context.client.roles = ['admin', 'user', 'guest'];
 
                   if (!client) {
-                    console.log('Realm -> Seer: Emit Direct failed, no client', op);
+                    log('Realm -> Seer: Emit Direct failed, no client', op);
                     observer.complete();
                     return;
                   }
 
                   if (!client.socket || !client.socket.emit) {
-                    console.log('Realm -> Seer: Emit Direct failed, bad socket', op);
+                    log('Realm -> Seer: Emit Direct failed, bad socket', op);
                     observer.complete();
                     return;
                   }
-                  console.log('Realm -> Seer: Emit Direct', op, client.socket);
+                  log('Realm -> Seer: Emit Direct', op);
 
                   const uuid = generateShortId();
 
@@ -369,7 +389,7 @@ export class RealmServer implements Realm.Service {
 
                   // save the ID and callback when finished
                   const timeout = setTimeout(() => {
-                    console.log('Realm -> Seer: Request timed out', op);
+                    log('Realm -> Seer: Request timed out', op);
                     delete client.ioCallbacks[uuid];
                     observer.error(new TRPCClientError('Realm -> Seer: Request timeout'));
                   }, 15000); // 15 seconds timeout
@@ -377,19 +397,27 @@ export class RealmServer implements Realm.Service {
                   client.ioCallbacks[uuid] = {
                     request,
                     timeout,
-                    resolve: (response) => {
-                      console.log('Realm -> Seer: ioCallbacks.resolve', uuid, response);
+                    resolve: (pack) => {
+                      log('Realm -> Seer: ioCallbacks.resolve', uuid, pack);
                       clearTimeout(timeout);
-                      if (response.error) {
-                        observer.error(response.error);
+                      if (pack.error) {
+                        observer.error(pack.error);
                       } else {
-                        observer.next(response);
+                        const result = deserialize(pack.result);
+                        console.log(443332, result);
+
+                        if (result?.status !== 1) throw new Error('Realm -> Seer callback status error' + result);
+
+                        observer.next({
+                          result: result ? result : { data: undefined },
+                        });
+
                         observer.complete();
                       }
                       delete client.ioCallbacks[uuid]; // Cleanup after completion
                     },
                     reject: (error) => {
-                      console.log('Realm -> Seer: ioCallbacks.reject', error);
+                      log('Realm -> Seer: ioCallbacks.reject', error);
                       clearTimeout(timeout);
                       observer.error(error);
                       delete client.ioCallbacks[uuid]; // Cleanup on error
@@ -405,11 +433,11 @@ export class RealmServer implements Realm.Service {
       client.socket.on('trpcResponse', async (message) => {
         log('Shard seer client trpcResponse message', message);
         const pack = message;
-        console.log('Shard client trpcResponse pack', pack);
+        log('Shard seer trpcResponse pack', pack);
         const { id } = pack;
 
         if (pack.error) {
-          console.log(
+          log(
             'Shard seer client callback - error occurred',
             pack,
             client.ioCallbacks[id] ? client.ioCallbacks[id].request : ''
@@ -423,89 +451,95 @@ export class RealmServer implements Realm.Service {
           if (client.ioCallbacks[id]) {
             clearTimeout(client.ioCallbacks[id].timeout);
 
-            client.ioCallbacks[id].resolve({ result: { data: deserialize(pack.result) } });
+            client.ioCallbacks[id].resolve(pack);
 
             delete client.ioCallbacks[id];
           }
         } catch (e) {
-          console.log('Shard seer client trpcResponse error', id, e);
+          log('Shard seer client trpcResponse error', id, e);
         }
       });
 
-      client.socket.addEventListener('connect', async () => {
+      const connect = async () => {
         // Initialize the realm server with status 1
-        const data = { address: this.secrets.address }; // TODO: timestamp
+        const data = { address: this.secrets.address, gameKey: 'evolution' }; // TODO: timestamp
         const signature = await getSignedRequest(this.web3, this.secrets, data);
 
-        const res = await this.seer.emit.auth.mutate({
-          data,
-          signature: { hash: signature.hash, address: signature.address },
+        const res: Realm.RouterOutput['auth'] = await this.seer.emit.core.authorize.mutate({
+          token: JSON.stringify({
+            data,
+            signature: { hash: signature.hash, address: signature.address },
+          }),
         });
-        console.log('Seer auth res', res);
+
+        log('Seer auth res', res);
+
         // Check if initialization was successful
-        if (res?.status !== 1) {
-          console.error('Could not connect to seer');
-          resolve({ status: 0 });
+        if (!res?.profile) {
+          console.error('Could not connect to seer. Retrying in 10 seconds.');
+          // resolve({ status: 0 });
+
+          setTimeout(connect, 10 * 1000);
+
           return;
         }
 
         this.config = {
           ...this.config,
-          ...(res.data as any),
+          ...(res as any),
         };
 
         log('Seer connected', res);
-        resolve({ status: 1 });
-      });
+        resolve(null);
+      };
 
+      client.socket.addEventListener('connect', connect);
       client.socket.connect();
     });
   }
 
-  async auth(input: Realm.RouterInput['auth'], ctx: Realm.ServiceContext) {
+  async auth(input: Realm.RouterInput['auth'], { client }: Realm.ServiceContext): Promise<Realm.RouterOutput['auth']> {
     if (!input) throw new Error('Input should not be void');
 
     const { signature } = input;
 
     if (this.seerList.includes(signature.address)) {
-      ctx.client.isSeer = true;
-      ctx.client.isAdmin = true;
-      ctx.client.isMod = true;
+      client.isSeer = true;
+      client.isAdmin = true;
+      client.isMod = true;
       // await this.onSeerConnected();
     } else if (this.adminList.includes(signature.address)) {
-      ctx.client.isSeer = false;
-      ctx.client.isAdmin = true;
-      ctx.client.isMod = true;
+      client.isSeer = false;
+      client.isAdmin = true;
+      client.isMod = true;
     } else if (this.modList.includes(signature.address)) {
-      ctx.client.isSeer = false;
-      ctx.client.isAdmin = false;
-      ctx.client.isMod = true;
+      client.isSeer = false;
+      client.isAdmin = false;
+      client.isMod = true;
     } else {
-      ctx.client.isSeer = false;
-      ctx.client.isAdmin = false;
-      ctx.client.isMod = false;
+      client.isSeer = false;
+      client.isAdmin = false;
+      client.isMod = false;
     }
-
-    return { status: 1 };
   }
 
-  async setConfig({ data }: { data?: { shardId?: string; config?: Record<string, any> } }) {
+  async setConfig(
+    input: Realm.RouterInput['setConfig'],
+    { client }: Realm.ServiceContext
+  ): Promise<Realm.RouterOutput['setConfig']> {
+    if (!input) throw new Error('Input should not be void');
     this.config = {
       ...this.config,
-      ...data.config,
+      ...input.config,
     };
 
-    await this.shards[data.shardId].router.setConfigRequest.mutate(
-      await getSignedRequest(this.web3, this.secrets, data),
-      data
+    await this.shards[input.shardId].router.setConfigRequest.mutate(
+      await getSignedRequest(this.web3, this.secrets, input),
+      input
     );
-
-    return { status: 1 };
   }
 
-  async ping() {
-    return { status: 1 };
-  }
+  async ping(input: Realm.RouterInput['ping'], { client }: Realm.ServiceContext): Promise<Realm.RouterOutput['ping']> {}
 
   async info(input: Realm.RouterInput['info'], { client }: Realm.ServiceContext): Promise<Realm.RouterOutput['info']> {
     const games = this.shards.map((shard) => shard.info).filter((info) => !!info);
@@ -513,119 +547,114 @@ export class RealmServer implements Realm.Service {
     const speculatorCount = games.reduce((total, game) => total + game.speculatorCount, 0);
 
     if (!this.config) {
-      return {
-        status: 0,
-        error: 'Config is not setup.',
-      };
+      throw new Error('Config is not setup.');
     }
 
     const res = {
-      status: 1,
-      data: {
-        playerCount: playerCount || 0,
-        speculatorCount: speculatorCount || 0,
-        version: this.version,
-        authorizedProfile: {
-          id: client.id,
-        },
-        games: games.map((game: any) => ({ id: game.id, gameMode: game.gameMode })),
-        isSeerConnected: !!this.seer, // TODO: improve with heartbeat check
-        // roundId: this.config.roundId,
-        // gameMode: this.config.gameMode,
-        // isRoundPaused: this.config.isRoundPaused,
-        // isBattleRoyale: this.config.isBattleRoyale,
-        // isGodParty: this.config.isGodParty,
-        // level2open: this.config.level2open,
+      playerCount: playerCount || 0,
+      speculatorCount: speculatorCount || 0,
+      version: this.version,
+      authorizedProfile: {
+        id: client.id,
       },
+      games: games.map((game: any) => ({ id: game.id, gameMode: game.gameMode })),
+      isSeerConnected: !!this.seer, // TODO: improve with heartbeat check
+      // roundId: this.config.roundId,
+      // gameMode: this.config.gameMode,
+      // isRoundPaused: this.config.isRoundPaused,
+      // isBattleRoyale: this.config.isBattleRoyale,
+      // isGodParty: this.config.isGodParty,
+      // level2open: this.config.level2open,
     };
 
-    console.log('info res', res);
+    log('info res', res);
 
     return res;
   }
 
-  async addMod({
-    signature,
-    data: { target },
-  }: {
-    signature: { address: string; hash: string };
-    data: { target: string };
-  }) {
-    this.modList.push(target);
-    return { status: 1 };
+  async addMod(
+    input: Realm.RouterInput['addMod'],
+    { client }: Realm.ServiceContext
+  ): Promise<Realm.RouterOutput['addMod']> {
+    if (!input) throw new Error('Input should not be void');
+
+    this.modList.push(input.target);
   }
 
-  async removeMod({
-    signature,
-    data: { target },
-  }: {
-    signature: { address: string; hash: string };
-    data: { target: string };
-  }) {
-    this.modList = this.modList.filter((addr) => addr !== target);
-    return { status: 1 };
+  async removeMod(
+    input: Realm.RouterInput['removeMod'],
+    { client }: Realm.ServiceContext
+  ): Promise<Realm.RouterOutput['removeMod']> {
+    if (!input) throw new Error('Input should not be void');
+
+    this.modList = this.modList.filter((addr) => addr !== input.target);
   }
 
-  async banClient({ data }: { data: { target: string } }) {
+  async banClient(
+    input: Realm.RouterInput['banClient'],
+    { client }: Realm.ServiceContext
+  ): Promise<Realm.RouterOutput['banClient']> {
+    if (!input) throw new Error('Input should not be void');
+
     for (const shardId of Object.keys(this.shards)) {
-      const res = await this.shards[shardId].banClient.mutate(data);
+      const res = await this.shards[shardId].banClient.mutate(input);
       if (res.status !== 1) {
-        log('Failed to ban client', data.target, shardId);
+        log('Failed to ban client', input.target, shardId);
       }
     }
-    return { status: 1 };
   }
 
-  async banUser({
-    data,
-    signature,
-  }: {
-    data: { target: string; banReason: string; banExpireDate: string };
-    signature: { address: string; hash: string };
-  }) {
-    this.seer.emit.banUser.mutate(data);
+  async banUser(
+    input: Realm.RouterInput['banUser'],
+    { client }: Realm.ServiceContext
+  ): Promise<Realm.RouterOutput['banUser']> {
+    if (!input) throw new Error('Input should not be void');
+
+    // TODO: call seer
+    // this.seer.emit.banUser.mutate(input);
 
     for (const shardId of Object.keys(this.shards)) {
-      const res = await this.shards[shardId].emit.kickClient.mutate(data);
+      const res = await this.shards[shardId].emit.kickClient.mutate(input);
 
       if (!res.status) {
-        log('Failed to kick client', data.target, shardId);
+        log('Failed to kick client', input.target, shardId);
       }
     }
-
-    return { status: 1 };
   }
 
   async getState() {
     return {
-      status: 1,
-      data: {
-        config: this.config,
-        adminList: this.adminList,
-        modList: this.modList,
-      },
+      config: this.config,
+      adminList: this.adminList,
+      modList: this.modList,
     };
   }
 
-  async unbanClient({ data, signature }: { data: { target: string }; signature: { address: string; hash: string } }) {
-    for (const shardId of Object.keys(this.shards)) {
-      const res = await this.shards[shardId].unbanClient.mutate({ target: data.target });
+  async unbanClient(
+    input: Realm.RouterInput['unbanClient'],
+    { client }: Realm.ServiceContext
+  ): Promise<Realm.RouterOutput['unbanClient']> {
+    if (!input) throw new Error('Input should not be void');
 
-      if (!res.status) {
-        log('Failed to kick client', data.target, shardId);
+    for (const shardId of Object.keys(this.shards)) {
+      const res = await this.shards[shardId].unbanClient.mutate({ target: input.target });
+
+      if (!res) {
+        log('Failed to kick client', input.target, shardId);
       }
     }
-
-    return { status: 1 };
   }
 
-  async matchShard() {
+  async matchShard(
+    input: Realm.RouterInput['matchShard'],
+    { client }: Realm.ServiceContext
+  ): Promise<Realm.RouterOutput['matchShard']> {
     for (const shard of Object.values(this.shards)) {
       if (shard.info.clientCount < this.config.maxClients) {
-        return { status: 1, endpoint: shard.endpoint, port: 80 };
+        return { endpoint: shard.endpoint, port: 80 };
       }
     }
-    return { status: 0, message: 'Failed to find shard' };
+    throw new Error('Failed to find shard');
   }
 
   // async call({ data, signature }: { data: { method: string }; signature: { address: string; hash: string } }) {
