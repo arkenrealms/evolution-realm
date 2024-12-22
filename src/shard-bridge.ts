@@ -301,15 +301,15 @@ export class ShardBridge implements Bridge.Service {
     log('configure');
     const { config } = this;
     // TODO: add them
-    this.clients = input;
+    this.clients = input.clients;
 
-    for (const client of input) {
+    for (const client of this.clients) {
       client.shardId = ctx.client.id;
     }
 
     config.totalLegitPlayers = 0;
 
-    for (const client of input) {
+    for (const client of this.clients) {
       if (client.isGuest) continue;
 
       try {
@@ -329,22 +329,24 @@ export class ShardBridge implements Bridge.Service {
 
     if (config.totalLegitPlayers === 0) config.totalLegitPlayers = 1;
 
-    config.rewardItemAmount = parseFloat(
-      (
-        Math.round(
-          Math.min(config.totalLegitPlayers * config.rewardItemAmountPerLegitPlayer, config.rewardItemAmountMax) * 1000
-        ) / 1000
-      ).toFixed(3)
-    );
+    config.rewardItemAmount = 1;
+    // parseFloat(
+    //   (
+    //     Math.round(
+    //       Math.min(config.totalLegitPlayers * config.rewardItemAmountPerLegitPlayer, config.rewardItemAmountMax) * 1000
+    //     ) / 1000
+    //   ).toFixed(3)
+    // );
 
-    config.rewardWinnerAmount = parseFloat(
-      (
-        Math.round(
-          Math.min(config.totalLegitPlayers * config.rewardWinnerAmountPerLegitPlayer, config.rewardWinnerAmountMax) *
-            1000
-        ) / 1000
-      ).toFixed(3)
-    );
+    config.rewardWinnerAmount = 100;
+    // parseFloat(
+    //   (
+    //     Math.round(
+    //       Math.min(config.totalLegitPlayers * config.rewardWinnerAmountPerLegitPlayer, config.rewardWinnerAmountMax) *
+    //         1000
+    //     ) / 1000
+    //   ).toFixed(3)
+    // );
 
     return {
       rewardWinnerAmount: config.rewardWinnerAmount,
@@ -364,7 +366,7 @@ export class ShardBridge implements Bridge.Service {
 
       const res = await this.realm.seer.emit.evolution.saveRound.mutate({
         shardId: ctx.client.id,
-        roundId: this.realm.config.roundId,
+        roundId: input.id,
         round: input,
         rewardWinnerAmount: config.rewardWinnerAmount,
         lastClients: this.clients,
@@ -403,7 +405,7 @@ export class ShardBridge implements Bridge.Service {
   ): Promise<RouterOutput['confirmProfile']> {
     if (!input) throw new Error('Input should not be void');
 
-    log('confirmProfile', input.address);
+    log('confirmProfile', input);
 
     if (!this.realm.profiles[input.address]) {
       this.realm.profiles[input.address] = await this.realm.seer.emit.profile.getProfile.query({
@@ -425,6 +427,8 @@ export class ShardBridge implements Bridge.Service {
     }
 
     return {
+      name: profile.name,
+      isBanned: profile.isBanned,
       isMod: this.realm.modList.includes(input.address) || this.realm.adminList.includes(input.address),
     };
   }
@@ -503,6 +507,8 @@ export class ShardBridge implements Bridge.Service {
       else if (rand > 850) tempReward.rarity = 'Rare';
 
       tempReward.rewardItemName = `${tempReward.rarity} ${tempReward.name}`;
+      tempReward.rewardItemType = 2;
+
       config.drops.guardian = now;
     } else if (
       dropItems &&
@@ -522,6 +528,8 @@ export class ShardBridge implements Bridge.Service {
       };
 
       tempReward.rewardItemName = tempReward.name;
+      tempReward.rewardItemType = 3;
+
       config.drops.earlyAccess = now;
     } else if (
       dropItems &&
@@ -546,11 +554,13 @@ export class ShardBridge implements Bridge.Service {
       else if (rand > 850) tempReward.rarity = 'Rare';
 
       tempReward.rewardItemName = `${tempReward.rarity} ${tempReward.name}`;
+      tempReward.rewardItemType = 4;
+
       config.drops.trinket = now;
     } else {
       const odds = Array(1000).fill('tokens');
 
-      const rewardType = this.info.rewards[odds[random(0, odds.length - 1)]];
+      const rewardType = this.info.rewards.tokens; // [odds[random(0, odds.length - 1)]];
       if (!rewardType || rewardType.length === 0) {
         throw new Error('Reward doesnt exist');
       }
@@ -560,7 +570,9 @@ export class ShardBridge implements Bridge.Service {
         throw new Error('No tokens left');
       }
 
-      tempReward = { ...reward, id: generateShortId(), enabledDate: now };
+      tempReward = { ...reward, rewardItemType: 0, quantity: 1, id: generateShortId(), enabledDate: now };
+      tempReward.rewardItemName = tempReward.symbol;
+      tempReward.rewardItemType = 0;
       tempReward.position = config.level2open
         ? this.config.rewardSpawnPoints2[random(0, this.config.rewardSpawnPoints2.length - 1)]
         : this.config.rewardSpawnPoints[random(0, this.config.rewardSpawnPoints.length - 1)];
@@ -713,6 +725,8 @@ export class ShardBridge implements Bridge.Service {
             delete client.ioCallbacks[oid];
           }
         } else if (eventName === 'trpc') {
+          if (res instanceof Buffer) return;
+
           const { method } = res;
 
           if (method === 'onEvents') return;
