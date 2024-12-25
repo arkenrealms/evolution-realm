@@ -462,14 +462,11 @@ export class RealmServer implements Realm.Service {
 
       const connect = async () => {
         // Initialize the realm server with status 1
-        const data = { address: this.secrets.address, gameKey: 'evolution' }; // TODO: timestamp
-        const signature = await getSignedRequest(this.web3, this.secrets, data);
+        const signature = await getSignedRequest(this.web3, this.secrets, 'evolution');
 
         const res: Realm.RouterOutput['auth'] = await this.seer.emit.core.authorize.mutate({
-          token: JSON.stringify({
-            data,
-            signature: { hash: signature.hash, address: signature.address },
-          }),
+          address: signature.address,
+          token: signature.hash,
         });
 
         log('Seer auth res', res);
