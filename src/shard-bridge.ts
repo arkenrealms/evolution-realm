@@ -599,7 +599,7 @@ export class ShardBridge implements Bridge.Service {
 
     client.ioCallbacks = {};
 
-    client.endpoint = (this.realm.isHttps ? 'https://' : 'http://') + 'localhost:' + this.spawnPort;
+    client.endpoint = (this.realm.isHttps ? 'https://' : 'http://') + 'hoff.arken.gg:' + this.spawnPort;
 
     client.socket = ioClient(client.endpoint, {
       transports: ['websocket'],
