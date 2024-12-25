@@ -12,7 +12,7 @@
     "killkill": "sudo kill -9 `ps -aux | grep /usr/bin/node | grep -v grep | awk '{ print $2 }'` && sudo kill -9 `ps -aux | grep RuneInfinite | grep -v grep | awk '{ print $2 }'`",
     "manual": "sudo node --max_semi_space_size=30000 --max-old-space-size=30000 --initial-old-space-size=8000 --optimize-for-size --experimental-modules --experimental-json-modules build/index.js",
     "nohup": "sudo nohup node --max_semi_space_size=30000 --max-old-space-size=30000 --initial-old-space-size=8000 --optimize-for-size --experimental-modules --experimental-json-modules build/index.js &",
-    "prod": "NODE_ENV=production yarn run nodemon --config nodemon.production.json",
+    "prod": "LOG=1 LOG_PREFIX=[REALM] REALM_PORT=4010 REALM_SSL_PORT=4011 SHARD_PORT=4020 SHARD_SSL_PORT=4021 ts-node-dev --respawn -r dotenv/config -r tsconfig-paths/register ./src/index.ts",
     "start": "ARKEN_ENV=local LOG=1 LOG_PREFIX=[REALM] REALM_PORT=4010 REALM_SSL_PORT=4011 SHARD_PORT=4020 SHARD_SSL_PORT=4021 NODE_ENV=production node -r tsconfig-paths/register --max_semi_space_size=30000 --max-old-space-size=30000 --initial-old-space-size=8000 --optimize-for-size --experimental-modules --experimental-json-modules build/src/index.js",
     "test": "jest"
   },
