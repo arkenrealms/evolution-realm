@@ -467,6 +467,7 @@ export class RealmServer implements Realm.Service {
         const res: Realm.RouterOutput['auth'] = await this.seer.emit.core.authorize.mutate({
           address: signature.address,
           token: signature.hash,
+          data: signature.data,
         });
 
         log('Seer auth res', res);
