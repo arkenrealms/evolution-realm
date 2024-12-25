@@ -88,7 +88,7 @@ export class RealmServer implements Realm.Service {
       })
     );
 
-    this.isHttps = false; // process.env.ARKEN_ENV !== 'local';
+    this.isHttps = process.env.ARKEN_ENV !== 'local';
 
     if (this.isHttps) {
       this.https = require('https').createServer(

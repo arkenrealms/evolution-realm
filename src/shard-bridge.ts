@@ -52,21 +52,21 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 // Define the schema for the configuration
-const configSchema = new Schema({
-  roundId: { type: Number, default: 1 },
-  rewardItemAmountPerLegitPlayer: { type: Number, default: 0 },
-  rewardItemAmountMax: { type: Number, default: 0 },
-  rewardWinnerAmountPerLegitPlayer: { type: Number, default: 0 },
-  rewardWinnerAmountMax: { type: Number, default: 0 },
-  rewardItemAmount: { type: Number, default: 0 },
-  rewardWinnerAmount: { type: Number, default: 0 },
-  drops: {
-    guardian: { type: Number, default: 1633043139000 },
-    earlyAccess: { type: Number, default: 1633043139000 },
-    trinket: { type: Number, default: 1641251240764 },
-    santa: { type: Number, default: 1633043139000 },
-  },
-});
+// const configSchema = new Schema({
+//   roundId: { type: Number, default: 1 },
+//   rewardItemAmountPerLegitPlayer: { type: Number, default: 0 },
+//   rewardItemAmountMax: { type: Number, default: 0 },
+//   rewardWinnerAmountPerLegitPlayer: { type: Number, default: 0 },
+//   rewardWinnerAmountMax: { type: Number, default: 0 },
+//   rewardItemAmount: { type: Number, default: 0 },
+//   rewardWinnerAmount: { type: Number, default: 0 },
+//   drops: {
+//     guardian: { type: Number, default: 1633043139000 },
+//     earlyAccess: { type: Number, default: 1633043139000 },
+//     trinket: { type: Number, default: 1641251240764 },
+//     santa: { type: Number, default: 1633043139000 },
+//   },
+// });
 
 const path = require('path');
 
@@ -366,7 +366,6 @@ export class ShardBridge implements Bridge.Service {
 
       const res = await this.realm.seer.emit.evolution.saveRound.mutate({
         shardId: ctx.client.id,
-        roundId: input.id,
         round: input,
         rewardWinnerAmount: config.rewardWinnerAmount,
         lastClients: this.clients,
@@ -378,25 +377,25 @@ export class ShardBridge implements Bridge.Service {
       failed = true;
     }
 
-    if (failed) {
-      this.unsavedGames.push({
-        gsid: this.id,
-        roundId: this.realm.config.roundId,
-        round: input,
-        rewardWinnerAmount: config.rewardWinnerAmount,
-      });
+    // if (failed) {
+    //   this.unsavedGames.push({
+    //     gsid: this.id,
+    //     roundId: this.realm.config.roundId,
+    //     round: input,
+    //     rewardWinnerAmount: config.rewardWinnerAmount,
+    //   });
 
-      return { rewardWinnerAmount: 0, rewardItemAmount: 0 };
-    } else {
-      for (const game of this.unsavedGames.filter((g) => g.status === undefined)) {
-        const res = await this.realm.seer.emit.evolution.saveRound.mutate(game);
-        game.status = res.status;
-      }
+    //   return { rewardWinnerAmount: 0, rewardItemAmount: 0 };
+    // } else {
+    //   for (const game of this.unsavedGames.filter((g) => g.status === undefined)) {
+    //     const res = await this.realm.seer.emit.evolution.saveRound.mutate(game);
+    //     game.status = res.status;
+    //   }
 
-      this.unsavedGames = this.unsavedGames.filter((g) => g.status !== 1);
-    }
+    //   this.unsavedGames = this.unsavedGames.filter((g) => g.status !== 1);
+    // }
 
-    this.realm.config.roundId++;
+    // this.realm.config.roundId++;
   }
 
   async confirmProfile(
