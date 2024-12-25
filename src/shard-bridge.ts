@@ -706,7 +706,7 @@ export class ShardBridge implements Bridge.Service {
 
     client.socket.onAny(async (eventName, res) => {
       try {
-        log('client.socket.onAny', eventName, res);
+        // log('client.socket.onAny', eventName, res);
 
         if (eventName === 'trpcResponse') {
           const { oid } = res;
