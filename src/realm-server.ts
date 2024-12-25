@@ -93,8 +93,8 @@ export class RealmServer implements Realm.Service {
     if (this.isHttps) {
       this.https = require('https').createServer(
         {
-          key: fs.readFileSync(path.resolve('./privkey.pem')),
-          cert: fs.readFileSync(path.resolve('./fullchain.pem')),
+          key: fs.readFileSync('/etc/letsencrypt/live/hoff.arken.gg/privkey.pem'), //fs.readFileSync(path.resolve('./privkey.pem')),
+          cert: fs.readFileSync('/etc/letsencrypt/live/hoff.arken.gg/fullchain.pem'), // fs.readFileSync(path.resolve('./fullchain.pem')),
         },
         this.server
       );
