@@ -321,7 +321,7 @@ export class ShardBridge implements Bridge.Service {
 
     if (config.totalLegitPlayers === 0) config.totalLegitPlayers = 1;
 
-    config.rewardItemAmount = 1;
+    config.rewardItemAmount = this.info.rewardItemAmount;
     // parseFloat(
     //   (
     //     Math.round(
@@ -330,7 +330,7 @@ export class ShardBridge implements Bridge.Service {
     //   ).toFixed(3)
     // );
 
-    config.rewardWinnerAmount = 100;
+    config.rewardWinnerAmount = this.info.rewardWinnerAmount;
     // parseFloat(
     //   (
     //     Math.round(
