@@ -548,6 +548,23 @@ export class ShardBridge implements Bridge.Service {
       tempReward.rewardItemType = 4;
 
       config.drops.trinket = now;
+    } else if (now - config.drops.santa > 24 * 60 * 60 * 1000 && randPerDay === Math.round(timesPerDay / 100)) {
+      tempReward = {
+        id: generateShortId(),
+        position: config.level2open
+          ? this.config.rewardSpawnPoints2[random(0, this.config.rewardSpawnPoints2.length - 1)]
+          : this.config.rewardSpawnPoints[random(0, this.config.rewardSpawnPoints.length - 1)],
+        enabledDate: now,
+        name: 'Santa Christmas 2024 Ticket',
+        rarity: 'Normal',
+        quantity: 1,
+        rewardItemType: 6,
+      };
+
+      tempReward.rewardItemName = tempReward.name;
+      tempReward.rewardItemType = 6;
+
+      config.drops.santa = now;
     } else {
       const odds = Array(1000).fill('tokens');
 
@@ -557,7 +574,7 @@ export class ShardBridge implements Bridge.Service {
       }
 
       const reward = rewardType[random(0, rewardType.length - 1)];
-      if (reward.type === 'rune' && reward.quantity <= 0) {
+      if (reward.type === 'token' && reward.quantity <= 0) {
         throw new Error('No tokens left');
       }
 
