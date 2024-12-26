@@ -360,7 +360,7 @@ export class ShardBridge implements Bridge.Service {
         shardId: ctx.client.id,
         round: input,
         rewardWinnerAmount: config.rewardWinnerAmount,
-        lastClients: this.clients,
+        clients: this.clients,
       });
 
       return res;
