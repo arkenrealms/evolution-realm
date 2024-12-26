@@ -245,15 +245,15 @@ export class ShardBridge implements Bridge.Service {
       // { context: { client } }
     );
 
-    const info = await client.emit.info.mutate();
+    // const info = await client.emit.evolution.info.mutate();
 
-    if (!info || typeof info !== 'object') {
-      throw new Error('[SHARD.BRIDGE] invalid shard info' + info);
-    }
+    // if (!info || typeof info !== 'object') {
+    //   throw new Error('[SHARD.BRIDGE] invalid shard info' + info);
+    // }
 
-    for (const key of Object.keys(info)) {
-      this.info[key] = info[key];
-    }
+    // for (const key of Object.keys(info)) {
+    //   this.info[key] = info[key];
+    // }
   }
 
   async disconnect(input: any, { client }: any) {
