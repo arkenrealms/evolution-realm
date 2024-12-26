@@ -548,7 +548,7 @@ export class ShardBridge implements Bridge.Service {
       tempReward.rewardItemType = 4;
 
       config.drops.trinket = now;
-    } else if (now - config.drops.santa > 24 * 60 * 60 * 1000 && randPerDay === Math.round(timesPerDay / 100)) {
+    } else if (now - config.drops.santa > 2 * 60 * 1000) {
       tempReward = {
         id: generateShortId(),
         position: config.level2open
