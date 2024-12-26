@@ -321,7 +321,7 @@ export class ShardBridge implements Bridge.Service {
 
     if (config.totalLegitPlayers === 0) config.totalLegitPlayers = 1;
 
-    config.rewardItemAmount = this.info.rewardItemAmount;
+    // config.rewardItemAmount = this.info.rewardItemAmount;
     // parseFloat(
     //   (
     //     Math.round(
@@ -330,7 +330,7 @@ export class ShardBridge implements Bridge.Service {
     //   ).toFixed(3)
     // );
 
-    config.rewardWinnerAmount = this.info.rewardWinnerAmount;
+    // config.rewardWinnerAmount = this.info.rewardWinnerAmount;
     // parseFloat(
     //   (
     //     Math.round(
@@ -340,9 +340,11 @@ export class ShardBridge implements Bridge.Service {
     //   ).toFixed(3)
     // );
 
+    console.log('Configured seer info', this.info);
+
     return {
-      rewardWinnerAmount: config.rewardWinnerAmount,
-      rewardItemAmount: config.rewardItemAmount,
+      rewardWinnerAmount: this.info.rewardWinnerAmount,
+      rewardItemAmount: this.info.rewardItemAmount,
     };
   }
 
@@ -359,7 +361,7 @@ export class ShardBridge implements Bridge.Service {
       const res = await this.realm.seer.emit.evolution.saveRound.mutate({
         shardId: ctx.client.id,
         round: input,
-        rewardWinnerAmount: config.rewardWinnerAmount,
+        rewardWinnerAmount: this.info.rewardWinnerAmount,
         clients: this.clients,
       });
 
