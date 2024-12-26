@@ -1,22 +1,14 @@
-import axios from 'axios';
-import md5 from 'js-md5';
 import dayjs from 'dayjs';
-import jetpack from 'fs-jetpack';
 import { spawn } from 'child_process';
 import { observable } from '@trpc/server/observable';
-import WebSocket from 'isomorphic-ws';
 import { sleep } from '@arken/node/util/time';
-import { generateUuid } from '@arken/node/util/guid';
 import { io as ioClient } from 'socket.io-client';
 import { isValidRequest, getSignedRequest } from '@arken/node/util/web3';
 import { log, logError, random, getTime } from '@arken/node/util';
-import { emitDirect } from '@arken/node/util/websocket';
-import { upgradeGsCodebase, cloneGsCodebase } from '@arken/node/util/codebase';
 import { initTRPC } from '@trpc/server';
 import { z } from 'zod';
 import { createTRPCProxyClient, TRPCClientError, httpBatchLink, createWSClient, wsLink } from '@trpc/client';
 import { generateShortId } from '@arken/node/util/db';
-import { customErrorFormatter, transformer, dummyTransformer } from '@arken/node/util/rpc';
 import { randomName } from '@arken/node/util/string';
 import { Realm, Shard } from '@arken/evolution-protocol/types';
 import {
@@ -28,14 +20,14 @@ import {
 import type * as Bridge from '@arken/evolution-protocol/bridge/bridge.types';
 import { serialize, deserialize } from '@arken/node/util/rpc';
 import { RealmServer } from './realm-server';
-import SocketIOWebSocket from './trpc-websocket';
-import { TRPCLink } from '@trpc/client';
-import { AnyRouter } from '@trpc/server';
+// import SocketIOWebSocket from './trpc-websocket';
+// import { TRPCLink } from '@trpc/client';
+// import { AnyRouter } from '@trpc/server';
 
 // Extend the context type to include 'client'
-interface CustomContext {
-  client: ShardProxyClient; // or Shard.Client, depending on your exact type
-}
+// interface CustomContext {
+//   client: ShardProxyClient; // or Shard.Client, depending on your exact type
+// }
 
 // class NodeWebSocket extends WebSocket implements WebSocket {
 //   // Add any methods that the `ws` WebSocket lacks
@@ -46,10 +38,10 @@ interface CustomContext {
 // }
 
 // Assign it globally
-(global as any).WebSocket = SocketIOWebSocket as any;
+// (global as any).WebSocket = SocketIOWebSocket as any;
 
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+// const mongoose = require('mongoose');
+// const Schema = mongoose.Schema;
 
 // Define the schema for the configuration
 // const configSchema = new Schema({
