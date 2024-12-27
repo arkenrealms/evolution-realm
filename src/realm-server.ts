@@ -398,13 +398,13 @@ export class RealmServer implements Realm.Service {
                     request,
                     timeout,
                     resolve: (pack) => {
-                      log('Realm -> Seer: ioCallbacks.resolve', uuid, pack);
+                      // log('Realm -> Seer: ioCallbacks.resolve', uuid, pack);
                       clearTimeout(timeout);
                       if (pack.error) {
                         observer.error(pack.error);
                       } else {
                         const result = deserialize(pack.result);
-                        console.log(443332, result);
+                        console.log('Realm -> Seer: ioCallbacks.resolve', result);
 
                         if (result?.status !== 1) throw new Error('Realm -> Seer callback status error' + result);
 

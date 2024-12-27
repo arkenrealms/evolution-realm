@@ -415,13 +415,14 @@ export class ShardBridge implements Bridge.Service {
 
     const now = dayjs();
 
-    if (profile.isBanned && dayjs(profile.banExpireDate).isAfter(now)) {
+    if (profile.meta?.isBanned && dayjs(profile.meta?.banExpireDate).isAfter(now)) {
       throw new Error('Banned');
     }
 
     return {
       name: profile.name,
-      isBanned: profile.isBanned,
+      address: profile.address,
+      isBanned: profile.meta?.isBanned,
       isMod: this.realm.modList.includes(input.address) || this.realm.adminList.includes(input.address),
     };
   }
@@ -663,13 +664,13 @@ export class ShardBridge implements Bridge.Service {
               client.ioCallbacks[id] = {
                 timeout,
                 resolve: (pack) => {
-                  log('[REALM.SHARD_BRIDGE] ioCallbacks.resolve', id, pack);
+                  // log('[REALM.SHARD_BRIDGE] ioCallbacks.resolve', id, pack);
                   clearTimeout(timeout);
                   if (pack.error) {
                     observer.error(pack.error);
                   } else {
                     const result = deserialize(pack.result);
-                    console.log(443332, result);
+                    console.log('[REALM.SHARD_BRIDGE] ioCallbacks.resolve', result);
 
                     if (result?.status !== undefined && result?.status !== 1)
                       throw new Error('[REALM.SHARD_BRIDGE] callback status error' + result);
