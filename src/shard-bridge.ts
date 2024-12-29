@@ -282,6 +282,7 @@ export class ShardBridge implements Bridge.Service {
 
     return {
       id: this.id,
+      maxClients: this.info.maxClients,
       roundId: this.info.roundId,
       rewards: this.info.rewards,
     };
@@ -361,8 +362,8 @@ export class ShardBridge implements Bridge.Service {
       const res = await this.realm.seer.emit.evolution.saveRound.mutate({
         shardId: ctx.client.id,
         round: input,
-        rewardWinnerAmount: this.info.rewardWinnerAmount,
-        clients: this.clients,
+        // rewardWinnerAmount: this.info.rewardWinnerAmount,
+        // clients: this.clients,
       });
 
       return res;
