@@ -11,6 +11,7 @@ import { createTRPCProxyClient, TRPCClientError, httpBatchLink, createWSClient, 
 import { generateShortId } from '@arken/node/util/db';
 import { randomName } from '@arken/node/util/string';
 import { Realm, Shard } from '@arken/evolution-protocol/types';
+import { weightedRandom } from '@arken/node/util/array';
 import {
   createRouter as createBridgeRouter,
   RouterInput,
@@ -577,9 +578,12 @@ export class ShardBridge implements Bridge.Service {
         throw new Error('Reward doesnt exist');
       }
 
-      const reward = rewardType[random(0, rewardType.length - 1)];
-      if (reward.type === 'token' && reward.quantity <= 0) {
-        return this.getRandomReward();
+      const reward = weightedRandom(
+        rewardType.filter((rewardType) => rewardType.type === 'token' && reward.quantity > 0)
+      );
+
+      if (!reward) {
+        throw new Error('Out of rewards');
       }
 
       tempReward = { ...reward, rewardItemType: 0, quantity: 1, id: generateShortId(), enabledDate: now };
