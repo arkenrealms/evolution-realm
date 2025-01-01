@@ -579,7 +579,7 @@ export class ShardBridge implements Bridge.Service {
       }
 
       const reward = weightedRandom(
-        rewardType.filter((rewardType) => rewardType.type === 'token' && reward.quantity > 0)
+        rewardType.filter((rewardType) => rewardType.type === 'token' && rewardType.quantity > 0)
       );
 
       if (!reward) {
