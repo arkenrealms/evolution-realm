@@ -579,7 +579,7 @@ export class ShardBridge implements Bridge.Service {
 
       const reward = rewardType[random(0, rewardType.length - 1)];
       if (reward.type === 'token' && reward.quantity <= 0) {
-        throw new Error('No tokens left');
+        return getRandomReward();
       }
 
       tempReward = { ...reward, rewardItemType: 0, quantity: 1, id: generateShortId(), enabledDate: now };
