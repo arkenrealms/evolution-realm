@@ -602,6 +602,20 @@ export class RealmServer implements Realm.Service {
     }
   }
 
+  async broadcast(
+    input: Realm.RouterInput['broadcast'],
+    { client }: Realm.ServiceContext
+  ): Promise<Realm.RouterOutput['broadcast']> {
+    if (!input) throw new Error('Input should not be void');
+
+    // TODO: call seer
+    // this.seer.emit.banUser.mutate(input);
+
+    for (const shardId of Object.keys(this.shards)) {
+      await this.shards[shardId].emit.broadcast.mutate(input);
+    }
+  }
+
   async banUser(
     input: Realm.RouterInput['banUser'],
     { client }: Realm.ServiceContext
