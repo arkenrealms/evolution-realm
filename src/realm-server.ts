@@ -406,9 +406,11 @@ export class RealmServer implements Realm.Service {
                         const result = deserialize(pack.result);
                         console.log('Realm -> Seer: ioCallbacks.resolve', result);
 
+                        // @ts-ignore
                         if (result?.status !== 1) throw new Error('Realm -> Seer callback status error' + result);
 
                         observer.next({
+                          // @ts-ignore
                           result: result ? result : { data: undefined },
                         });
 
