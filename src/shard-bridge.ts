@@ -119,6 +119,7 @@ type ShardBridgeConfig = {
     earlyAccess: number;
     trinket: number;
     santa: number;
+    hellKey: number;
   };
   rewardSpawnPoints: { x: number; y: number }[];
   rewardSpawnPoints2: { x: number; y: number }[];
@@ -469,6 +470,7 @@ export class ShardBridge implements Bridge.Service {
     config.drops.earlyAccess = config.drops.earlyAccess || 1633043139000;
     config.drops.trinket = config.drops.trinket || 1641251240764;
     config.drops.santa = config.drops.santa || 1633043139000;
+    config.drops.hellKey = config.drops.hellKey || 1633043139000;
 
     const timesPer10Mins = Math.round((10 * 60) / config.rewardSpawnLoopSeconds);
     const randPer10Mins = random(0, timesPer10Mins);
@@ -483,6 +485,7 @@ export class ShardBridge implements Bridge.Service {
 
     let tempReward: any;
     const dropItems = false; // Assuming this is determined elsewhere
+    const dropHats = false;
 
     if (dropItems && now - config.drops.guardian > 48 * 60 * 60 * 1000 && randPerDay === Math.round(timesPerDay / 2)) {
       tempReward = {
@@ -553,7 +556,7 @@ export class ShardBridge implements Bridge.Service {
       tempReward.rewardItemType = 4;
 
       config.drops.trinket = now;
-    } else if (now - config.drops.santa > 2 * 60 * 1000) {
+    } else if (dropHats && now - config.drops.santa > 2 * 60 * 1000) {
       tempReward = {
         id: generateShortId(),
         position: config.level2open
@@ -570,7 +573,26 @@ export class ShardBridge implements Bridge.Service {
       tempReward.rewardItemType = 6;
 
       config.drops.santa = now;
-    } else {
+    }
+    // else if (now - config.drops.hellKey > 24 * 60 * 60 * 1000) {
+    //   tempReward = {
+    //     id: generateShortId(),
+    //     position: config.level2open
+    //       ? this.config.rewardSpawnPoints2[random(0, this.config.rewardSpawnPoints2.length - 1)]
+    //       : this.config.rewardSpawnPoints[random(0, this.config.rewardSpawnPoints.length - 1)],
+    //     enabledDate: now,
+    //     name: 'Hell Key',
+    //     rarity: 'Normal',
+    //     quantity: 1,
+    //     rewardItemType: 6,
+    //   };
+
+    //   tempReward.rewardItemName = tempReward.name;
+    //   tempReward.rewardItemType = 6;
+
+    //   config.drops.hellKey = now;
+    // }
+    else {
       const odds = Array(1000).fill('tokens');
 
       const rewardType = this.info.rewards.tokens; // [odds[random(0, odds.length - 1)]];
