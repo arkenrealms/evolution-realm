@@ -699,10 +699,12 @@ export class ShardBridge implements Bridge.Service {
                     const result = deserialize(pack.result);
                     console.log('[REALM.SHARD_BRIDGE] ioCallbacks.resolve', result);
 
+                    // @ts-ignore
                     if (result?.status !== undefined && result?.status !== 1)
                       throw new Error('[REALM.SHARD_BRIDGE] callback status error' + result);
 
                     observer.next({
+                      // @ts-ignore
                       result: result ? result : { data: undefined },
                     });
 
@@ -901,6 +903,7 @@ export async function init(realm, spawnPort) {
     earlyAccess: 1633043139000,
     trinket: 1641251240764,
     santa: 1633043139000,
+    hellKey: 1633043139000,
   };
 
   setTimeout(() => {
