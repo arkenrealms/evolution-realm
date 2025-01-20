@@ -458,6 +458,7 @@ export class ShardBridge implements Bridge.Service {
   }
 
   async normalizeAddress(address: string) {
+    console.log('Normalizing address', address.trim());
     return this.realm.web3.utils.toChecksumAddress(address.trim());
   }
 
@@ -638,7 +639,7 @@ export class ShardBridge implements Bridge.Service {
 
     client.ioCallbacks = {};
 
-    client.endpoint = (this.realm.isHttps ? 'https://' : 'http://') + 'hoff.arken.gg:' + this.spawnPort;
+    client.endpoint = (this.realm.isHttps ? 'https://' : 'http://') + process.env.SHARD_HOSTNAME + ':' + this.spawnPort;
 
     client.socket = ioClient(client.endpoint, {
       transports: ['websocket'],
