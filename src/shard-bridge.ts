@@ -242,7 +242,7 @@ export class ShardBridge implements Bridge.Service {
 
     await sleep(2000);
 
-    await client.emit.connected.mutate(
+    await client.emit.initRealm.mutate(
       { signature: { hash: signature.hash, address: signature.address }, data }
       // { context: { client } }
     );
@@ -272,7 +272,7 @@ export class ShardBridge implements Bridge.Service {
 
     log('Shard instance initialized');
     log('Getting seer info');
-    const res = await this.realm.seer.emit.evolution.info.query();
+    const res = await this.realm.seer.emit.evolution.info.query({ gameKey: process.env.GAME_KEY });
 
     if (!res) throw new Error('Could not fetch info');
 
@@ -287,6 +287,9 @@ export class ShardBridge implements Bridge.Service {
       maxClients: this.info.maxClients,
       roundId: this.info.roundId,
       rewards: this.info.rewards,
+      rewardWinnerAmount: this.info.rewardWinnerAmount,
+      rewardItemAmount: this.info.rewardItemAmount,
+      roundLoopSeconds: this.info.roundLoopSeconds,
     };
   }
 
@@ -348,6 +351,7 @@ export class ShardBridge implements Bridge.Service {
     return {
       rewardWinnerAmount: this.info.rewardWinnerAmount,
       rewardItemAmount: this.info.rewardItemAmount,
+      roundLoopSeconds: this.info.roundLoopSeconds,
     };
   }
 
@@ -362,6 +366,7 @@ export class ShardBridge implements Bridge.Service {
       log('saveRound', input);
 
       const res = await this.realm.seer.emit.evolution.saveRound.mutate({
+        gameKey: process.env.GAME_KEY,
         shardId: ctx.client.id,
         round: input,
         // rewardWinnerAmount: this.info.rewardWinnerAmount,
