@@ -52,7 +52,7 @@ export class RealmServer implements Realm.Service {
   // sockets: Record<string, any>;
   version: string;
   endpoint: string;
-  shards: ShardBridge[];
+  shardBridges: ShardBridge[];
   profiles: Record<string, Arken.Profile.Types.Profile>;
   web3: any; // Assume web3 is a configured instance
   secrets: any; // Secrets for signing
@@ -144,10 +144,14 @@ export class RealmServer implements Realm.Service {
       this.endpoint = 'rs1.evolution.arken.asi.sh';
       this.clients = [];
       // this.sockets = {};
-      this.shards = [];
+      this.shardBridges = [];
       this.profiles = {};
       this.seerList = ['0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C'];
-      this.adminList = ['0xDfA8f768d82D719DC68E12B199090bDc3691fFc7', '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C'];
+      this.adminList = [
+        '0xDfA8f768d82D719DC68E12B199090bDc3691fFc7',
+        '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C',
+        '0x954246b18fee13712C48E5a7Da5b78D88e8891d5',
+      ];
       this.modList = [
         '0x4b64Ff29Ee3B68fF9de11eb1eFA577647f83151C',
         '0xa987f487639920A3c2eFe58C8FBDedB96253ed9B',
@@ -205,7 +209,7 @@ export class RealmServer implements Realm.Service {
             log('Realm calling trpc service', id, method, params);
             const result = params ? await caller[method](deserialize(params)) : await caller[method]();
             log('Realm sending trpc response', method, params, result);
-            socket.emit('trpcResponse', { id, result: serialize(result) });
+            socket.emit('trpcResponse', { id, result: result ? serialize(result) : {} });
           } catch (error) {
             log('Error while sending trpc message', error);
             socket.emit('trpcResponse', { id, result: {}, error: error.stack + '' });
@@ -243,7 +247,7 @@ export class RealmServer implements Realm.Service {
 
           // TODO
           // if (client.isSeer) {
-          //   for (const shard of this.shards) {
+          //   for (const shard of this.shardBridges) {
           //     await shard.emit.seerDisconnected.query(); // await getSignedRequest(this.web3, this.secrets, {}), {});
           //   }
           // }
@@ -282,7 +286,7 @@ export class RealmServer implements Realm.Service {
 
     this.spawnPort += 1;
 
-    this.shards.push(shard);
+    this.shardBridges.push(shard);
 
     const data = {
       id: shard.id,
@@ -299,7 +303,7 @@ export class RealmServer implements Realm.Service {
           status: 'Online',
           regionCode: 'EU',
           clientCount: 1,
-          realmShards: this.shards.map((shard: any) => ({
+          realmShards: this.shardBridges.map((shard: any) => ({
             endpoint: shard.endpoint,
             status: shard.status,
             clientCount: shard.clientCount,
@@ -314,7 +318,7 @@ export class RealmServer implements Realm.Service {
         status: 'Online',
         regionCode: 'EU',
         clientCount: 1,
-        realmShards: this.shards
+        realmShards: this.shardBridges
           .filter((shard: any) => !!shard)
           .map((shard: any) => ({
             endpoint: shard.endpoint,
@@ -341,9 +345,11 @@ export class RealmServer implements Realm.Service {
 
       client.ioCallbacks = {};
 
-      client.endpoint = process.env.SEER_ENDPOINT;
+      const isLocal = process.env.ARKEN_ENV === 'local';
 
-      log('Connecting to Seer');
+      client.endpoint = process.env['SEER_ENDPOINT' + (isLocal ? '_LOCAL' : '')];
+
+      log('Connecting to Seer', client.endpoint);
 
       client.socket = ioClient(client.endpoint, {
         transports: ['websocket'],
@@ -366,8 +372,9 @@ export class RealmServer implements Realm.Service {
                   const { input } = op;
 
                   op.context.client = client;
+
                   // @ts-ignore
-                  op.context.client.roles = ['admin', 'user', 'guest'];
+                  op.context.client.roles = ['seer', 'admin', 'mod', 'user', 'guest'];
 
                   if (!client) {
                     log('Realm -> Seer: Emit Direct failed, no client', op);
@@ -507,20 +514,26 @@ export class RealmServer implements Realm.Service {
       client.isSeer = true;
       client.isAdmin = true;
       client.isMod = true;
+      client.roles = ['seer', 'admin', 'mod', 'user', 'guest'];
       // await this.onSeerConnected();
     } else if (this.adminList.includes(signature.address)) {
       client.isSeer = false;
       client.isAdmin = true;
       client.isMod = true;
+      client.roles = ['admin', 'mod', 'user', 'guest'];
     } else if (this.modList.includes(signature.address)) {
       client.isSeer = false;
       client.isAdmin = false;
       client.isMod = true;
+      client.roles = ['mod', 'user', 'guest'];
     } else {
       client.isSeer = false;
       client.isAdmin = false;
       client.isMod = false;
+      client.roles = ['user', 'guest'];
     }
+
+    return { roles: client.roles };
   }
 
   async setConfig(
@@ -533,7 +546,7 @@ export class RealmServer implements Realm.Service {
       ...input.config,
     };
 
-    await this.shards[input.shardId].router.setConfigRequest.mutate(
+    await this.shardBridges[input.shardId].router.setConfigRequest.mutate(
       await getSignedRequest(this.web3, this.secrets, input),
       input
     );
@@ -542,7 +555,7 @@ export class RealmServer implements Realm.Service {
   async ping(input: Realm.RouterInput['ping'], { client }: Realm.ServiceContext): Promise<Realm.RouterOutput['ping']> {}
 
   async info(input: Realm.RouterInput['info'], { client }: Realm.ServiceContext): Promise<Realm.RouterOutput['info']> {
-    const games = this.shards.map((shard) => shard.info).filter((info) => !!info);
+    const games = this.shardBridges.map((shard) => shard.info).filter((info) => !!info);
     const playerCount = games.reduce((total, game) => total + game.playerCount, 0);
     const speculatorCount = games.reduce((total, game) => total + game.speculatorCount, 0);
 
@@ -596,8 +609,8 @@ export class RealmServer implements Realm.Service {
   ): Promise<Realm.RouterOutput['banClient']> {
     if (!input) throw new Error('Input should not be void');
 
-    for (const shardId of Object.keys(this.shards)) {
-      const res = await this.shards[shardId].banClient.mutate(input);
+    for (const shardId of Object.keys(this.shardBridges)) {
+      const res = await this.shardBridges[shardId].banClient.mutate(input);
       if (res.status !== 1) {
         log('Failed to ban client', input.target, shardId);
       }
@@ -613,8 +626,8 @@ export class RealmServer implements Realm.Service {
     // TODO: call seer
     // this.seer.emit.banUser.mutate(input);
 
-    for (const shardId of Object.keys(this.shards)) {
-      await this.shards[shardId].emit.broadcast.mutate(input);
+    for (const shardId of Object.keys(this.shardBridges)) {
+      await this.shardBridges[shardId].shard.emit.broadcast.mutate(input);
     }
   }
 
@@ -627,8 +640,8 @@ export class RealmServer implements Realm.Service {
     // TODO: call seer
     // this.seer.emit.banUser.mutate(input);
 
-    for (const shardId of Object.keys(this.shards)) {
-      const res = await this.shards[shardId].emit.kickClient.mutate(input);
+    for (const shardId of Object.keys(this.shardBridges)) {
+      const res = await this.shardBridges[shardId].emit.kickClient.mutate(input);
 
       if (!res.status) {
         log('Failed to kick client', input.target, shardId);
@@ -650,8 +663,8 @@ export class RealmServer implements Realm.Service {
   ): Promise<Realm.RouterOutput['unbanClient']> {
     if (!input) throw new Error('Input should not be void');
 
-    for (const shardId of Object.keys(this.shards)) {
-      const res = await this.shards[shardId].unbanClient.mutate({ target: input.target });
+    for (const shardId of Object.keys(this.shardBridges)) {
+      const res = await this.shardBridges[shardId].unbanClient.mutate({ target: input.target });
 
       if (!res) {
         log('Failed to kick client', input.target, shardId);
@@ -663,7 +676,7 @@ export class RealmServer implements Realm.Service {
     input: Realm.RouterInput['matchShard'],
     { client }: Realm.ServiceContext
   ): Promise<Realm.RouterOutput['matchShard']> {
-    for (const shard of Object.values(this.shards)) {
+    for (const shard of Object.values(this.shardBridges)) {
       if (shard.info.clientCount < this.config.maxClients) {
         return { endpoint: shard.endpoint, port: 80 };
       }

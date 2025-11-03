@@ -155,7 +155,7 @@ export class ShardBridge implements Bridge.Service {
   isAuthed: boolean;
   socket: any;
   realm: RealmServer;
-  shards: ShardProxyClient[];
+  shard: ShardProxyClient;
   endpoint: string;
   key: string;
   config: ShardBridgeConfig;
@@ -169,7 +169,6 @@ export class ShardBridge implements Bridge.Service {
   constructor({ realm }: Context) {
     console.log('Construct shard bridge');
     this.realm = realm;
-    this.shards = [];
     this.ioCallbacks = {};
     this.clients = [];
   }
@@ -441,8 +440,6 @@ export class ShardBridge implements Bridge.Service {
     // async auth({ data, signature }: { data?: string; signature?: { hash?: string; address?: string } }) {
     log('ShardBridge.auth', input);
 
-    const roles = [];
-
     if (input.signature.address.length !== 42 || input.signature.address.slice(0, 2) !== '0x') return { status: 0 };
 
     const normalizedAddress = this.realm.web3.utils.toChecksumAddress(input.signature.address.trim());
@@ -455,9 +452,20 @@ export class ShardBridge implements Bridge.Service {
     )
       return { status: 0 };
 
-    if (this.realm.seerList.includes(normalizedAddress)) roles.push('seer');
-    if (this.realm.adminList.includes(normalizedAddress)) roles.push('admin');
-    if (this.realm.modList.includes(normalizedAddress)) roles.push('mod');
+    const roles = ['user', 'guest'];
+
+    if (this.realm.seerList.includes(normalizedAddress)) {
+      roles.push('seer');
+      roles.push('admin');
+      roles.push('mod');
+    }
+    if (this.realm.adminList.includes(normalizedAddress)) {
+      roles.push('admin');
+      roles.push('mod');
+    }
+    if (this.realm.modList.includes(normalizedAddress)) {
+      roles.push('mod');
+    }
 
     return { roles };
   }
@@ -626,27 +634,24 @@ export class ShardBridge implements Bridge.Service {
   }
 
   bridge(bid) {
-    const existingShard = this.shards.find((s) => s.id === bid);
-    if (existingShard) {
-      this.shards = this.shards.filter((s) => s.id !== bid);
-      if (existingShard?.socket) {
-        existingShard.socket.close();
+    if (this.shard?.socket) {
+      this.shard.socket.close();
 
-        // clearTimeout(existingShard.infoRequestTimeout);
-        // clearTimeout(existingShard.connectTimeout);
-      }
+      // clearTimeout(existingShard.infoRequestTimeout);
+      // clearTimeout(existingShard.connectTimeout);
     }
 
-    const client = new ShardProxyClient();
+    this.shard = new ShardProxyClient();
 
-    client.id = bid;
-    client.key = 'local1';
+    this.shard.id = bid;
+    this.shard.key = 'local1';
 
-    client.ioCallbacks = {};
+    this.shard.ioCallbacks = {};
 
-    client.endpoint = (this.realm.isHttps ? 'https://' : 'http://') + process.env.SHARD_HOSTNAME + ':' + this.spawnPort;
+    this.shard.endpoint =
+      (this.realm.isHttps ? 'https://' : 'http://') + process.env.SHARD_HOSTNAME + ':' + this.spawnPort;
 
-    client.socket = ioClient(client.endpoint, {
+    this.shard.socket = ioClient(this.shard.endpoint, {
       transports: ['websocket'],
       upgrade: false,
       autoConnect: false,
@@ -657,25 +662,25 @@ export class ShardBridge implements Bridge.Service {
       // }
     });
 
-    client.emit = createTRPCProxyClient<Shard.Router>({
+    this.shard.emit = createTRPCProxyClient<Shard.Router>({
       links: [
         () =>
           ({ op, next }) => {
             return observable((observer) => {
               const { input } = op;
 
-              op.context.client = client;
+              op.context.client = this.shard;
               // @ts-ignore
-              op.context.client.roles = ['admin', 'user', 'guest'];
+              op.context.client.roles = ['admin', 'mod', 'user', 'guest'];
 
-              if (!client) {
+              if (!this.shard) {
                 // console.log('Emit Direct failed, no client', op);
                 // observer.complete();
                 observer.error(new TRPCClientError('Emit Direct failed, no client'));
                 return;
               }
 
-              if (!client.socket || !client.socket.emit) {
+              if (!this.shard.socket || !this.shard.socket.emit) {
                 // console.log('Emit Direct failed, bad socket', op);
                 // observer.complete();
                 observer.error(new TRPCClientError('Emit Direct failed, bad socket'));
@@ -685,16 +690,16 @@ export class ShardBridge implements Bridge.Service {
 
               const id = generateShortId();
 
-              client.socket.emit('trpc', { id, method: op.path, type: op.type, params: input });
+              this.shard.socket.emit('trpc', { id, method: op.path, type: op.type, params: input });
 
               // save the ID and callback when finished
               const timeout = setTimeout(() => {
                 console.log('[REALM.SHARD_BRIDGE] Request timed out', op);
-                delete client.ioCallbacks[id];
+                delete this.shard.ioCallbacks[id];
                 observer.error(new TRPCClientError('Request timeout'));
               }, 15000); // 15 seconds timeout
 
-              client.ioCallbacks[id] = {
+              this.shard.ioCallbacks[id] = {
                 timeout,
                 resolve: (pack) => {
                   // log('[REALM.SHARD_BRIDGE] ioCallbacks.resolve', id, pack);
@@ -716,13 +721,13 @@ export class ShardBridge implements Bridge.Service {
 
                     observer.complete();
                   }
-                  delete client.ioCallbacks[id]; // Cleanup after completion
+                  delete this.shard.ioCallbacks[id]; // Cleanup after completion
                 },
                 reject: (error) => {
                   console.log('[REALM.SHARD_BRIDGE] ioCallbacks.reject', error);
                   clearTimeout(timeout);
                   observer.error(error);
-                  delete client.ioCallbacks[id]; // Cleanup on error
+                  delete this.shard.ioCallbacks[id]; // Cleanup on error
                 },
               };
 
@@ -751,7 +756,7 @@ export class ShardBridge implements Bridge.Service {
       // transformer: dummyTransformer,
     });
 
-    client.socket.onAny(async (eventName, res) => {
+    this.shard.socket.onAny(async (eventName, res) => {
       try {
         // log('client.socket.onAny', eventName, res);
 
@@ -759,16 +764,16 @@ export class ShardBridge implements Bridge.Service {
           const { oid } = res;
 
           console.log(
-            `[REALM.SHARD_BRIDGE] Callback ${client.ioCallbacks[oid] ? 'Exists' : 'Doesnt Exist'}`,
+            `[REALM.SHARD_BRIDGE] Callback ${this.shard.ioCallbacks[oid] ? 'Exists' : 'Doesnt Exist'}`,
             eventName
           );
 
-          if (client.ioCallbacks[oid]) {
-            clearTimeout(client.ioCallbacks[oid].timeout);
+          if (this.shard.ioCallbacks[oid]) {
+            clearTimeout(this.shard.ioCallbacks[oid].timeout);
 
-            client.ioCallbacks[oid].resolve({ result: { data: deserialize(res.result) } });
+            this.shard.ioCallbacks[oid].resolve({ result: { data: deserialize(res.result) } });
 
-            delete client.ioCallbacks[oid];
+            delete this.shard.ioCallbacks[oid];
           }
         } else if (eventName === 'trpc') {
           if (res instanceof Buffer) return;
@@ -782,16 +787,16 @@ export class ShardBridge implements Bridge.Service {
           const id = generateShortId();
 
           try {
-            const ctx = { client: client };
+            const ctx = { client: this.shard };
 
             const createCaller = createCallerFactory(this.router);
             const caller = createCaller(ctx);
             // @ts-ignore
             const result = res.params ? await caller[method](deserialize(res.params)) : await caller[method]();
             // socket.emit('trpcResponse', { id, result });
-            client.socket.emit('trpcResponse', { id, oid: res.id, result: serialize(result) });
+            this.shard.socket.emit('trpcResponse', { id, oid: res.id, result: serialize(result) });
           } catch (e) {
-            client.socket.emit('trpcResponse', { id, oid: res.id, error: e.stack + '' });
+            this.shard.socket.emit('trpcResponse', { id, oid: res.id, result: {}, error: e.stack + '' });
           }
         }
       } catch (e) {
@@ -818,11 +823,11 @@ export class ShardBridge implements Bridge.Service {
     //   }
     // });
 
-    client.socket.addEventListener('connect', async () => {
-      this.connect(null, { client: client });
+    this.shard.socket.addEventListener('connect', async () => {
+      this.connect(null, { client: this.shard });
     });
 
-    client.socket.addEventListener('disconnect', async () => {
+    this.shard.socket.addEventListener('disconnect', async () => {
       log('Shard has disconnected');
 
       // if (client.isAdmin) {
@@ -832,14 +837,12 @@ export class ShardBridge implements Bridge.Service {
       // client.log.clientDisconnected += 1;
       // delete app.sockets[client.id];
       // delete app.clientLookup[client.id];
-      this.clients = this.clients.filter((c) => c.shardId !== client.id);
+      this.clients = this.clients.filter((c) => c.shardId !== this.shard.id);
     });
-
-    this.shards.push(client);
 
     this.spawnPort += 1; // TODO: just have the shard tell us what it is via discovery
 
-    client.socket.connect();
+    this.shard.socket.connect();
   }
 
   async seerDisconnected(

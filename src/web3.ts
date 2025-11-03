@@ -12,7 +12,7 @@ function _initProvider(app) {
 
     app.secrets = secrets;
     app.web3Provider = getRandomProvider(secrets);
-    app.web3 = new Web3(app.web3Provider);
+    app.web3 = new Web3(app.web3Provider); // TODO: make this app.web3 = { bsc: } just like seer (if needed?)
 
     app.ethersProvider = new ethers.providers.Web3Provider(app.web3Provider, 'any');
     app.ethersProvider.pollingInterval = 15000;
