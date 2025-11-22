@@ -6,54 +6,54 @@ import contractInfo from '@arken/node/legacy/contractInfo';
 import BEP20Contract from '@arken/node/legacy/contracts/BEP20.json';
 import secrets from '../secrets.json';
 
-function _initProvider(app) {
+function _initProvider(ctx) {
   try {
     log('Setting up provider');
 
-    app.secrets = secrets;
-    app.web3Provider = getRandomProvider(secrets);
-    app.web3 = new Web3(app.web3Provider); // TODO: make this app.web3 = { bsc: } just like seer (if needed?)
+    ctx.secrets = secrets;
+    ctx.web3Provider = getRandomProvider(secrets);
+    ctx.web3 = new Web3(ctx.web3Provider); // TODO: make this ctx.web3 = { bsc: } just like seer (if needed?)
 
-    app.ethersProvider = new ethers.providers.Web3Provider(app.web3Provider, 'any');
-    app.ethersProvider.pollingInterval = 15000;
+    ctx.ethersProvider = new ethers.providers.Web3Provider(ctx.web3Provider, 'any');
+    ctx.ethersProvider.pollingInterval = 15000;
 
-    app.signers = {};
-    app.signers.read = app.ethersProvider.getSigner();
-    app.signers.write = app.ethersProvider.getSigner();
+    ctx.signers = {};
+    ctx.signers.read = ctx.ethersProvider.getSigner();
+    ctx.signers.write = ctx.ethersProvider.getSigner();
 
-    app.contracts = {};
-    app.contracts.wbnb = new ethers.Contract(
-      getAddress(app.contractInfo.wbnb),
-      app.contractMetadata.BEP20.abi,
-      app.signers.read
+    ctx.contracts = {};
+    ctx.contracts.wbnb = new ethers.Contract(
+      getAddress(ctx.contractInfo.wbnb),
+      ctx.contractMetadata.BEP20.abi,
+      ctx.signers.read
     );
   } catch (e) {
     log(`Couldn't setup provider.`, e);
 
-    setTimeout(() => _initProvider(app), 60 * 1000);
+    setTimeout(() => _initProvider(ctx), 60 * 1000);
   }
 }
 
-export function initProvider(app) {
-  _initProvider(app);
+export function initProvider(ctx) {
+  _initProvider(ctx);
 
   // setInterval(() => {
-  //   // Something happened, lets restart the provider
-  //   if (new Date().getTime() > app.config.trades.updatedTimestamp + 10 * 60 * 1000) {
-  //     _initProvider(app)
+  //   // Something hctxened, lets restart the provider
+  //   if (new Date().getTime() > ctx.config.trades.updatedTimestamp + 10 * 60 * 1000) {
+  //     _initProvider(ctx)
   //   }
   // }, 15 * 60 * 1000)
 }
 
-export function initWeb3(app) {
-  app.contractInfo = contractInfo;
-  app.contractMetadata = {};
-  app.contractMetadata.BEP20 = BEP20Contract;
+export function initWeb3(ctx) {
+  ctx.contractInfo = contractInfo;
+  ctx.contractMetadata = {};
+  ctx.contractMetadata.BEP20 = BEP20Contract;
 
-  app.signers = {
+  ctx.signers = {
     read: undefined,
     write: undefined,
   };
 
-  initProvider(app);
+  initProvider(ctx);
 }
