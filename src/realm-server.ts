@@ -603,6 +603,20 @@ export class RealmServer implements Realm.Service {
     this.modList = this.modList.filter((addr) => addr !== input.target);
   }
 
+  async claimMaster(
+    input: Realm.RouterInput['claimMaster'],
+    { client }: Realm.ServiceContext
+  ): Promise<Realm.RouterOutput['claimMaster']> {
+    if (!input) throw new Error('Input should not be void');
+
+    const bridge = this.shardBridges[input.shardId];
+    const res = await bridge.shard.emit.claimMaster.mutate(input.address);
+
+    if (res.status !== 1) {
+      log('Failed to ban client', input);
+    }
+  }
+
   async banClient(
     input: Realm.RouterInput['banClient'],
     { client }: Realm.ServiceContext
