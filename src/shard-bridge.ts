@@ -369,7 +369,7 @@ export class ShardBridge implements Bridge.Service {
         shardId: ctx.client.id,
         round: input,
         // rewardWinnerAmount: this.info.rewardWinnerAmount,
-        // clients: this.clients,
+        clients: input.clients,
       });
 
       return res;
@@ -577,7 +577,7 @@ export class ShardBridge implements Bridge.Service {
           ? this.config.rewardSpawnPoints2[random(0, this.config.rewardSpawnPoints2.length - 1)]
           : this.config.rewardSpawnPoints[random(0, this.config.rewardSpawnPoints.length - 1)],
         enabledDate: now,
-        name: 'Santa Christmas 2024 Ticket',
+        name: 'Santa Christmas Ticket',
         rarity: 'Normal',
         quantity: 1,
         rewardItemType: 6,
