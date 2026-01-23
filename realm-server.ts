@@ -1,11 +1,11 @@
 // import axios from 'axios';
-import { getSignedRequest } from '@arken/node/util/web3';
+import { getSignedRequest } from '@arken/node/web3';
 import { log, logError, getTime } from '@arken/node/util';
 import { observable } from '@trpc/server/observable';
-// import { emitDirect } from '@arken/node/util/websocket';
-// import { upgradeCodebase } from '@arken/node/util/codebase';
+// import { emitDirect } from '@arken/websocket';
+// import { upgradeCodebase } from '@arken/codebase';
 // import { initTRPC, TRPCError } from '@trpc/server';
-// import { customErrorFormatter, transformer, hasRole, validateRequest } from '@arken/node/util/rpc';
+// import { customErrorFormatter, transformer, hasRole, validateRequest } from '@arken/node/rpc';
 // import shortId from 'shortId';
 import fs from 'fs';
 import { createTRPCProxyClient, TRPCClientError, httpBatchLink, createWSClient, wsLink } from '@trpc/client';
@@ -13,12 +13,12 @@ import express, { Express } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import { io as ioClient } from 'socket.io-client';
-import { generateShortId } from '@arken/node/util/db';
+import { generateShortId } from '@arken/node/db';
 import * as dotenv from 'dotenv';
 import type { Types as SeerTypes } from '@arken/seer-protocol';
 // import mongoose from 'mongoose';
-import { catchExceptions } from '@arken/node/util/process';
-import { dummyTransformer } from '@arken/node/util/rpc';
+import { catchExceptions } from '@arken/node/process';
+import { dummyTransformer } from '@arken/node/rpc';
 import type * as Arken from '@arken/node/types';
 import { Server as HttpServer } from 'http';
 import { Server as HttpsServer } from 'https';
@@ -30,7 +30,7 @@ import { createRouter, createCallerFactory } from '@arken/evolution-protocol/rea
 import { initWeb3 } from './web3';
 import { initMonitor } from './monitor';
 import type { Realm, Shard } from '@arken/evolution-protocol/types';
-import { serialize, deserialize } from '@arken/node/util/rpc';
+import { serialize, deserialize } from '@arken/node/rpc';
 import { init as initShardbridge, ShardBridge } from './shard-bridge';
 
 dotenv.config();
@@ -117,7 +117,7 @@ export class RealmServer implements Realm.Service {
   }
 
   async init() {
-    catchExceptions();
+    catchExceptions(true);
 
     try {
       log('RealmServer init');
@@ -609,12 +609,12 @@ export class RealmServer implements Realm.Service {
   ): Promise<Realm.RouterOutput['claimMaster']> {
     if (!input) throw new Error('Input should not be void');
 
-    const bridge = this.shardBridges[input.shardId];
-    const res = await bridge.shard.emit.claimMaster.mutate(input.address);
+    // const bridge = this.shardBridges[input.shardId];
+    // const res = await bridge.shard.emit.claimMaster.mutate(input.address);
 
-    if (res.status !== 1) {
-      log('Failed to ban client', input);
-    }
+    // if (res.status !== 1) {
+    //   log('Failed to ban client', input);
+    // }
   }
 
   async banClient(

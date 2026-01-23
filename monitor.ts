@@ -1,5 +1,5 @@
 import { log, logError, getTime } from '@arken/node/util';
-import { killSubProcesses } from '@arken/node/util/process';
+import { killSubProcesses } from '@arken/node/process';
 
 const os = require('os');
 const fs = require('fs');
