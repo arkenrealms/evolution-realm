@@ -1,7 +1,7 @@
 // arken/packages/evolution/packages/realm/src/shard-bridge.ts
 //
 import dayjs from 'dayjs';
-import { spawn } from 'child_process';
+import { spawn, type ChildProcess } from 'child_process';
 import { observable } from '@trpc/server/observable';
 import { sleep } from '@arken/node/time';
 import { io as ioClient } from 'socket.io-client';
@@ -15,6 +15,7 @@ import { generateShortId } from '@arken/node/db';
 import { randomName } from '@arken/node/string';
 import { Realm, Shard } from '@arken/evolution-protocol/types';
 import { weightedRandom } from '@arken/node/array';
+import fs from 'fs';
 import {
   createRouter as createBridgeRouter,
   RouterInput,
@@ -145,14 +146,49 @@ export type Event2 = {
   name: string;
   args: Array<any>;
 };
+
+function pidFileForPort(port: number) {
+  return path.join('/tmp', `arken-shard-${port}.pid`);
+}
+
+async function killProcessGroup(pid: number, graceMs = 4000) {
+  // If it doesn't exist, we're done
+  try {
+    process.kill(pid, 0);
+  } catch {
+    return;
+  }
+
+  // Try graceful first
+  try {
+    process.kill(-pid, 'SIGTERM');
+  } catch {}
+
+  // Wait a bit for exit
+  const deadline = Date.now() + graceMs;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 100));
+    try {
+      process.kill(pid, 0);
+    } catch {
+      return;
+    } // exited
+  }
+
+  // Hard kill
+  try {
+    process.kill(-pid, 'SIGKILL');
+  } catch {}
+}
+
 export class ShardBridge implements Bridge.Service {
+  process?: ChildProcess;
   spawnPort: number;
   id: string;
   name: string;
   router: ReturnType<typeof createBridgeRouter>; // Shard.Router ??
   emit: ReturnType<typeof createTRPCProxyClient<Shard.Router>>;
   // emit: any; //Shard.Router;
-  process: any;
   characters: any;
   info: any;
   isAuthed: boolean;
@@ -176,8 +212,34 @@ export class ShardBridge implements Bridge.Service {
     this.clients = [];
   }
 
+  private async killOldInstanceForThisPort() {
+    const file = pidFileForPort(this.spawnPort);
+
+    if (!fs.existsSync(file)) return;
+
+    const oldPid = Number(fs.readFileSync(file, 'utf8').trim());
+    if (!Number.isFinite(oldPid) || oldPid <= 0) return;
+
+    // Don't accidentally kill ourselves
+    if (oldPid === process.pid) return;
+
+    await killProcessGroup(oldPid);
+    try {
+      fs.unlinkSync(file);
+    } catch {}
+  }
+
+  private writePidFile(childPid: number) {
+    fs.writeFileSync(pidFileForPort(this.spawnPort), String(childPid));
+  }
+
+  private async stopCurrentChild() {
+    if (!this.process?.pid) return;
+    await killProcessGroup(this.process.pid);
+    this.process = undefined;
+  }
   start() {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
         setInterval(
           () => {
@@ -192,6 +254,12 @@ export class ShardBridge implements Bridge.Service {
         //   win32: ''
         // }[process.platform]
 
+        // 1) If we already spawned one in this realm instance, kill it
+        await this.stopCurrentChild();
+
+        // 2) If a previous realm run left a shard alive on this port, kill it
+        await this.killOldInstanceForThisPort();
+
         const env = {
           ...process.env,
           LOG_PREFIX: '[SHARD]',
@@ -204,7 +272,7 @@ export class ShardBridge implements Bridge.Service {
         this.process = spawn(
           'node', // Start the Node.js runtime
           [
-            '--inspect', // Enable debugging with the inspector
+            '--inspect=0.0.0.0:9231', // Enable debugging with the inspector
             '-r',
             'ts-node/register', // Use ts-node/register to execute TypeScript
             '-r',
@@ -217,6 +285,7 @@ export class ShardBridge implements Bridge.Service {
             cwd: path.resolve('../shard'), // Set the current working directory
             env, // Set environment variables
             stdio: ['ignore', 'pipe', 'pipe'], // Configure stdio streams
+            detached: true,
           }
         );
         // this.process = spawn('node', ['-r', 'tsconfig-paths/register', 'build/index.js'], {
@@ -228,9 +297,14 @@ export class ShardBridge implements Bridge.Service {
         this.process.stdout.pipe(process.stdout);
         this.process.stderr.pipe(process.stderr);
 
+        // Record pid so future starts can kill stale instances
+        this.writePidFile(this.process.pid!);
+
         this.process.on('exit', (code, signal) => {
           log(`Child process exited with code ${code} and signal ${signal}.`);
-
+          try {
+            fs.unlinkSync(pidFileForPort(this.spawnPort));
+          } catch {}
           // process.exit(1);
           reject(new Error(`Process exited with code ${code}.`));
         });
@@ -246,7 +320,7 @@ export class ShardBridge implements Bridge.Service {
   }
 
   async connect(input: RouterInput['connect'], { client }: RouterContext): Promise<RouterOutput['connect']> {
-    log('Connected: ' + client.key, client.id);
+    log('[Arken.Evolution.Realm.ShardBridge] Connected: ' + client.key, client.id);
 
     const data = { id: client.id };
     const signature = await getSignedRequest(this.realm.web3, this.realm.secrets, data);
@@ -484,7 +558,7 @@ export class ShardBridge implements Bridge.Service {
     return { roles };
   }
 
-  async normalizeAddress(address: string) {
+  async normalizeAddress(address: string, { client }: RouterContext) {
     console.log('Normalizing address', address.trim());
     return this.realm.web3.utils.toChecksumAddress(address.trim());
   }
