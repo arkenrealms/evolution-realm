@@ -1,6 +1,7 @@
 // import axios from 'axios';
 import { getSignedRequest } from '@arken/node/web3';
-import { log, logError, getTime } from '@arken/node/util';
+import { getTime } from '@arken/node/util';
+import { log, logError } from '@arken/node/log';
 import { observable } from '@trpc/server/observable';
 // import { emitDirect } from '@arken/websocket';
 // import { upgradeCodebase } from '@arken/codebase';
@@ -16,22 +17,18 @@ import { io as ioClient } from 'socket.io-client';
 import { generateShortId } from '@arken/node/db';
 import * as dotenv from 'dotenv';
 import type { Types as SeerTypes } from '@arken/seer-protocol';
-// import mongoose from 'mongoose';
 import { catchExceptions } from '@arken/node/process';
-import { dummyTransformer } from '@arken/node/rpc';
-import type * as Arken from '@arken/node/types';
+import type * as Arken from '@arken/seer-protocol/types';
 import { Server as HttpServer } from 'http';
 import { Server as HttpsServer } from 'https';
 import { Server as SocketServer } from 'socket.io';
-import path from 'path';
-import packageJson from '../package.json';
-// import { z } from 'zod';
 import { createRouter, createCallerFactory } from '@arken/evolution-protocol/realm/realm.router';
-import { initWeb3 } from './web3';
-import { initMonitor } from './monitor';
 import type { Realm, Shard } from '@arken/evolution-protocol/types';
 import { serialize, deserialize } from '@arken/node/rpc';
 import { init as initShardbridge, ShardBridge } from './shard-bridge';
+import { initWeb3 } from './web3';
+import { initMonitor } from './monitor';
+import packageJson from './package.json';
 
 dotenv.config();
 
@@ -141,7 +138,7 @@ export class RealmServer implements Realm.Service {
       }
 
       this.version = packageJson.version;
-      this.endpoint = 'rs1.evolution.arken.asi.sh';
+      this.endpoint = 'evolution-realm-shard-1.arken.gg';
       this.clients = [];
       // this.sockets = {};
       this.shardBridges = [];
@@ -178,14 +175,21 @@ export class RealmServer implements Realm.Service {
       // Override because we didnt get response from RS yet
 
       this.io.on('connection', (socket) => {
-        const ip = 'HIDDEN';
-        log('Client connected from ' + ip);
+        // const ip = socket.handshake.address.split('.').slice(0, 3).join('.');
 
+        const ip = socket.handshake.headers['x-forwarded-for']?.toString().split(',')[0] ?? socket.handshake.address;
+
+        const baseIp = ip.includes(':')
+          ? ip.split(':').slice(0, -1).join(':') // IPv6
+          : ip.split('.').slice(0, -1).join('.'); // IPv4
+
+        // const ip = 'HIDDEN';
         // @ts-ignore
         const client: Realm.Client = {
           id: socket.id,
           name: 'Unknown' + Math.floor(Math.random() * 999),
-          ip,
+          address: null,
+          ip: baseIp,
           info: null,
           lastReportedTime: getTime(),
           isSeer: false,
@@ -195,6 +199,8 @@ export class RealmServer implements Realm.Service {
             clientDisconnected: 0,
           },
         };
+
+        log(`Client connected from ${client.ip} (${client.name})`);
 
         // this.sockets[client.id] = socket;
         this.clients.push(client);
@@ -211,7 +217,7 @@ export class RealmServer implements Realm.Service {
             log('Realm sending trpc response', method, params, result);
             socket.emit('trpcResponse', { id, result: result ? serialize(result) : {} });
           } catch (error) {
-            log('Error while sending trpc message', error);
+            log('Error while sending trpc message', method, params, error);
             socket.emit('trpcResponse', { id, result: {}, error: error.stack + '' });
           }
         });
@@ -243,7 +249,7 @@ export class RealmServer implements Realm.Service {
         });
 
         socket.on('disconnect', async () => {
-          log('Client has disconnected');
+          log(`Client has disconnected: ${client.name} (${client.address})`);
 
           // TODO
           // if (client.isSeer) {
@@ -282,53 +288,61 @@ export class RealmServer implements Realm.Service {
 
     log('Creating shard');
 
-    const shard = await initShardbridge(this, this.spawnPort);
+    try {
+      const shard: any = await initShardbridge(this, this.spawnPort);
 
-    this.spawnPort += 1;
+      if (!shard) throw new Error('Could not create shard.');
 
-    this.shardBridges.push(shard);
+      this.spawnPort += 1;
 
-    const data = {
-      id: shard.id,
-      name: shard.name,
-      realmId: shard.realmId,
-      // endpoint: shard.endpoint,
-    };
+      await shard.init();
 
-    log(
-      'Creating shard',
-      JSON.stringify({
+      this.shardBridges.push(shard);
+
+      const data = {
+        id: shard.id,
+        name: shard.name,
+        realmId: shard.realmId,
+        // endpoint: shard.endpoint,
+      };
+
+      log(
+        'Configuring shard',
+        JSON.stringify({
+          where: { id: { equals: '66f104dace637115159e29a0' } },
+          data: {
+            status: 'Online',
+            regionCode: 'EU',
+            clientCount: 1,
+            realmShards: this.shardBridges.map((shard: any) => ({
+              endpoint: shard.endpoint,
+              status: shard.status,
+              clientCount: shard.clientCount,
+            })),
+          },
+        })
+      );
+
+      await this.seer.emit.core.updateRealm.mutate({
         where: { id: { equals: '66f104dace637115159e29a0' } },
         data: {
           status: 'Online',
           regionCode: 'EU',
           clientCount: 1,
-          realmShards: this.shardBridges.map((shard: any) => ({
-            endpoint: shard.endpoint,
-            status: shard.status,
-            clientCount: shard.clientCount,
-          })),
+          realmShards: this.shardBridges
+            .filter((shard: any) => !!shard)
+            .map((shard: any) => ({
+              endpoint: shard.endpoint,
+              status: shard.status,
+              clientCount: shard.clientCount,
+            })),
         },
-      })
-    );
+      });
 
-    await this.seer.emit.core.updateRealm.mutate({
-      where: { id: { equals: '66f104dace637115159e29a0' } },
-      data: {
-        status: 'Online',
-        regionCode: 'EU',
-        clientCount: 1,
-        realmShards: this.shardBridges
-          .filter((shard: any) => !!shard)
-          .map((shard: any) => ({
-            endpoint: shard.endpoint,
-            status: shard.status,
-            clientCount: shard.clientCount,
-          })),
-      },
-    });
-
-    return data;
+      return { data, message: `Shard ${data.name} ($data.id) created.` };
+    } catch (e) {
+      throw new Error('Unable to create shard: ' + e?.message);
+    }
   }
 
   async getShards(
@@ -339,6 +353,10 @@ export class RealmServer implements Realm.Service {
   }
 
   async connectSeer() {
+    if (this.seer?.client?.status === 'Connected') {
+      return { message: 'Seer already connected.' };
+    }
+
     return new Promise((resolve, reject) => {
       // @ts-ignore
       const client: Realm.Client = {};
@@ -481,8 +499,12 @@ export class RealmServer implements Realm.Service {
 
         log('Seer auth res', res);
 
+        const profile: Realm.RouterOutput['auth'] = await this.seer.emit.profile.me.query();
+
+        log('Seer profile res', profile);
+
         // Check if initialization was successful
-        if (!res?.profile) {
+        if (!profile) {
           console.error('Could not connect to seer. Retrying in 10 seconds.');
           // resolve({ status: 0 });
 
@@ -491,13 +513,18 @@ export class RealmServer implements Realm.Service {
           return;
         }
 
-        this.config = {
-          ...this.config,
-          ...(res as any),
-        };
+        // this.config = {
+        //   ...this.config,
+        //   profile,
+        // };
 
-        log('Seer connected', res);
-        resolve(null);
+        client.status = 'Connected';
+        client.roles = profile.roles;
+        client.permissions = profile.permissions;
+        client.profile = profile;
+
+        log('Seer connected', profile);
+        resolve({ message: 'Seer connected.' });
       };
 
       client.socket.addEventListener('connect', connect);

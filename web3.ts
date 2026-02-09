@@ -1,17 +1,21 @@
 import * as ethers from 'ethers';
 import Web3 from 'web3';
-import { log } from '@arken/node/util';
+import { log } from '@arken/node/log';
+import HDWalletProvider from '@truffle/hdwallet-provider';
 import { getAddress, getRandomProvider } from '@arken/node/web3';
 import contractInfo from '@arken/node/legacy/contractInfo';
 import BEP20Contract from '@arken/node/legacy/contracts/BEP20.json';
-import secrets from '../secrets.json';
 
 function _initProvider(ctx) {
   try {
     log('Setting up provider');
 
-    ctx.secrets = secrets;
-    ctx.web3Provider = getRandomProvider(secrets);
+    ctx.secrets = {
+      mnemonic: process.env.SECRET_MNEMONIC,
+      address: process.env.SECRET_ADDRESS,
+      key: process.env.SECRET_KEY,
+    };
+    ctx.web3Provider = getRandomProvider(HDWalletProvider, ctx.secrets);
     ctx.web3 = new Web3(ctx.web3Provider); // TODO: make this ctx.web3 = { bsc: } just like seer (if needed?)
 
     ctx.ethersProvider = new ethers.providers.Web3Provider(ctx.web3Provider, 'any');

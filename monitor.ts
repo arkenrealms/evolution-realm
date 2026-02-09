@@ -1,4 +1,4 @@
-import { log, logError, getTime } from '@arken/node/util';
+import { log, logError } from '@arken/node/log';
 import { killSubProcesses } from '@arken/node/process';
 
 const os = require('os');

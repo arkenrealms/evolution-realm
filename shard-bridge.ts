@@ -6,14 +6,15 @@ import { observable } from '@trpc/server/observable';
 import { sleep } from '@arken/node/time';
 import { io as ioClient } from 'socket.io-client';
 import { isValidRequest, getSignedRequest } from '@arken/node/web3';
-import { log, logError, random, getTime } from '@arken/node/util';
+import { random, getTime } from '@arken/node/util';
+import { log, logError } from '@arken/node/log';
 import { initTRPC } from '@trpc/server';
 import { z } from 'zod';
 import { createTRPCProxyClient, TRPCClientError, httpBatchLink, createWSClient, wsLink } from '@trpc/client';
 import { generateShortId } from '@arken/node/db';
 import { randomName } from '@arken/node/string';
 import { Realm, Shard } from '@arken/evolution-protocol/types';
-import { weightedRandom } from '@arken/array';
+import { weightedRandom } from '@arken/node/array';
 import {
   createRouter as createBridgeRouter,
   RouterInput,
@@ -176,63 +177,72 @@ export class ShardBridge implements Bridge.Service {
   }
 
   start() {
-    try {
-      setInterval(() => {
-        this.characters = {};
-      }, 10 * 60 * 1000);
+    return new Promise((resolve, reject) => {
+      try {
+        setInterval(
+          () => {
+            this.characters = {};
+          },
+          10 * 60 * 1000
+        );
 
-      // const binaryPath = {
-      //   linux: '../game-server/build/index.js',
-      //   darwin: '../game-server/build/index.js',
-      //   win32: ''
-      // }[process.platform]
+        // const binaryPath = {
+        //   linux: '../game-server/build/index.js',
+        //   darwin: '../game-server/build/index.js',
+        //   win32: ''
+        // }[process.platform]
 
-      const env = {
-        ...process.env,
-        LOG_PREFIX: '[SHARD]',
-        SHARD_PORT: this.spawnPort + '',
-      };
+        const env = {
+          ...process.env,
+          LOG_PREFIX: '[SHARD]',
+          SHARD_PORT: this.spawnPort + '',
+        };
 
-      console.log('Start shard bridge', env);
+        console.log('Start shard bridge', env);
 
-      // Start the server
-      this.process = spawn(
-        'node', // Start the Node.js runtime
-        [
-          '--inspect', // Enable debugging with the inspector
-          '-r',
-          'ts-node/register', // Use ts-node/register to execute TypeScript
-          '-r',
-          'dotenv/config', // Load dotenv config
-          '-r',
-          'tsconfig-paths/register', // Register tsconfig paths
-          'src/index.ts', // Your TypeScript entry file
-        ],
-        {
-          cwd: path.resolve('../shard'), // Set the current working directory
-          env, // Set environment variables
-          stdio: ['ignore', 'pipe', 'pipe'], // Configure stdio streams
-        }
-      );
-      // this.process = spawn('node', ['-r', 'tsconfig-paths/register', 'build/index.js'], {
-      //   cwd: path.resolve('../shard'),
-      //   env,
-      //   stdio: ['ignore', 'pipe', 'pipe'],
-      // });
+        // Start the server
+        this.process = spawn(
+          'node', // Start the Node.js runtime
+          [
+            '--inspect', // Enable debugging with the inspector
+            '-r',
+            'ts-node/register', // Use ts-node/register to execute TypeScript
+            '-r',
+            'dotenv/config', // Load dotenv config
+            '-r',
+            'tsconfig-paths/register', // Register tsconfig paths
+            'index.ts', // Your TypeScript entry file
+          ],
+          {
+            cwd: path.resolve('../shard'), // Set the current working directory
+            env, // Set environment variables
+            stdio: ['ignore', 'pipe', 'pipe'], // Configure stdio streams
+          }
+        );
+        // this.process = spawn('node', ['-r', 'tsconfig-paths/register', 'build/index.js'], {
+        //   cwd: path.resolve('../shard'),
+        //   env,
+        //   stdio: ['ignore', 'pipe', 'pipe'],
+        // });
 
-      this.process.stdout.pipe(process.stdout);
-      this.process.stderr.pipe(process.stderr);
+        this.process.stdout.pipe(process.stdout);
+        this.process.stderr.pipe(process.stderr);
 
-      this.process.on('exit', (code, signal) => {
-        log(`Child process exited with code ${code} and signal ${signal}. Lets exit too.`);
+        this.process.on('exit', (code, signal) => {
+          log(`Child process exited with code ${code} and signal ${signal}.`);
 
-        process.exit(1);
-      });
+          // process.exit(1);
+          reject(new Error(`Process exited with code ${code}.`));
+        });
 
-      this.realm.subProcesses.push(this.process);
-    } catch (e) {
-      log('startShardBridge error', e);
-    }
+        this.realm.subProcesses.push(this.process);
+
+        resolve(this.process);
+      } catch (e) {
+        log('startShardBridge error', e);
+        reject(new Error('startShardBridge error: ' + e));
+      }
+    });
   }
 
   async connect(input: RouterInput['connect'], { client }: RouterContext): Promise<RouterOutput['connect']> {
@@ -468,6 +478,8 @@ export class ShardBridge implements Bridge.Service {
     if (this.realm.modList.includes(normalizedAddress)) {
       roles.push('mod');
     }
+
+    client.address = normalizedAddress;
 
     return { roles };
   }
@@ -803,6 +815,7 @@ export class ShardBridge implements Bridge.Service {
         }
       } catch (e) {
         logError(e);
+        throw e;
       }
     });
 
@@ -854,76 +867,88 @@ export class ShardBridge implements Bridge.Service {
 }
 
 export async function init(realm, spawnPort) {
-  const shardBridge = new ShardBridge({ realm });
+  return new Promise((resolve, reject) => {
+    try {
+      const shardBridge = new ShardBridge({ realm });
 
-  shardBridge.id = generateShortId();
-  shardBridge.name = randomName();
-  shardBridge.spawnPort = spawnPort;
-  shardBridge.realmId = realm.id;
-  shardBridge.clientCount = 0;
-  shardBridge.endpoint = 'localhost:' + spawnPort;
-  shardBridge.status = 'Active';
+      shardBridge.id = generateShortId();
+      shardBridge.name = randomName();
+      shardBridge.spawnPort = spawnPort;
+      shardBridge.realmId = realm.id;
+      shardBridge.clientCount = 0;
+      shardBridge.endpoint = 'localhost:' + spawnPort;
+      shardBridge.status = 'Active';
 
-  shardBridge.router = createBridgeRouter(shardBridge);
+      shardBridge.router = createBridgeRouter(shardBridge);
 
-  shardBridge.config = {} as ShardBridgeConfig;
-  shardBridge.config.rewardSpawnPoints = [
-    { x: -16.32, y: -15.7774 },
-    { x: -9.420004, y: -6.517404 },
-    { x: -3.130003, y: -7.537404 },
-    { x: -7.290003, y: -12.9074 },
-    { x: -16.09, y: -2.867404 },
-    { x: -5.39, y: -3.76 },
-    { x: -7.28, y: -15.36 },
-    { x: -13.46, y: -13.92 },
-    { x: -12.66, y: -1.527404 },
-  ];
-  shardBridge.config.rewardSpawnPoints2 = [
-    { x: -16.32, y: -15.7774 },
-    { x: -9.420004, y: -6.517404 },
-    { x: -3.130003, y: -7.537404 },
-    { x: -7.290003, y: -12.9074 },
-    { x: -16.09, y: -2.867404 },
-    { x: -5.39, y: -3.76 },
-    { x: -12.66, y: -1.527404 },
+      shardBridge.config = {} as ShardBridgeConfig;
+      shardBridge.config.rewardSpawnPoints = [
+        { x: -16.32, y: -15.7774 },
+        { x: -9.420004, y: -6.517404 },
+        { x: -3.130003, y: -7.537404 },
+        { x: -7.290003, y: -12.9074 },
+        { x: -16.09, y: -2.867404 },
+        { x: -5.39, y: -3.76 },
+        { x: -7.28, y: -15.36 },
+        { x: -13.46, y: -13.92 },
+        { x: -12.66, y: -1.527404 },
+      ];
+      shardBridge.config.rewardSpawnPoints2 = [
+        { x: -16.32, y: -15.7774 },
+        { x: -9.420004, y: -6.517404 },
+        { x: -3.130003, y: -7.537404 },
+        { x: -7.290003, y: -12.9074 },
+        { x: -16.09, y: -2.867404 },
+        { x: -5.39, y: -3.76 },
+        { x: -12.66, y: -1.527404 },
 
-    { x: -24.21, y: -7.58 },
-    { x: -30.62, y: -7.58 },
-    { x: -30.8, y: -14.52 },
-    { x: -20.04, y: -15.11 },
-    { x: -29.21, y: -3.76 },
-    { x: -18.16, y: 0.06 },
-    { x: -22.98, y: -3.35 },
-    { x: -25.92, y: -7.64 },
-    { x: -20.1, y: -6.93 },
-    { x: -26.74, y: 0 },
-    { x: -32.74, y: -5.17 },
-    { x: -25.74, y: -15.28 },
-    { x: -22.62, y: -11.69 },
-    { x: -26.44, y: -4.05 },
-  ];
+        { x: -24.21, y: -7.58 },
+        { x: -30.62, y: -7.58 },
+        { x: -30.8, y: -14.52 },
+        { x: -20.04, y: -15.11 },
+        { x: -29.21, y: -3.76 },
+        { x: -18.16, y: 0.06 },
+        { x: -22.98, y: -3.35 },
+        { x: -25.92, y: -7.64 },
+        { x: -20.1, y: -6.93 },
+        { x: -26.74, y: 0 },
+        { x: -32.74, y: -5.17 },
+        { x: -25.74, y: -15.28 },
+        { x: -22.62, y: -11.69 },
+        { x: -26.44, y: -4.05 },
+      ];
 
-  shardBridge.config.rewardItemAmountPerLegitPlayer = 0;
-  shardBridge.config.rewardItemAmountMax = 0;
-  shardBridge.config.rewardWinnerAmountPerLegitPlayer = 0;
-  shardBridge.config.rewardWinnerAmountMax = 0;
-  shardBridge.config.rewardItemAmount = 0;
-  shardBridge.config.rewardWinnerAmount = 0;
-  shardBridge.config.drops = {
-    guardian: 1633043139000,
-    earlyAccess: 1633043139000,
-    trinket: 1641251240764,
-    santa: 1633043139000,
-    hellKey: 1633043139000,
-  };
+      shardBridge.config.rewardItemAmountPerLegitPlayer = 0;
+      shardBridge.config.rewardItemAmountMax = 0;
+      shardBridge.config.rewardWinnerAmountPerLegitPlayer = 0;
+      shardBridge.config.rewardWinnerAmountMax = 0;
+      shardBridge.config.rewardItemAmount = 0;
+      shardBridge.config.rewardWinnerAmount = 0;
+      shardBridge.config.drops = {
+        guardian: 1633043139000,
+        earlyAccess: 1633043139000,
+        trinket: 1641251240764,
+        santa: 1633043139000,
+        hellKey: 1633043139000,
+      };
 
-  setTimeout(() => {
-    shardBridge.start();
+      setTimeout(async () => {
+        try {
+          await shardBridge.start();
+        } catch (e) {
+          reject(e);
+          return;
+        }
 
-    setTimeout(() => {
-      shardBridge.bridge(generateShortId());
-    }, 20 * 1000);
-  }, 1000);
+        setTimeout(() => {
+          shardBridge.bridge(generateShortId());
 
-  return shardBridge;
+          resolve(shardBridge);
+        }, 20 * 1000);
+      }, 1000);
+    } catch (e) {
+      console.error(e);
+      reject(e);
+    }
+  });
 }

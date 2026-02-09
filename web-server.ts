@@ -2,8 +2,8 @@ import express from 'express';
 import RateLimit from 'express-rate-limit';
 import bodyParser from 'body-parser';
 import morgan from 'morgan';
-import { log, logError } from '@arken/node/util';
-import { emitAll } from '@arken/websocket';
+import { log, logError } from '@arken/node/log';
+import { emitAll } from '@arken/node/websocket';
 import { killSubProcesses } from '@arken/node/process';
 
 const path = require('path');
