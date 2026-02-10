@@ -782,10 +782,10 @@ export class ShardBridge implements Bridge.Service {
 
               // save the ID and callback when finished
               const timeout = setTimeout(() => {
-                console.log('[REALM.SHARD_BRIDGE] Request timed out', op);
+                console.log('[REALM.SHARD_BRIDGE] Request timed out', id, op);
                 delete this.shard.ioCallbacks[id];
                 observer.error(new TRPCClientError('Request timeout'));
-              }, 15000); // 15 seconds timeout
+              }, 30000);
 
               this.shard.ioCallbacks[id] = {
                 timeout,
@@ -849,19 +849,19 @@ export class ShardBridge implements Bridge.Service {
         // log('client.socket.onAny', eventName, res);
 
         if (eventName === 'trpcResponse') {
-          const { oid } = res;
+          const { id } = res;
 
           console.log(
-            `[REALM.SHARD_BRIDGE] Callback ${this.shard.ioCallbacks[oid] ? 'Exists' : 'Doesnt Exist'}`,
+            `[REALM.SHARD_BRIDGE] Callback ${this.shard.ioCallbacks[id] ? 'Exists' : 'Doesnt Exist'}`,
             eventName
           );
 
-          if (this.shard.ioCallbacks[oid]) {
-            clearTimeout(this.shard.ioCallbacks[oid].timeout);
+          if (this.shard.ioCallbacks[id]) {
+            clearTimeout(this.shard.ioCallbacks[id].timeout);
 
-            this.shard.ioCallbacks[oid].resolve({ result: { data: deserialize(res.result) } });
+            this.shard.ioCallbacks[id].resolve({ result: { data: deserialize(res.result) } });
 
-            delete this.shard.ioCallbacks[oid];
+            delete this.shard.ioCallbacks[id];
           }
         } else if (eventName === 'trpc') {
           if (res instanceof Buffer) return;
@@ -872,7 +872,7 @@ export class ShardBridge implements Bridge.Service {
 
           console.log('[REALM.SHARD_BRIDGE] Shard bridge called', method, res.params);
 
-          const id = generateShortId();
+          // const id = generateShortId();
 
           try {
             const ctx = { client: this.shard };
@@ -882,9 +882,9 @@ export class ShardBridge implements Bridge.Service {
             // @ts-ignore
             const result = res.params ? await caller[method](deserialize(res.params)) : await caller[method]();
             // socket.emit('trpcResponse', { id, result });
-            this.shard.socket.emit('trpcResponse', { id, oid: res.id, result: serialize(result) });
+            this.shard.socket.emit('trpcResponse', { id: res.id, result: serialize(result) });
           } catch (e) {
-            this.shard.socket.emit('trpcResponse', { id, oid: res.id, result: {}, error: e.stack + '' });
+            this.shard.socket.emit('trpcResponse', { id: res.id, result: {}, error: e.stack + '' });
           }
         }
       } catch (e) {

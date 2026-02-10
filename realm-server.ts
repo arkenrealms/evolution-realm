@@ -417,7 +417,7 @@ export class RealmServer implements Realm.Service {
                     log('Realm -> Seer: Request timed out', op);
                     delete client.ioCallbacks[uuid];
                     observer.error(new TRPCClientError('Realm -> Seer: Request timeout'));
-                  }, 15000); // 15 seconds timeout
+                  }, 30000); // 15 seconds timeout
 
                   client.ioCallbacks[uuid] = {
                     request,
