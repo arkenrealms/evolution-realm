@@ -323,23 +323,27 @@ export class RealmServer implements Realm.Service {
         })
       );
 
+      const realmShards = this.shardBridges
+        .filter((shard: any) => !!shard)
+        .map((shard: any) => ({
+          endpoint: shard.endpoint,
+          status: shard.status,
+          clientCount: shard.clientCount,
+        }));
+
+      const clientCount = 1;
+
       await this.seer.emit.core.updateRealm.mutate({
         where: { id: { equals: '66f104dace637115159e29a0' } },
         data: {
           status: 'Online',
-          regionCode: 'EU',
-          clientCount: 1,
-          realmShards: this.shardBridges
-            .filter((shard: any) => !!shard)
-            .map((shard: any) => ({
-              endpoint: shard.endpoint,
-              status: shard.status,
-              clientCount: shard.clientCount,
-            })),
+          regionCode: process.env.REGION,
+          clientCount,
+          realmShards,
         },
       });
 
-      return { data, message: `Shard ${data.name} ($data.id) created.` };
+      return { data, message: `Shard ${data.name} (${data.id}) created.` };
     } catch (e) {
       throw new Error('Unable to create shard: ' + e?.message);
     }
@@ -356,6 +360,8 @@ export class RealmServer implements Realm.Service {
     if (this.seer?.client?.status === 'Connected') {
       return { message: 'Seer already connected.' };
     }
+
+    log('Connecting to seer');
 
     return new Promise((resolve, reject) => {
       // @ts-ignore
@@ -458,14 +464,14 @@ export class RealmServer implements Realm.Service {
       };
 
       client.socket.on('trpcResponse', async (message) => {
-        log('Shard seer client trpcResponse message', message);
+        log('Seer client trpcResponse message', message);
         const pack = message;
-        log('Shard seer trpcResponse pack', pack);
+        log('Seer trpcResponse pack', pack);
         const { id } = pack;
 
         if (pack.error) {
           log(
-            'Shard seer client callback - error occurred',
+            'Seer client callback - error occurred',
             pack,
             client.ioCallbacks[id] ? client.ioCallbacks[id].request : ''
           );
@@ -473,7 +479,7 @@ export class RealmServer implements Realm.Service {
         }
 
         try {
-          log(`Shard  seerclient callback ${client.ioCallbacks[id] ? 'Exists' : 'Doesnt Exist'}`);
+          log(`Seer client callback ${client.ioCallbacks[id] ? 'Exists' : 'Doesnt Exist'}`);
 
           if (client.ioCallbacks[id]) {
             clearTimeout(client.ioCallbacks[id].timeout);
@@ -483,11 +489,12 @@ export class RealmServer implements Realm.Service {
             delete client.ioCallbacks[id];
           }
         } catch (e) {
-          log('Shard seer client trpcResponse error', id, e);
+          log('Seer client trpcResponse error', id, e);
         }
       });
 
       const connect = async () => {
+        log('Seer connected');
         // Initialize the realm server with status 1
         const signature = await getSignedRequest(this.web3, this.secrets, 'evolution');
 

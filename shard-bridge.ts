@@ -204,6 +204,8 @@ export class ShardBridge implements Bridge.Service {
   realmId: string;
   clientCount: number;
   status: string;
+  shardResolver: any;
+  shardRejecter: any;
 
   constructor({ realm }: Context) {
     console.log('Construct shard bridge');
@@ -355,17 +357,24 @@ export class ShardBridge implements Bridge.Service {
     //   throw new Error('Could not init');
     // }
 
-    log('Shard instance initialized');
-    log('Getting seer info');
+    log('Shard instance initializing');
     const res = await this.realm.seer.emit.evolution.info.query({ gameKey: process.env.GAME_KEY });
 
     if (!res) throw new Error('Could not fetch info');
 
-    this.id = generateShortId();
+    if (!this.id) this.id = generateShortId();
+
     this.info = { ...res };
     this.isAuthed = true;
 
     log('Seer info', this.info);
+
+    if (this.shardResolver) {
+      this.shardResolver(this);
+      this.shardResolver = null;
+    }
+
+    log('Shard instance initialized');
 
     return {
       id: this.id,
@@ -784,7 +793,9 @@ export class ShardBridge implements Bridge.Service {
               const timeout = setTimeout(() => {
                 console.log('[REALM.SHARD_BRIDGE] Request timed out', id, op);
                 delete this.shard.ioCallbacks[id];
-                observer.error(new TRPCClientError('Request timeout'));
+                observer.error(
+                  new TRPCClientError(`Request timeout ${id} ${op.path} ${op.type} ${JSON.stringify(input)}`)
+                );
               }, 30000);
 
               this.shard.ioCallbacks[id] = {
@@ -913,6 +924,8 @@ export class ShardBridge implements Bridge.Service {
     // });
 
     this.shard.socket.addEventListener('connect', async () => {
+      log('Shard has connected');
+
       this.connect(null, { client: this.shard });
     });
 
@@ -929,9 +942,7 @@ export class ShardBridge implements Bridge.Service {
       this.clients = this.clients.filter((c) => c.shardId !== this.shard.id);
     });
 
-    this.spawnPort += 1; // TODO: just have the shard tell us what it is via discovery
-
-    this.shard.socket.connect();
+    // this.spawnPort += 1; // TODO: just have the shard tell us what it is via discovery
   }
 
   async seerDisconnected(
@@ -1009,16 +1020,20 @@ export async function init(realm, spawnPort) {
       setTimeout(async () => {
         try {
           await shardBridge.start();
+
+          shardBridge.bridge(generateShortId());
         } catch (e) {
+          console.log('E300', e);
           reject(e);
           return;
         }
 
         setTimeout(() => {
-          shardBridge.bridge(generateShortId());
+          shardBridge.shardResolver = resolve;
+          shardBridge.shardRejecter = reject;
 
-          resolve(shardBridge);
-        }, 20 * 1000);
+          shardBridge.shard.socket.connect();
+        }, 10 * 1000);
       }, 1000);
     } catch (e) {
       console.error(e);
