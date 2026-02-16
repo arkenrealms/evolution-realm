@@ -32,6 +32,19 @@ import packageJson from './package.json';
 
 dotenv.config();
 
+const SHARD_PORT_TO_HOSTNAME = new Map<number, string>([
+  [4020, 'evolution-realm-shard-2.arken.gg'],
+  [4021, 'evolution-realm-shard-3.arken.gg'],
+  [4022, 'evolution-realm-shard-4.arken.gg'],
+]);
+
+const SHARD_PORTS = [4020, 4021, 4022] as const;
+
+const REALM_KEY = 'asia1'; // you already used this in updateRealm
+const HEARTBEAT_INTERVAL_MS = 20_000;
+const HEARTBEAT_TIMEOUT_MS = 2_500;
+const HEARTBEAT_FAILS_TO_OFFLINE = 2; // require 2 consecutive fails before offline
+
 export class RealmServer implements Realm.Service {
   client: Realm.Client;
   state: Arken.Core.Types.Data;
@@ -278,6 +291,30 @@ export class RealmServer implements Realm.Service {
     }
   }
 
+  private pickNextAvailableShardTarget(): { spawnPort: number; endpoint: string } {
+    const used = new Set<number>();
+
+    for (const b of this.shardBridges ?? []) {
+      used.add(b.spawnPort);
+    }
+
+    for (const port of SHARD_PORTS) {
+      if (!used.has(port)) {
+        const endpoint = SHARD_PORT_TO_HOSTNAME.get(port);
+        if (!endpoint) throw new Error(`No hostname mapping found for port ${port}`);
+        return { spawnPort: port, endpoint };
+      }
+    }
+
+    throw new Error(
+      `No shard ports available. In use: ${
+        Array.from(used)
+          .sort((a, b) => a - b)
+          .join(', ') || '(none)'
+      }`
+    );
+  }
+
   async createShard(
     input: Realm.RouterInput['createShard'],
     ctx: Realm.ServiceContext
@@ -289,61 +326,31 @@ export class RealmServer implements Realm.Service {
     log('Creating shard');
 
     try {
-      const shard: any = await initShardbridge(this, this.spawnPort);
+      const target = this.pickNextAvailableShardTarget();
 
+      const shard: any = await initShardbridge(this, target.spawnPort);
       if (!shard) throw new Error('Could not create shard.');
 
-      this.spawnPort += 1;
+      shard.spawnPort = target.spawnPort;
+      shard.endpoint = target.endpoint;
+      shard.status = 'Online';
+      shard.heartbeatFails = 0;
+      shard.lastHeartbeatOkAt = Date.now();
 
       await shard.init();
 
       this.shardBridges.push(shard);
 
-      const data = {
-        id: shard.id,
-        name: shard.name,
-        realmId: shard.realmId,
-        // endpoint: shard.endpoint,
-      };
+      await this.pushRealmUpdateIfChanged();
 
-      log(
-        'Configuring shard',
-        JSON.stringify({
-          where: { id: { equals: '66f104dace637115159e29a0' } },
-          data: {
-            status: 'Online',
-            regionCode: 'EU',
-            clientCount: 1,
-            realmShards: this.shardBridges.map((shard: any) => ({
-              endpoint: shard.endpoint,
-              status: shard.status,
-              clientCount: shard.clientCount,
-            })),
-          },
-        })
-      );
-
-      const realmShards = this.shardBridges
-        .filter((shard: any) => !!shard)
-        .map((shard: any) => ({
-          endpoint: shard.endpoint,
-          status: shard.status,
-          clientCount: shard.clientCount,
-        }));
-
-      const clientCount = 1;
-
-      await this.seer.emit.core.updateRealm.mutate({
-        where: { id: { equals: '66f104dace637115159e29a0' } },
+      return {
         data: {
-          status: 'Online',
-          regionCode: process.env.REGION,
-          clientCount,
-          realmShards,
+          id: shard.id,
+          name: shard.name,
+          realmId: shard.realmId,
         },
-      });
-
-      return { data, message: `Shard ${data.name} (${data.id}) created.` };
+        message: `Shard ${shard.name} (${shard.id}) created.`,
+      };
     } catch (e) {
       throw new Error('Unable to create shard: ' + e?.message);
     }
@@ -411,6 +418,7 @@ export class RealmServer implements Realm.Service {
                     observer.complete();
                     return;
                   }
+
                   log('Realm -> Seer: Emit Direct', op);
 
                   const uuid = generateShortId();
@@ -531,6 +539,9 @@ export class RealmServer implements Realm.Service {
         client.profile = profile;
 
         log('Seer connected', profile);
+
+        this.startShardHeartbeatLoop();
+
         resolve({ message: 'Seer connected.' });
       };
 
@@ -739,6 +750,132 @@ export class RealmServer implements Realm.Service {
   // private async onSeerConnected() {
   //   return await this.emit.seerConnected.mutate(await getSignedRequest(this.web3, this.secrets, {}), {});
   // }
+
+  private heartbeatTimer?: NodeJS.Timeout;
+  private lastPushedShardStateJson = '';
+
+  private withTimeout<T>(p: Promise<T>, ms: number, label = 'timeout'): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error(label)), ms);
+      p.then(
+        (v) => {
+          clearTimeout(t);
+          resolve(v);
+        },
+        (e) => {
+          clearTimeout(t);
+          reject(e);
+        }
+      );
+    });
+  }
+
+  private buildRealmShardsPayload() {
+    return this.shardBridges
+      .filter((s: any) => !!s?.endpoint)
+      .map((s: any) => ({
+        endpoint: s.endpoint,
+        status: s.status ?? 'Offline',
+        clientCount: s.clientCount ?? s.info?.clientCount ?? 0,
+        clientMax: s.clientMax ?? this.config?.maxClients ?? 30,
+        spawnPort: s.spawnPort, // optional but useful for debugging
+        lastHeartbeatOkAt: s.lastHeartbeatOkAt ?? null, // optional if schema allows
+      }));
+  }
+
+  private async pushRealmUpdateIfChanged() {
+    if (!this.seer) return;
+
+    const realmShards = this.buildRealmShardsPayload();
+    const clientCount = realmShards.reduce((sum, s) => sum + (s.clientCount ?? 0), 0);
+
+    // Only include fields you actually store in Realm schema
+    const payload = {
+      status: 'Online',
+      regionCode: process.env.REGION,
+      clientCount,
+      clientMax: 30,
+      realmShards,
+    };
+
+    const json = JSON.stringify(payload);
+    if (json === this.lastPushedShardStateJson) return; // no changes -> no DB write
+
+    this.lastPushedShardStateJson = json;
+
+    try {
+      await this.seer.emit.core.updateRealm.mutate({
+        where: { key: { equals: REALM_KEY } },
+        data: payload as any,
+      });
+    } catch (e: any) {
+      logError('Failed to push realm update', e?.message ?? e);
+      // Don't throw: heartbeat loop should keep running even if seer hiccups
+    }
+  }
+
+  private async checkShardHeartbeat(shard: any, shardId: number) {
+    // Initialize tracking fields if missing
+    if (typeof shard.heartbeatFails !== 'number') shard.heartbeatFails = 0;
+    if (!shard.status) shard.status = 'Online';
+
+    try {
+      const res = await this.withTimeout(
+        shard.shard.emit.heartbeat.query({ realmId: this.id }),
+        HEARTBEAT_TIMEOUT_MS,
+        'heartbeat timeout'
+      );
+
+      if (res !== 'OK') throw new Error(`Unexpected heartbeat response: ${String(res)}`);
+
+      shard.heartbeatFails = 0;
+      shard.lastHeartbeatOkAt = Date.now();
+
+      if (shard.status !== 'Online') {
+        shard.status = 'Online';
+        log(`Shard ${shardId} is back Online (${shard.endpoint})`);
+      }
+    } catch (e: any) {
+      shard.heartbeatFails += 1;
+
+      if (shard.heartbeatFails >= HEARTBEAT_FAILS_TO_OFFLINE && shard.status !== 'Offline') {
+        shard.status = 'Offline';
+        logError(`Shard ${shardId} marked Offline (${shard.endpoint}): ${e?.message ?? e}`);
+      } else {
+        logError(
+          `Shard ${shardId} heartbeat failed (${shard.heartbeatFails}/${HEARTBEAT_FAILS_TO_OFFLINE}) (${shard.endpoint}): ${
+            e?.message ?? e
+          }`
+        );
+      }
+    }
+  }
+
+  private startShardHeartbeatLoop() {
+    if (this.heartbeatTimer) return;
+
+    this.heartbeatTimer = setInterval(async () => {
+      if (!this.seer) return; // no point writing updates until connected
+
+      // Run checks sequentially to avoid stampeding; change to Promise.allSettled if you prefer parallel.
+      for (let i = 0; i < this.shardBridges.length; i++) {
+        const shard = this.shardBridges[i];
+        if (!shard) continue;
+        // If shard bridge exists but shard client isn't ready yet, mark offline
+        if (!(shard as any).shard?.emit?.heartbeat?.query) {
+          (shard as any).status = 'Offline';
+          continue;
+        }
+
+        await this.checkShardHeartbeat(shard as any, i);
+      }
+
+      await this.pushRealmUpdateIfChanged();
+    }, HEARTBEAT_INTERVAL_MS);
+
+    // Don't keep process alive solely because of the interval (optional)
+    this.heartbeatTimer.unref?.();
+  }
 }
 
 export function init() {

@@ -206,6 +206,8 @@ export class ShardBridge implements Bridge.Service {
   status: string;
   shardResolver: any;
   shardRejecter: any;
+  heartbeatFails: any;
+  lastHeartbeatOkAt: any;
 
   constructor({ realm }: Context) {
     console.log('Construct shard bridge');
@@ -783,7 +785,8 @@ export class ShardBridge implements Bridge.Service {
                 observer.error(new TRPCClientError('Emit Direct failed, bad socket'));
                 return;
               }
-              console.log('[REALM.SHARD_BRIDGE] Emit Direct', op);
+
+              if (op.path !== 'heartbeat') console.log('[REALM.SHARD_BRIDGE] Emit Direct', op);
 
               const id = generateShortId();
 
