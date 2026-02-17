@@ -2,7 +2,6 @@
 //
 import dayjs from 'dayjs';
 import { spawn, type ChildProcess } from 'child_process';
-import { observable } from '@trpc/server/observable';
 import { sleep } from '@arken/node/time';
 import { io as ioClient } from 'socket.io-client';
 import { isValidRequest, getSignedRequest } from '@arken/node/web3';
@@ -10,9 +9,11 @@ import { random, getTime } from '@arken/node/util';
 import { log, logError } from '@arken/node/log';
 import { initTRPC } from '@trpc/server';
 import { z } from 'zod';
-import { createTRPCProxyClient, TRPCClientError, httpBatchLink, createWSClient, wsLink } from '@trpc/client';
+import { TRPCClientError, createTRPCProxyClient } from '@trpc/client';
 import { generateShortId } from '@arken/node/db';
 import { randomName } from '@arken/node/string';
+import { bindSocketClientEmit } from '@arken/node/trpc/socketLink';
+import { createSocketTrpcHandler } from '@arken/node/trpc/socketServer';
 import { Realm, Shard } from '@arken/evolution-protocol/types';
 import { weightedRandom } from '@arken/node/array';
 import fs from 'fs';
@@ -23,7 +24,7 @@ import {
   RouterContext,
 } from '@arken/evolution-protocol/bridge/bridge.router';
 import type * as Bridge from '@arken/evolution-protocol/bridge/bridge.types';
-import { serialize, deserialize } from '@arken/node/rpc';
+// serialize/deserialize now handled internally by @arken/node/trpc utilities
 import { RealmServer } from './realm-server';
 // import SocketIOWebSocket from './trpc-websocket';
 // import { TRPCLink } from '@trpc/client';
@@ -759,149 +760,31 @@ export class ShardBridge implements Bridge.Service {
       // }
     });
 
-    this.shard.emit = createTRPCProxyClient<Shard.Router>({
-      links: [
-        () =>
-          ({ op, next }) => {
-            return observable((observer) => {
-              const { input } = op;
-
-              op.context.client = this.shard;
-              // @ts-ignore
-              op.context.client.roles = ['admin', 'mod', 'user', 'guest'];
-
-              if (!this.shard) {
-                // console.log('Emit Direct failed, no client', op);
-                // observer.complete();
-                observer.error(new TRPCClientError('Emit Direct failed, no client'));
-                return;
-              }
-
-              if (!this.shard.socket || !this.shard.socket.emit) {
-                // console.log('Emit Direct failed, bad socket', op);
-                // observer.complete();
-                observer.error(new TRPCClientError('Emit Direct failed, bad socket'));
-                return;
-              }
-              console.log('[REALM.SHARD_BRIDGE] Emit Direct', op);
-
-              const id = generateShortId();
-
-              this.shard.socket.emit('trpc', { id, method: op.path, type: op.type, params: input });
-
-              // save the ID and callback when finished
-              const timeout = setTimeout(() => {
-                console.log('[REALM.SHARD_BRIDGE] Request timed out', id, op);
-                delete this.shard.ioCallbacks[id];
-                observer.error(
-                  new TRPCClientError(`Request timeout ${id} ${op.path} ${op.type} ${JSON.stringify(input)}`)
-                );
-              }, 30000);
-
-              this.shard.ioCallbacks[id] = {
-                timeout,
-                resolve: (pack) => {
-                  // log('[REALM.SHARD_BRIDGE] ioCallbacks.resolve', id, pack);
-                  clearTimeout(timeout);
-                  if (pack.error) {
-                    observer.error(pack.error);
-                  } else {
-                    const result = deserialize(pack.result);
-                    console.log('[REALM.SHARD_BRIDGE] ioCallbacks.resolve', result);
-
-                    // @ts-ignore
-                    if (result?.status !== undefined && result?.status !== 1)
-                      throw new Error('[REALM.SHARD_BRIDGE] callback status error' + result);
-
-                    observer.next({
-                      // @ts-ignore
-                      result: result ? result : { data: undefined },
-                    });
-
-                    observer.complete();
-                  }
-                  delete this.shard.ioCallbacks[id]; // Cleanup after completion
-                },
-                reject: (error) => {
-                  console.log('[REALM.SHARD_BRIDGE] ioCallbacks.reject', error);
-                  clearTimeout(timeout);
-                  observer.error(error);
-                  delete this.shard.ioCallbacks[id]; // Cleanup on error
-                },
-              };
-
-              // const { input, context } = op;
-              // const client = client;
-
-              // if (!client) {
-              //   console.log('Emit Bridge -> Shard failed, no client', op);
-              //   observer.complete();
-              //   return;
-              // }
-
-              // if (!client.socket || !client.socket.emit) {
-              //   console.log('Emit Bridge -> Shard failed, bad socket', op);
-              //   observer.complete();
-              //   return;
-              // }
-              // console.log('Emit Bridge -> Shard', op);
-
-              // client.socket.emit('trpc', { id: op.id, method: op.path, type: op.type, params: input });
-
-              // observer.complete();
-            });
-          },
-      ],
-      // transformer: dummyTransformer,
+    // Use shared tRPC utilities instead of hand-rolled link + onAny handler.
+    // bindSocketClientEmit sets up:
+    //   1. attachTrpcResponseHandler — resolves ioCallbacks on 'trpcResponse'
+    //   2. createSocketProxyClient — builds the tRPC proxy for emitting 'trpc' requests
+    this.shard.emit = bindSocketClientEmit<Shard.Router>({
+      client: this.shard as any,
+      socket: this.shard.socket,
+      backendName: 'realm-shard-bridge',
+      logPrefix: 'REALM.SHARD_BRIDGE',
+      roles: ['admin', 'mod', 'user', 'guest'],
+      requestTimeoutMs: 30_000,
+      logging: true,
     });
 
-    this.shard.socket.onAny(async (eventName, res) => {
-      try {
-        // log('client.socket.onAny', eventName, res);
+    // Handle inbound 'trpc' requests from the shard (shard -> realm bridge calls)
+    const handleShardTrpc = createSocketTrpcHandler({
+      router: this.router,
+      createCallerFactory,
+      log: (...args: any[]) => log('[REALM.SHARD_BRIDGE]', ...args),
+    });
 
-        if (eventName === 'trpcResponse') {
-          const { id } = res;
-
-          console.log(
-            `[REALM.SHARD_BRIDGE] Callback ${this.shard.ioCallbacks[id] ? 'Exists' : 'Doesnt Exist'}`,
-            eventName
-          );
-
-          if (this.shard.ioCallbacks[id]) {
-            clearTimeout(this.shard.ioCallbacks[id].timeout);
-
-            this.shard.ioCallbacks[id].resolve({ result: { data: deserialize(res.result) } });
-
-            delete this.shard.ioCallbacks[id];
-          }
-        } else if (eventName === 'trpc') {
-          if (res instanceof Buffer) return;
-
-          const { method } = res;
-
-          if (method === 'onEvents') return;
-
-          console.log('[REALM.SHARD_BRIDGE] Shard bridge called', method, res.params);
-
-          // const id = generateShortId();
-
-          try {
-            const ctx = { client: this.shard };
-
-            const createCaller = createCallerFactory(this.router);
-            const caller = createCaller(ctx);
-            // @ts-ignore
-            const result = res.params ? await caller[method](deserialize(res.params)) : await caller[method]();
-            // socket.emit('trpcResponse', { id, result });
-            this.shard.socket.emit('trpcResponse', { id: res.id, result: serialize(result) });
-          } catch (e) {
-            this.shard.socket.emit('trpcResponse', { id: res.id, result: {}, error: e.stack + '' });
-          }
-        }
-      } catch (e) {
-        logError(e);
-        throw e;
-      }
+    this.shard.socket.on('trpc', async (message: any) => {
+      if (message instanceof Buffer) return;
+      if (message?.method === 'onEvents') return;
+      await handleShardTrpc(this.shard.socket, { client: this.shard }, message);
     });
 
     // client.socket.addEventListener('message', async (message) => {
