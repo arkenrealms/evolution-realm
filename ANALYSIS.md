@@ -51,3 +51,14 @@
 - Test gate result:
   - `npm test -- --runInBand` ❌ `sh: jest: command not found`.
 - Source files intentionally unchanged this slot to satisfy the source-change gate.
+
+## 2026-02-19T10:52:29-08:00 slot-7 active fix
+- Re-read local markdown first (`README.md`, `ANALYSIS.md`) before source edits.
+- Ran branch hygiene (`git fetch origin` + merge `origin/main`) and then cut fresh branch `nel/evolution-realm-websocket-error-close-20260219` from updated `main`.
+- Reliability issue in current branch state: websocket wrapper never dispatched `onclose` on either `disconnect` or explicit `close()`.
+- Applied practical fix in `trpc-websocket.ts`:
+  - dispatch `onclose` on socket disconnect,
+  - dispatch `onclose` on explicit close,
+  - enforce idempotent close dispatch to avoid duplicate callbacks.
+- Added `src/trpc-websocket.test.ts` with targeted Jest tests for both paths (`disconnect`, and `close()` then `disconnect`).
+- Validation: `rushx test` ✅ (1 suite, 2 tests).

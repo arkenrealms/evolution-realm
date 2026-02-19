@@ -36,6 +36,7 @@ type Listener = (...args: any[]) => void;
 export default class SocketIOWebSocket implements WebSocket {
   private ioSocket: Socket;
   private eventListeners: Map<string, Function[]>;
+  private didDispatchClose = false;
 
   // WebSocket properties
   public readonly url: string;
@@ -76,6 +77,7 @@ export default class SocketIOWebSocket implements WebSocket {
 
     this.ioSocket.on('connect', () => {
       console.log('SocketIOWebSocket.connect');
+      this.didDispatchClose = false;
       this.readyState = SocketIOWebSocket.OPEN;
       if (this.onopen) this.onopen();
     });
@@ -83,7 +85,7 @@ export default class SocketIOWebSocket implements WebSocket {
     this.ioSocket.on('disconnect', () => {
       console.log('SocketIOWebSocket.disconnect');
       this.readyState = SocketIOWebSocket.CLOSED;
-      // if (this.onclose) this.onclose();
+      this.dispatchClose();
     });
 
     this.ioSocket.on('message', (data: any) => {
@@ -109,7 +111,19 @@ export default class SocketIOWebSocket implements WebSocket {
     this.readyState = SocketIOWebSocket.CLOSING;
     this.ioSocket.close();
     this.readyState = SocketIOWebSocket.CLOSED;
-    // if (this.onclose) this.onclose();
+    this.dispatchClose(code, reason);
+  }
+
+  private dispatchClose(code = 1000, reason = 'socket closed'): void {
+    if (this.didDispatchClose) {
+      return;
+    }
+
+    this.didDispatchClose = true;
+
+    if (this.onclose) {
+      this.onclose({ code, reason, wasClean: true } as CloseEvent);
+    }
   }
 
   public send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void {
