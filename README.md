@@ -22,3 +22,10 @@ A battle for supremacy takes place amongst the dragons of Haerra.
 - Test gate remains blocked in this checkout:
   - `npm test -- --runInBand` → `sh: jest: command not found`
 - No source edits were made in this slot to preserve source-change gate compliance.
+
+## Rotation note (2026-02-19T03:32:24-08:00)
+- Branch hygiene completed (`git fetch origin` + merge `origin/main` => already up to date).
+- Loaded all local markdown first, then re-reviewed leaf runtime files (`shard-bridge.test.ts`, `shard-bridge.ts`, `trpc-websocket.ts`) before parent docs.
+- Source-change test gate still blocked in this checkout:
+  - `npm test -- --runInBand` → `sh: jest: command not found`.
+- No source edits were made in this slot to preserve test-gate compliance.

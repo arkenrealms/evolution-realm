@@ -40,3 +40,14 @@
   - `npm test -- --runInBand` ❌ `sh: jest: command not found`
 - Source remains unchanged this slot; docs updated only.
 - Next actionable requirement remains restoring runnable Jest runtime for this package.
+
+## 2026-02-19T03:32:24-08:00 slot-8 rerun
+- Re-read all local markdown docs first (`README.md`, `ANALYSIS.md`) before source inspection.
+- Re-ran branch hygiene (`git fetch origin` + `git merge --no-edit origin/main`) and confirmed branch is synced.
+- Deepest-first code recheck for this slot:
+  - `shard-bridge.test.ts` is still legacy/placeholder-heavy and references non-local modules (`../game-server`, `./app-router`), so it is not currently a realistic reliability guard.
+  - `shard-bridge.ts` process-lifecycle controls remain the highest-impact runtime path for future tested hardening once Jest runtime is restored.
+  - `trpc-websocket.ts` still contains compatibility wrapper scaffolding that appears lightly integrated; no edits made without runnable tests.
+- Test gate result:
+  - `npm test -- --runInBand` ❌ `sh: jest: command not found`.
+- Source files intentionally unchanged this slot to satisfy the source-change gate.
