@@ -38,3 +38,11 @@ A battle for supremacy takes place amongst the dragons of Haerra.
   - duplicate close notifications are prevented when `close()` is followed by `disconnect`.
 - Added Jest regression coverage in `src/trpc-websocket.test.ts` for both close paths.
 - Validation command: `rushx test`.
+
+## Rotation note (2026-02-19T12:43:23-08:00)
+- Branch hygiene completed (`git fetch origin` + merge `origin/main` => already up to date).
+- Improved websocket close reliability in `trpc-websocket.ts` by mapping Socket.IO disconnect reasons to WebSocket-style close codes:
+  - `io client disconnect` => clean close code `1000`.
+  - unknown/other disconnect reasons => abnormal close code `1006` with fallback reason text.
+- Expanded regression coverage in `src/trpc-websocket.test.ts` for both close-code paths.
+- Validation command: `rushx test`.

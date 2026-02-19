@@ -82,10 +82,11 @@ export default class SocketIOWebSocket implements WebSocket {
       if (this.onopen) this.onopen();
     });
 
-    this.ioSocket.on('disconnect', () => {
+    this.ioSocket.on('disconnect', (reason?: string) => {
       console.log('SocketIOWebSocket.disconnect');
       this.readyState = SocketIOWebSocket.CLOSED;
-      this.dispatchClose();
+      const closeCode = reason === 'io client disconnect' ? 1000 : 1006;
+      this.dispatchClose(closeCode, reason || 'socket disconnected');
     });
 
     this.ioSocket.on('message', (data: any) => {

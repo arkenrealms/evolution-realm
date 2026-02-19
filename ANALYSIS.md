@@ -62,3 +62,13 @@
   - enforce idempotent close dispatch to avoid duplicate callbacks.
 - Added `src/trpc-websocket.test.ts` with targeted Jest tests for both paths (`disconnect`, and `close()` then `disconnect`).
 - Validation: `rushx test` ✅ (1 suite, 2 tests).
+
+## 2026-02-19T12:43:23-08:00 slot-7 follow-up fix
+- Re-read local markdown docs first (`README.md`, `ANALYSIS.md`), then reviewed leaf runtime/test files (`trpc-websocket.ts`, `src/trpc-websocket.test.ts`).
+- Reliability issue addressed: disconnect-close events previously used a single default close payload, masking clean-vs-abnormal disconnect conditions.
+- Applied practical close semantics in `trpc-websocket.ts`:
+  - map `disconnect` reason `io client disconnect` to close code `1000`.
+  - map other/empty disconnect reasons to close code `1006` with fallback reason `socket disconnected`.
+- Added/updated Jest tests to verify both code paths and preserve close idempotency behavior.
+- Validation:
+  - `rushx test` ✅ (1 suite, 3 tests).

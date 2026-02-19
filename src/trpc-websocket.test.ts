@@ -50,7 +50,29 @@ describe('SocketIOWebSocket close handling', () => {
     mockSocket.trigger('disconnect');
 
     expect(onclose).toHaveBeenCalledTimes(1);
+    expect(onclose).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: 1006,
+        reason: 'socket disconnected',
+      }),
+    );
     expect(wrapped.readyState).toBe(SocketIOWebSocket.CLOSED);
+  });
+
+  test('uses clean close code for client initiated disconnect reason', () => {
+    const wrapped = new SocketIOWebSocket('http://localhost:1234');
+    const onclose = jest.fn();
+    wrapped.onclose = onclose;
+
+    mockSocket.trigger('disconnect', 'io client disconnect');
+
+    expect(onclose).toHaveBeenCalledTimes(1);
+    expect(onclose).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: 1000,
+        reason: 'io client disconnect',
+      }),
+    );
   });
 
   test('does not double-fire onclose when close() is followed by disconnect', () => {
