@@ -18,3 +18,10 @@
 1. Restore a runnable local test command for this package (prefer repo-defined `npm test`; align with Jest+TS direction).
 2. If Rush remains required, repair workspace package path/mapping for `@arken/cerebro-hub` first.
 3. Resume source-level reliability work only after tests are runnable in the same run.
+
+## 2026-02-18 late-night slot-8 follow-up
+- Re-ran branch hygiene (`git fetch origin` + merge `origin/main`) and reloaded source files deepest-first (`shard-bridge*`, `trpc-websocket.ts`, `realm-server.ts`, `web-server.ts`, `web3.ts`, `index.ts`).
+- Reconfirmed test gate:
+  - `npm test -- --runInBand` ❌ `jest: command not found`
+  - `rushx test` ❌ Rush workspace path drift (`@arken/cerebro-hub` expected at `arken/cerebro/hub/package.json`).
+- No source edits were made in this slot to preserve source-change gate compliance.
