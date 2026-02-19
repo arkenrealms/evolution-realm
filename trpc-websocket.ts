@@ -123,7 +123,7 @@ export default class SocketIOWebSocket implements WebSocket {
     this.didDispatchClose = true;
 
     if (this.onclose) {
-      this.onclose({ code, reason, wasClean: true } as CloseEvent);
+      this.onclose({ code, reason, wasClean: code === 1000 } as CloseEvent);
     }
   }
 

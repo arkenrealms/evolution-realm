@@ -46,3 +46,9 @@ A battle for supremacy takes place amongst the dragons of Haerra.
   - unknown/other disconnect reasons => abnormal close code `1006` with fallback reason text.
 - Expanded regression coverage in `src/trpc-websocket.test.ts` for both close-code paths.
 - Validation command: `rushx test`.
+
+## Rotation note (2026-02-19T14:32:58-08:00)
+- Branch hygiene completed (`git fetch origin` + merge `origin/main` => already up to date).
+- Tightened websocket close semantics in `trpc-websocket.ts` so `CloseEvent.wasClean` now reflects the close code (`true` for `1000`, `false` for abnormal close codes).
+- Extended regression assertions in `src/trpc-websocket.test.ts` to validate `wasClean` for both disconnect paths.
+- Validation command: `rushx test`.

@@ -54,6 +54,7 @@ describe('SocketIOWebSocket close handling', () => {
       expect.objectContaining({
         code: 1006,
         reason: 'socket disconnected',
+        wasClean: false,
       }),
     );
     expect(wrapped.readyState).toBe(SocketIOWebSocket.CLOSED);
@@ -71,6 +72,7 @@ describe('SocketIOWebSocket close handling', () => {
       expect.objectContaining({
         code: 1000,
         reason: 'io client disconnect',
+        wasClean: true,
       }),
     );
   });

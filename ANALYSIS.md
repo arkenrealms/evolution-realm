@@ -72,3 +72,14 @@
 - Added/updated Jest tests to verify both code paths and preserve close idempotency behavior.
 - Validation:
   - `rushx test` ✅ (1 suite, 3 tests).
+
+## 2026-02-19T14:32:58-08:00 slot-7 follow-up fix
+- Re-read local markdown docs first (`README.md`, `ANALYSIS.md`) and re-reviewed deepest leaf runtime/test files (`trpc-websocket.ts`, `src/trpc-websocket.test.ts`) before edits.
+- Reliability issue addressed: `CloseEvent.wasClean` was always set `true`, even for abnormal disconnects (`1006`), which can mislead reconnection/error handling.
+- Applied practical close-event fix in `trpc-websocket.ts`:
+  - `wasClean` now derives from close code (`code === 1000`).
+- Expanded regression expectations in `src/trpc-websocket.test.ts`:
+  - abnormal disconnect path asserts `wasClean: false`.
+  - clean client disconnect path asserts `wasClean: true`.
+- Validation:
+  - `rushx test` ✅ (1 suite, 3 tests).
