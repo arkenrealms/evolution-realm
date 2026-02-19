@@ -60,3 +60,10 @@
   - wrapper now calls `onclose` during both explicit `close()` and upstream socket `disconnect` events.
   - this avoids stale listeners/UI state waiting on close hooks that previously never fired.
 - Added targeted tests in `src/trpc-websocket.test.ts` for both close paths.
+
+## 2026-02-19T09:03:24-08:00 slot-7 follow-up hardening
+- Re-read local markdown first and re-ran branch hygiene (`git fetch origin` + merge `origin/main`) before source edits.
+- Identified close-event duplication risk: `close()` emits `onclose`, then socket `disconnect` path could emit it again.
+- Applied idempotent close-event dispatch in `trpc-websocket.ts` via a dedicated guard.
+- Extended `src/trpc-websocket.test.ts` with regression case ensuring `close()` followed by `disconnect` triggers `onclose` exactly once.
+- Validation command for this change set: `rushx test`.

@@ -46,4 +46,20 @@ describe('SocketIOWebSocket close handling', () => {
     expect(onclose).toHaveBeenCalledTimes(1);
     expect(socket.readyState).toBe(socket.CLOSED);
   });
+
+  it('does not invoke onclose twice when close() is followed by disconnect', () => {
+    const socket = new SocketIOWebSocket('http://localhost:1234');
+    const onclose = jest.fn();
+    socket.onclose = onclose;
+
+    socket.close();
+
+    const disconnectListener = listeners.get('disconnect');
+    expect(disconnectListener).toBeDefined();
+
+    disconnectListener?.();
+
+    expect(onclose).toHaveBeenCalledTimes(1);
+    expect(socket.readyState).toBe(socket.CLOSED);
+  });
 });

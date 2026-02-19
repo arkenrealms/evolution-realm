@@ -36,3 +36,9 @@ A battle for supremacy takes place amongst the dragons of Haerra.
   - `rushx test` now runs and executes Jest tests in this package.
 - Added runtime reliability fix in `trpc-websocket.ts`: `onclose` now fires on both explicit `close()` and socket `disconnect` callbacks.
 - Added regression tests in `src/trpc-websocket.test.ts` to guard close/disconnect close-event behavior.
+
+## Rotation note (2026-02-19T09:03:24-08:00)
+- Re-ran branch hygiene (`git fetch origin` + merge `origin/main`) before edits.
+- Hardened websocket wrapper close semantics: `onclose` is now idempotent and cannot double-fire when explicit `close()` is followed by a socket `disconnect` callback.
+- Added regression test covering `close()` + `disconnect` sequencing.
+- Validation command: `rushx test`.
