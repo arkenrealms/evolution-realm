@@ -29,3 +29,10 @@ A battle for supremacy takes place amongst the dragons of Haerra.
 - Source-change test gate still blocked in this checkout:
   - `npm test -- --runInBand` → `sh: jest: command not found`.
 - No source edits were made in this slot to preserve test-gate compliance.
+
+## Rotation note (2026-02-19T07:42:28-08:00)
+- Branch hygiene completed (`git fetch origin` + merge `origin/main` => already up to date).
+- Revalidated package test path with required command policy:
+  - `rushx test` now runs and executes Jest tests in this package.
+- Added runtime reliability fix in `trpc-websocket.ts`: `onclose` now fires on both explicit `close()` and socket `disconnect` callbacks.
+- Added regression tests in `src/trpc-websocket.test.ts` to guard close/disconnect close-event behavior.

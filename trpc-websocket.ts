@@ -83,7 +83,7 @@ export default class SocketIOWebSocket implements WebSocket {
     this.ioSocket.on('disconnect', () => {
       console.log('SocketIOWebSocket.disconnect');
       this.readyState = SocketIOWebSocket.CLOSED;
-      // if (this.onclose) this.onclose();
+      if (this.onclose) this.onclose({ type: 'close' } as CloseEvent);
     });
 
     this.ioSocket.on('message', (data: any) => {
@@ -109,7 +109,7 @@ export default class SocketIOWebSocket implements WebSocket {
     this.readyState = SocketIOWebSocket.CLOSING;
     this.ioSocket.close();
     this.readyState = SocketIOWebSocket.CLOSED;
-    // if (this.onclose) this.onclose();
+    if (this.onclose) this.onclose({ type: 'close' } as CloseEvent);
   }
 
   public send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void {
