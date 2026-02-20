@@ -29,3 +29,12 @@ A battle for supremacy takes place amongst the dragons of Haerra.
 - Source-change test gate still blocked in this checkout:
   - `npm test -- --runInBand` → `sh: jest: command not found`.
 - No source edits were made in this slot to preserve test-gate compliance.
+
+## Rotation note (2026-02-19T16:23:46-08:00)
+- Branch hygiene completed (`git fetch origin` + merge `origin/main` => already up to date), then moved to fresh branch `nel/evolution-realm-maintenance-20260219-1622`.
+- Improved websocket reliability in `trpc-websocket.ts`:
+  - disconnect events now emit `onclose` with clean (`1000`) vs abnormal (`1006`) code mapping,
+  - explicit `close()` now emits a close event,
+  - duplicate close callbacks are suppressed.
+- Added regression coverage in `src/trpc-websocket.test.ts` for clean disconnect, abnormal disconnect, and close idempotency.
+- Validation command: `rushx test`.

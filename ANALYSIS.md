@@ -51,3 +51,18 @@
 - Test gate result:
   - `npm test -- --runInBand` ❌ `sh: jest: command not found`.
 - Source files intentionally unchanged this slot to satisfy the source-change gate.
+
+## 2026-02-19T16:23:46-08:00 slot-7 follow-up fix
+- Re-read local markdown docs first (`README.md`, `ANALYSIS.md`) and re-reviewed leaf runtime/test files before edits (`trpc-websocket.ts`, `src/trpc-websocket.test.ts`).
+- Reliability issue addressed: close callbacks were not guaranteed for explicit close/disconnect paths, and clean-vs-abnormal disconnect semantics were inconsistent.
+- Applied practical fix in `trpc-websocket.ts`:
+  - dispatch `onclose` from disconnect path,
+  - map disconnect reason `io client disconnect` to close code `1000`, all others to `1006`,
+  - dispatch `onclose` from explicit `close()` with default client-close payload,
+  - enforce idempotent close dispatch to avoid duplicate callbacks.
+- Added Jest regression tests in `src/trpc-websocket.test.ts` for:
+  - clean disconnect mapping,
+  - abnormal disconnect mapping,
+  - explicit close idempotency when a disconnect follows.
+- Validation:
+  - `rushx test` ✅ (1 suite, 3 tests).

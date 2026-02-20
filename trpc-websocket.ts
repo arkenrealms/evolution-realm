@@ -36,6 +36,7 @@ type Listener = (...args: any[]) => void;
 export default class SocketIOWebSocket implements WebSocket {
   private ioSocket: Socket;
   private eventListeners: Map<string, Function[]>;
+  private closeDispatched = false;
 
   // WebSocket properties
   public readonly url: string;
@@ -59,6 +60,9 @@ export default class SocketIOWebSocket implements WebSocket {
   constructor(url: string) {
     console.log('SocketIOWebSocket.constructor');
 
+    this.url = url;
+    this.protocol = 'socket.io';
+
     this.ioSocket = socketIOClient(url, {
       transports: ['websocket'],
       upgrade: false,
@@ -80,10 +84,13 @@ export default class SocketIOWebSocket implements WebSocket {
       if (this.onopen) this.onopen();
     });
 
-    this.ioSocket.on('disconnect', () => {
+    this.ioSocket.on('disconnect', (reason?: string) => {
       console.log('SocketIOWebSocket.disconnect');
       this.readyState = SocketIOWebSocket.CLOSED;
-      // if (this.onclose) this.onclose();
+
+      const closeCode = reason === 'io client disconnect' ? 1000 : 1006;
+      const closeReason = reason || 'socket disconnected';
+      this.dispatchClose(closeCode, closeReason);
     });
 
     this.ioSocket.on('message', (data: any) => {
@@ -109,7 +116,7 @@ export default class SocketIOWebSocket implements WebSocket {
     this.readyState = SocketIOWebSocket.CLOSING;
     this.ioSocket.close();
     this.readyState = SocketIOWebSocket.CLOSED;
-    // if (this.onclose) this.onclose();
+    this.dispatchClose(code ?? 1000, reason ?? 'client closed');
   }
 
   public send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void {
@@ -122,14 +129,6 @@ export default class SocketIOWebSocket implements WebSocket {
     // You can implement custom event handling if necessary
     return false;
   }
-  //   // Dispatch event (not part of WebSocket interface, but for internal use)
-  //   private dispatchEvent(event: string, ...args: any[]) {
-  //     if (this.eventListeners.has(event)) {
-  //       for (const listener of this.eventListeners.get(event)!) {
-  //         listener(...args);
-  //       }
-  //     }
-  //   }
 
   public addEventListener(event: string, listener: Listener) {
     console.log('SocketIOWebSocket.addEventListener', event);
@@ -149,6 +148,22 @@ export default class SocketIOWebSocket implements WebSocket {
         listeners.splice(index, 1);
         this.ioSocket.off(event, listener);
       }
+    }
+  }
+
+  private dispatchClose(code: number, reason: string): void {
+    if (this.closeDispatched) {
+      return;
+    }
+
+    this.closeDispatched = true;
+
+    if (this.onclose) {
+      this.onclose({
+        code,
+        reason,
+        wasClean: code === 1000,
+      } as CloseEvent);
     }
   }
 }
