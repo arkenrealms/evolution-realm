@@ -133,4 +133,24 @@ describe('SocketIOWebSocket close lifecycle', () => {
 
     expect(onclose).toHaveBeenCalledTimes(2);
   });
+
+  test('send throws when socket is not OPEN', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+
+    expect(() => ws.send('payload')).toThrow('SocketIOWebSocket is not open');
+    expect(mockEmit).not.toHaveBeenCalled();
+  });
+
+  test('send emits trpc payload when socket is OPEN', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+
+    const connectListener = mockOn.mock.calls.find((call) => call[0] === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
+
+    connectListener?.();
+    ws.send('payload');
+
+    expect(mockEmit).toHaveBeenCalledWith('trpc', 'payload');
+  });
 });

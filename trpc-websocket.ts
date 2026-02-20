@@ -143,6 +143,11 @@ export default class SocketIOWebSocket implements WebSocket {
 
   public send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void {
     console.log('SocketIOWebSocket.send', data);
+
+    if (this.readyState !== SocketIOWebSocket.OPEN) {
+      throw new Error('SocketIOWebSocket is not open');
+    }
+
     this.ioSocket.emit('trpc', data);
   }
 

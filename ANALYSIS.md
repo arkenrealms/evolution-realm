@@ -68,3 +68,8 @@
 - Expanded `src/trpc-websocket.test.ts` to assert reason propagation from disconnect events.
 - Test result:
   - `rushx test` ✅ (1 suite, 7 tests).
+
+## 2026-02-20 slot follow-up (send state guard)
+- Added an OPEN-state guard in `trpc-websocket.ts#send`.
+- Why: pre-connect `send()` calls were being emitted while CONNECTING, which can hide race conditions and diverges from standard WebSocket invalid-state behavior.
+- Added focused tests in `src/trpc-websocket.test.ts` to verify both failure and success paths.

@@ -9,3 +9,4 @@ Focused runtime tests and implementation notes for realm source-adjacent reliabi
 - `error` callbacks now receive an Event-like payload (`type: 'error'`) for browser-compatible handler semantics instead of a raw thrown value.
 - Reconnect cycles now reset close-notification state so each new disconnect can still notify `onclose` exactly once.
 - Disconnect-originated close events now carry Socket.IO disconnect reason text for better diagnostics parity with explicit `close(code, reason)` calls.
+- `send()` now enforces OPEN-state semantics: it throws while CONNECTING/CLOSED and only emits once connected.

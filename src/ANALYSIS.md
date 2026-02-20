@@ -14,3 +14,5 @@
 - Added regression coverage for disconnect → reconnect → disconnect to verify two distinct `onclose` notifications across connection lifecycles.
 - Forwarded Socket.IO disconnect reason strings into the synthetic close event (`reason`) so disconnect-driven closes preserve actionable context.
 - Added regression coverage asserting disconnect reasons are propagated to `onclose` payloads.
+- Added a send-state guard in `trpc-websocket.ts` to throw when `send()` is called before the wrapper is OPEN; this prevents silent pre-connect emits and aligns behavior with WebSocket invalid-state expectations.
+- Added regression coverage for both send paths: (a) throw + no emit while CONNECTING, (b) successful `trpc` emit after simulated `connect`.
