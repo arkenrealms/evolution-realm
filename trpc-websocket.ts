@@ -44,6 +44,7 @@ function createCloseEvent(code?: number, reason?: string): CloseEvent {
 export default class SocketIOWebSocket implements WebSocket {
   private ioSocket: Socket;
   private eventListeners: Map<string, Function[]>;
+  private closeNotified = false;
 
   // WebSocket properties
   public readonly url: string;
@@ -91,7 +92,7 @@ export default class SocketIOWebSocket implements WebSocket {
     this.ioSocket.on('disconnect', () => {
       console.log('SocketIOWebSocket.disconnect');
       this.readyState = SocketIOWebSocket.CLOSED;
-      if (this.onclose) this.onclose(createCloseEvent());
+      this.notifyClose(createCloseEvent());
     });
 
     this.ioSocket.on('message', (data: any) => {
@@ -117,7 +118,13 @@ export default class SocketIOWebSocket implements WebSocket {
     this.readyState = SocketIOWebSocket.CLOSING;
     this.ioSocket.close();
     this.readyState = SocketIOWebSocket.CLOSED;
-    if (this.onclose) this.onclose(createCloseEvent(code, reason));
+    this.notifyClose(createCloseEvent(code, reason));
+  }
+
+  private notifyClose(event: CloseEvent): void {
+    if (this.closeNotified) return;
+    this.closeNotified = true;
+    if (this.onclose) this.onclose(event);
   }
 
   public send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void {

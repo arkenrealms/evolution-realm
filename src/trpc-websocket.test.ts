@@ -53,4 +53,20 @@ describe('SocketIOWebSocket close lifecycle', () => {
     expect(ws.readyState).toBe(ws.CLOSED);
     expect(onclose).toHaveBeenCalledTimes(1);
   });
+
+  test('close() followed by disconnect only notifies onclose once', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onclose = jest.fn();
+
+    ws.onclose = onclose;
+
+    const disconnectListener = mockOn.mock.calls.find((call) => call[0] === 'disconnect')?.[1] as
+      | (() => void)
+      | undefined;
+
+    ws.close(1000, 'normal');
+    disconnectListener?.();
+
+    expect(onclose).toHaveBeenCalledTimes(1);
+  });
 });
