@@ -73,3 +73,10 @@
 - Added an OPEN-state guard in `trpc-websocket.ts#send`.
 - Why: pre-connect `send()` calls were being emitted while CONNECTING, which can hide race conditions and diverges from standard WebSocket invalid-state behavior.
 - Added focused tests in `src/trpc-websocket.test.ts` to verify both failure and success paths.
+
+## 2026-02-20 slot follow-up (listener dedupe + cleanup)
+- Added duplicate-listener suppression in `trpc-websocket.ts#addEventListener` for the same event+callback pair.
+- Why: duplicate registrations can cause repeated callback execution and noisy side effects during reconnect/rebind flows.
+- Added empty-bucket cleanup in `trpc-websocket.ts#removeEventListener` after last listener removal.
+- Why: keeps internal listener bookkeeping bounded and avoids stale map entries across long-lived sessions.
+- Added regression tests in `src/trpc-websocket.test.ts` to validate dedupe and one-time unregister behavior.

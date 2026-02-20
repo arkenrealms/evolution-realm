@@ -16,3 +16,6 @@
 - Added regression coverage asserting disconnect reasons are propagated to `onclose` payloads.
 - Added a send-state guard in `trpc-websocket.ts` to throw when `send()` is called before the wrapper is OPEN; this prevents silent pre-connect emits and aligns behavior with WebSocket invalid-state expectations.
 - Added regression coverage for both send paths: (a) throw + no emit while CONNECTING, (b) successful `trpc` emit after simulated `connect`.
+- Added duplicate-listener registration guard in `addEventListener()` so repeated registrations of the same callback on the same event no longer stack duplicate socket handlers.
+- Added cleanup in `removeEventListener()` to clear empty event buckets after unregistering listeners, preventing stale listener-map growth.
+- Added regression tests confirming duplicate registration suppression and one-time unregister behavior per distinct listener.

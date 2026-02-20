@@ -170,7 +170,13 @@ export default class SocketIOWebSocket implements WebSocket {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }
-    this.eventListeners.get(event)!.push(listener);
+
+    const listeners = this.eventListeners.get(event)!;
+    if (listeners.includes(listener)) {
+      return;
+    }
+
+    listeners.push(listener);
     this.ioSocket.on(event, listener);
   }
 
@@ -182,6 +188,10 @@ export default class SocketIOWebSocket implements WebSocket {
       if (index !== -1) {
         listeners.splice(index, 1);
         this.ioSocket.off(event, listener);
+      }
+
+      if (listeners.length === 0) {
+        this.eventListeners.delete(event);
       }
     }
   }

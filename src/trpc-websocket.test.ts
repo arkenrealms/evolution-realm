@@ -153,4 +153,29 @@ describe('SocketIOWebSocket close lifecycle', () => {
 
     expect(mockEmit).toHaveBeenCalledWith('trpc', 'payload');
   });
+
+  test('addEventListener ignores duplicate listener registration', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const listener = jest.fn();
+
+    ws.addEventListener('custom', listener);
+    ws.addEventListener('custom', listener);
+
+    expect(mockOn.mock.calls.filter((call) => call[0] === 'custom')).toHaveLength(1);
+  });
+
+  test('removeEventListener unregisters each distinct listener exactly once', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const listenerA = jest.fn();
+    const listenerB = jest.fn();
+
+    ws.addEventListener('custom', listenerA);
+    ws.addEventListener('custom', listenerB);
+
+    ws.removeEventListener('custom', listenerA);
+    ws.removeEventListener('custom', listenerA);
+    ws.removeEventListener('custom', listenerB);
+
+    expect(mockOff.mock.calls.filter((call) => call[0] === 'custom')).toHaveLength(2);
+  });
 });
