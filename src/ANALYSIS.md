@@ -22,3 +22,6 @@
 - Added explicit `connect_error` forwarding into the same normalized `onerror` path used by runtime `error` events.
 - Why: connection-establishment failures previously had no wrapper-level delivery path, creating a blind spot where early transport/auth errors were swallowed by the compatibility layer.
 - Added regression coverage asserting `connect_error` events produce Event-like `onerror` payloads.
+- Added shared inbound message handler wiring for both Socket.IO `'message'` and `'trpc'` events.
+- Why: this wrapper emits outbound payloads on `'trpc'`; listening only to `'message'` risked dropping protocol responses in environments that send tRPC frames on `'trpc'`.
+- Added regression coverage asserting `'trpc'` events reach `onmessage` with the original payload envelope.

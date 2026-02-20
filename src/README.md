@@ -11,5 +11,6 @@ Focused runtime tests and implementation notes for realm source-adjacent reliabi
 - Reconnect cycles now reset close-notification state so each new disconnect can still notify `onclose` exactly once.
 - Disconnect-originated close events now carry Socket.IO disconnect reason text for better diagnostics parity with explicit `close(code, reason)` calls.
 - `send()` now enforces OPEN-state semantics: it throws while CONNECTING/CLOSED and only emits once connected.
+- inbound tRPC transport frames (`'trpc'` Socket.IO event) now flow through `onmessage` alongside legacy `'message'` events so wrapper consumers receive protocol payloads consistently.
 - `addEventListener()` now ignores duplicate registrations for the same event+listener pair to avoid duplicate handler execution and listener leaks.
 - `removeEventListener()` now cleans up empty listener buckets after unregistering callbacks.

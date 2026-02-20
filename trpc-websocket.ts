@@ -105,10 +105,13 @@ export default class SocketIOWebSocket implements WebSocket {
       this.notifyClose(createCloseEvent(undefined, reason));
     });
 
-    this.ioSocket.on('message', (data: any) => {
+    const handleMessage = (data: any) => {
       console.log('SocketIOWebSocket.message');
       if (this.onmessage) this.onmessage({ data } as MessageEvent);
-    });
+    };
+
+    this.ioSocket.on('message', handleMessage);
+    this.ioSocket.on('trpc', handleMessage);
 
     this.ioSocket.on('error', (err: any) => {
       console.log('SocketIOWebSocket.error');

@@ -80,3 +80,8 @@
 - Added empty-bucket cleanup in `trpc-websocket.ts#removeEventListener` after last listener removal.
 - Why: keeps internal listener bookkeeping bounded and avoids stale map entries across long-lived sessions.
 - Added regression tests in `src/trpc-websocket.test.ts` to validate dedupe and one-time unregister behavior.
+
+## 2026-02-20 slot follow-up (inbound trpc parity)
+- Added shared inbound message handling for both Socket.IO `'message'` and `'trpc'` events in `trpc-websocket.ts`.
+- Why: outbound traffic already uses `'trpc'`; if server responses arrive on the same event, listening only to `'message'` can silently drop `onmessage` callbacks.
+- Added regression coverage in `src/trpc-websocket.test.ts` to verify `'trpc'` frames are surfaced via `onmessage` without payload mutation.
