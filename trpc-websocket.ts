@@ -115,6 +115,11 @@ export default class SocketIOWebSocket implements WebSocket {
       if (this.onerror) this.onerror(createErrorEvent(err));
     });
 
+    this.ioSocket.on('connect_error', (err: any) => {
+      console.log('SocketIOWebSocket.connect_error');
+      if (this.onerror) this.onerror(createErrorEvent(err));
+    });
+
     this.eventListeners = new Map<string, Function[]>();
   }
 

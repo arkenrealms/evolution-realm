@@ -114,6 +114,23 @@ describe('SocketIOWebSocket close lifecycle', () => {
     expect(onerror.mock.calls[0][0]).toMatchObject({ type: 'error' });
   });
 
+  test('connect_error event is surfaced as Event-like payload', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onerror = jest.fn();
+
+    ws.onerror = onerror;
+
+    const connectErrorListener = mockOn.mock.calls.find((call) => call[0] === 'connect_error')?.[1] as
+      | ((err: unknown) => void)
+      | undefined;
+
+    expect(connectErrorListener).toBeDefined();
+    connectErrorListener?.(new Error('connect boom'));
+
+    expect(onerror).toHaveBeenCalledTimes(1);
+    expect(onerror.mock.calls[0][0]).toMatchObject({ type: 'error' });
+  });
+
   test('connect resets close notification state for subsequent disconnects', () => {
     const ws = new SocketIOWebSocket('http://localhost:1234');
     const onclose = jest.fn();
