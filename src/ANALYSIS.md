@@ -12,3 +12,5 @@
 - Added regression coverage asserting `onerror` receives the normalized Event-like payload.
 - Reset close-notification guard state on reconnect (`connect`) so later disconnects still emit `onclose`; this prevents stale suppression after a prior close cycle.
 - Added regression coverage for disconnect → reconnect → disconnect to verify two distinct `onclose` notifications across connection lifecycles.
+- Forwarded Socket.IO disconnect reason strings into the synthetic close event (`reason`) so disconnect-driven closes preserve actionable context.
+- Added regression coverage asserting disconnect reasons are propagated to `onclose` payloads.

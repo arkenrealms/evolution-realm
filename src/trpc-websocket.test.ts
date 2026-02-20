@@ -37,21 +37,22 @@ describe('SocketIOWebSocket close lifecycle', () => {
     expect(onclose.mock.calls[0][0]).toMatchObject({ code: 1001, reason: 'shutdown' });
   });
 
-  test('disconnect event notifies onclose', () => {
+  test('disconnect event notifies onclose with disconnect reason', () => {
     const ws = new SocketIOWebSocket('http://localhost:1234');
     const onclose = jest.fn();
 
     ws.onclose = onclose;
 
     const disconnectListener = mockOn.mock.calls.find((call) => call[0] === 'disconnect')?.[1] as
-      | (() => void)
+      | ((reason?: string) => void)
       | undefined;
 
     expect(disconnectListener).toBeDefined();
-    disconnectListener?.();
+    disconnectListener?.('transport close');
 
     expect(ws.readyState).toBe(ws.CLOSED);
     expect(onclose).toHaveBeenCalledTimes(1);
+    expect(onclose.mock.calls[0][0]).toMatchObject({ reason: 'transport close' });
   });
 
   test('close() followed by disconnect only notifies onclose once', () => {

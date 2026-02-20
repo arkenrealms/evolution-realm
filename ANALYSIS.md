@@ -61,3 +61,10 @@
   - close-event construction now has a Node-safe fallback when `CloseEvent` is unavailable.
 - Test result:
   - `rushx test` ✅ (1 suite, 2 tests).
+
+## 2026-02-20 slot follow-up
+- Hardened disconnect close-event parity in `trpc-websocket.ts` by forwarding Socket.IO disconnect reason text into the emitted close event.
+- Why: callers already receive explicit `close(code, reason)` metadata, but disconnect-triggered closes previously dropped reason context and made diagnostics harder.
+- Expanded `src/trpc-websocket.test.ts` to assert reason propagation from disconnect events.
+- Test result:
+  - `rushx test` ✅ (1 suite, 7 tests).
