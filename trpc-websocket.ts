@@ -33,6 +33,14 @@ import { io as socketIOClient, Socket } from 'socket.io-client';
 
 type Listener = (...args: any[]) => void;
 
+function createCloseEvent(code?: number, reason?: string): CloseEvent {
+  if (typeof CloseEvent === 'function') {
+    return new CloseEvent('close', { code, reason });
+  }
+
+  return { type: 'close', code: code ?? 1000, reason: reason ?? '' } as CloseEvent;
+}
+
 export default class SocketIOWebSocket implements WebSocket {
   private ioSocket: Socket;
   private eventListeners: Map<string, Function[]>;
@@ -83,7 +91,7 @@ export default class SocketIOWebSocket implements WebSocket {
     this.ioSocket.on('disconnect', () => {
       console.log('SocketIOWebSocket.disconnect');
       this.readyState = SocketIOWebSocket.CLOSED;
-      // if (this.onclose) this.onclose();
+      if (this.onclose) this.onclose(createCloseEvent());
     });
 
     this.ioSocket.on('message', (data: any) => {
@@ -109,7 +117,7 @@ export default class SocketIOWebSocket implements WebSocket {
     this.readyState = SocketIOWebSocket.CLOSING;
     this.ioSocket.close();
     this.readyState = SocketIOWebSocket.CLOSED;
-    // if (this.onclose) this.onclose();
+    if (this.onclose) this.onclose(createCloseEvent(code, reason));
   }
 
   public send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void {
