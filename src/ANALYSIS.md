@@ -10,3 +10,5 @@
 - Hardened `close()` with a CLOSED/CLOSING guard so repeated close attempts become no-ops instead of re-closing the underlying socket.
 - Normalized socket `error` callback delivery through an Event-like wrapper so `onerror` consumers always receive a WebSocket-style event object (`type: 'error'`) even in Node runtimes.
 - Added regression coverage asserting `onerror` receives the normalized Event-like payload.
+- Reset close-notification guard state on reconnect (`connect`) so later disconnects still emit `onclose`; this prevents stale suppression after a prior close cycle.
+- Added regression coverage for disconnect → reconnect → disconnect to verify two distinct `onclose` notifications across connection lifecycles.
