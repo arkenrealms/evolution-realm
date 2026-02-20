@@ -95,6 +95,7 @@ export default class SocketIOWebSocket implements WebSocket {
     this.ioSocket.on('connect', () => {
       console.log('SocketIOWebSocket.connect');
       this.readyState = SocketIOWebSocket.OPEN;
+      this.closeNotified = false;
       if (this.onopen) this.onopen();
     });
 

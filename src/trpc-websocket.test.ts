@@ -112,4 +112,24 @@ describe('SocketIOWebSocket close lifecycle', () => {
     expect(onerror).toHaveBeenCalledTimes(1);
     expect(onerror.mock.calls[0][0]).toMatchObject({ type: 'error' });
   });
+
+  test('connect resets close notification state for subsequent disconnects', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onclose = jest.fn();
+
+    ws.onclose = onclose;
+
+    const disconnectListener = mockOn.mock.calls.find((call) => call[0] === 'disconnect')?.[1] as
+      | (() => void)
+      | undefined;
+    const connectListener = mockOn.mock.calls.find((call) => call[0] === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
+
+    disconnectListener?.();
+    connectListener?.();
+    disconnectListener?.();
+
+    expect(onclose).toHaveBeenCalledTimes(2);
+  });
 });
