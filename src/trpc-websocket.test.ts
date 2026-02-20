@@ -69,4 +69,30 @@ describe('SocketIOWebSocket close lifecycle', () => {
 
     expect(onclose).toHaveBeenCalledTimes(1);
   });
+
+  test('disconnect followed by close() does not re-close or double-notify', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onclose = jest.fn();
+
+    ws.onclose = onclose;
+
+    const disconnectListener = mockOn.mock.calls.find((call) => call[0] === 'disconnect')?.[1] as
+      | (() => void)
+      | undefined;
+
+    disconnectListener?.();
+    ws.close(1000, 'normal');
+
+    expect(mockClose).toHaveBeenCalledTimes(0);
+    expect(onclose).toHaveBeenCalledTimes(1);
+  });
+
+  test('second close() call is ignored after initial close', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+
+    ws.close(1000, 'first');
+    ws.close(1000, 'second');
+
+    expect(mockClose).toHaveBeenCalledTimes(1);
+  });
 });

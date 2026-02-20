@@ -115,6 +115,10 @@ export default class SocketIOWebSocket implements WebSocket {
 
   public close(code?: number, reason?: string): void {
     console.log('SocketIOWebSocket.close');
+    if (this.readyState === SocketIOWebSocket.CLOSING || this.readyState === SocketIOWebSocket.CLOSED) {
+      return;
+    }
+
     this.readyState = SocketIOWebSocket.CLOSING;
     this.ioSocket.close();
     this.readyState = SocketIOWebSocket.CLOSED;
