@@ -51,3 +51,13 @@
 - Test gate result:
   - `npm test -- --runInBand` ❌ `sh: jest: command not found`.
 - Source files intentionally unchanged this slot to satisfy the source-change gate.
+
+## 2026-02-19T18:14:13-08:00 slot follow-up
+- Branch hygiene performed before edits (`git fetch origin`, switched to `main`, merged `origin/main`), then created fresh branch from main.
+- Added `src/trpc-websocket.test.ts` to activate and validate package-local Jest coverage under existing `testMatch`.
+- Reliability hardening in `trpc-websocket.ts`:
+  - explicit `close(code, reason)` now reliably calls `onclose`.
+  - socket disconnect event now reliably calls `onclose`.
+  - close-event construction now has a Node-safe fallback when `CloseEvent` is unavailable.
+- Test result:
+  - `rushx test` ✅ (1 suite, 2 tests).

@@ -7,11 +7,10 @@ A battle for supremacy takes place amongst the dragons of Haerra.
 - Build: `npm run build`
 - Test: `npm test`
 
-## Current maintenance note (2026-02-18)
-- Source edits are currently blocked by the test gate in this checkout:
-  - `npm test` fails with `jest: command not found`
-  - `rushx test` fails at workspace load because `@arken/cerebro-hub` path resolution is broken in this checkout
-- Until one of those test paths is restored, this package should remain docs/analysis-only in cron rotation.
+## Current maintenance note (2026-02-19)
+- Test gate is now runnable via Rush in this checkout:
+  - `rushx test` executes package-local Jest tests.
+- `npm test` remains environment-dependent in some checkouts, so rotation runs should prefer `rushx test` per workspace policy.
 
 ## Rotation note (2026-02-18T23:43:02-08:00)
 - Revalidated branch sync against `origin/main` and reran `npm test -- --runInBand`.
@@ -29,3 +28,7 @@ A battle for supremacy takes place amongst the dragons of Haerra.
 - Source-change test gate still blocked in this checkout:
   - `npm test -- --runInBand` → `sh: jest: command not found`.
 - No source edits were made in this slot to preserve test-gate compliance.
+
+## Rotation note (2026-02-19T18:14:13-08:00)
+- Added a focused `src/` Jest suite for `trpc-websocket.ts` and verified `rushx test` passes.
+- Hardened close lifecycle behavior so both explicit `close()` calls and socket disconnect events trigger `onclose` callbacks.
