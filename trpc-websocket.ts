@@ -41,6 +41,15 @@ function createCloseEvent(code?: number, reason?: string): CloseEvent {
   return { type: 'close', code: code ?? 1000, reason: reason ?? '' } as CloseEvent;
 }
 
+function createErrorEvent(error: unknown): Event {
+  if (typeof ErrorEvent === 'function') {
+    const message = error instanceof Error ? error.message : String(error ?? 'unknown error');
+    return new ErrorEvent('error', { error, message });
+  }
+
+  return { type: 'error', error } as Event;
+}
+
 export default class SocketIOWebSocket implements WebSocket {
   private ioSocket: Socket;
   private eventListeners: Map<string, Function[]>;
@@ -102,7 +111,7 @@ export default class SocketIOWebSocket implements WebSocket {
 
     this.ioSocket.on('error', (err: any) => {
       console.log('SocketIOWebSocket.error');
-      if (this.onerror) this.onerror(err);
+      if (this.onerror) this.onerror(createErrorEvent(err));
     });
 
     this.eventListeners = new Map<string, Function[]>();

@@ -95,4 +95,21 @@ describe('SocketIOWebSocket close lifecycle', () => {
 
     expect(mockClose).toHaveBeenCalledTimes(1);
   });
+
+  test('error event is surfaced as Event-like payload', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onerror = jest.fn();
+
+    ws.onerror = onerror;
+
+    const errorListener = mockOn.mock.calls.find((call) => call[0] === 'error')?.[1] as
+      | ((err: unknown) => void)
+      | undefined;
+
+    expect(errorListener).toBeDefined();
+    errorListener?.(new Error('boom'));
+
+    expect(onerror).toHaveBeenCalledTimes(1);
+    expect(onerror.mock.calls[0][0]).toMatchObject({ type: 'error' });
+  });
 });
