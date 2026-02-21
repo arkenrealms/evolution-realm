@@ -269,4 +269,29 @@ describe('SocketIOWebSocket close lifecycle', () => {
 
     expect(mockOff.mock.calls.filter((call) => call[0] === 'close')).toHaveLength(0);
   });
+
+  test('dispatchEvent triggers native handler and listener callbacks', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onmessage = jest.fn();
+    const listener = jest.fn();
+
+    ws.onmessage = onmessage;
+    ws.addEventListener('message', listener);
+
+    const messageEvent = { type: 'message', data: { id: 99 } } as MessageEvent;
+    const handled = ws.dispatchEvent(messageEvent as unknown as Event);
+
+    expect(handled).toBe(true);
+    expect(onmessage).toHaveBeenCalledTimes(1);
+    expect(onmessage).toHaveBeenCalledWith(messageEvent);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith(messageEvent);
+  });
+
+  test('dispatchEvent returns false for invalid events', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+
+    expect(ws.dispatchEvent(undefined as unknown as Event)).toBe(false);
+    expect(ws.dispatchEvent({} as Event)).toBe(false);
+  });
 });

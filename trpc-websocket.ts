@@ -196,8 +196,30 @@ export default class SocketIOWebSocket implements WebSocket {
 
   public dispatchEvent(event: Event): boolean {
     console.log('SocketIOWebSocket.dispatchEvent', event);
-    // You can implement custom event handling if necessary
-    return false;
+
+    if (!event || typeof event.type !== 'string') {
+      return false;
+    }
+
+    switch (event.type) {
+      case 'open':
+        if (this.onopen) this.onopen();
+        break;
+      case 'message':
+        if (this.onmessage) this.onmessage(event as unknown as MessageEvent);
+        break;
+      case 'error':
+        if (this.onerror) this.onerror(event);
+        break;
+      case 'close':
+        if (this.onclose) this.onclose(event as unknown as CloseEvent);
+        break;
+      default:
+        break;
+    }
+
+    this.dispatchListenerEvent(event.type, event);
+    return true;
   }
   //   // Dispatch event (not part of WebSocket interface, but for internal use)
   //   private dispatchEvent(event: string, ...args: any[]) {

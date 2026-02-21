@@ -33,3 +33,6 @@
 - Why: native event names were being passed to `ioSocket.on(...)`, which does not represent wrapper lifecycle events and could silently drop consumer listeners.
 - Wrapper now dispatches native listener callbacks from lifecycle/message/error paths directly, while keeping Socket.IO pass-through behavior for custom event names.
 - Added regression tests for native close/message listeners and for native-listener removal behavior (no incorrect `socket.off('close', ...)`).
+- Implemented `dispatchEvent(event)` compatibility dispatch for wrapper-native handlers (`onopen`, `onmessage`, `onerror`, `onclose`) plus `addEventListener` listeners.
+- Why: returning `false` unconditionally made `dispatchEvent` a no-op and broke EventTarget-style consumer code paths that expect explicit event re-dispatch during tests/reconnect orchestration.
+- Added regression coverage asserting `dispatchEvent` routes message events to both property handlers and native listeners, and rejects invalid payloads with a `false` return.

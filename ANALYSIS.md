@@ -97,3 +97,8 @@
 - Why: listeners registered via `addEventListener('close' | 'message' | ...)` were previously forwarded to `ioSocket.on(event, ...)`, which does not represent wrapper-native lifecycle events and can drop callbacks.
 - Implementation keeps custom Socket.IO event passthrough, but dispatches native listener callbacks directly from wrapper lifecycle/message/error paths.
 - Added regression tests in `src/trpc-websocket.test.ts` for native close/message listeners and native close-listener removal semantics.
+
+## 2026-02-20 slot follow-up (dispatchEvent compatibility)
+- Implemented `SocketIOWebSocket.dispatchEvent(event)` so it now routes native event payloads to both property handlers (`onopen`, `onmessage`, `onerror`, `onclose`) and `addEventListener` listeners.
+- Why: previous behavior returned `false` unconditionally and performed no dispatch, which broke EventTarget-style code paths that rely on explicit wrapper event redispatch (notably in tests and adapter-level lifecycle orchestration).
+- Added focused regression tests in `src/trpc-websocket.test.ts` for message redispatch and invalid-event rejection semantics.
