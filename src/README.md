@@ -14,3 +14,4 @@ Focused runtime tests and implementation notes for realm source-adjacent reliabi
 - inbound tRPC transport frames (`'trpc'` Socket.IO event) now flow through `onmessage` alongside legacy `'message'` events so wrapper consumers receive protocol payloads consistently.
 - `addEventListener()` now ignores duplicate registrations for the same event+listener pair to avoid duplicate handler execution and listener leaks.
 - `removeEventListener()` now cleans up empty listener buckets after unregistering callbacks.
+- Native WebSocket events (`open`, `message`, `error`, `close`) registered via `addEventListener()` are now dispatched by the wrapper itself instead of being incorrectly proxied as Socket.IO event subscriptions.

@@ -31,7 +31,7 @@
 
 import { io as socketIOClient, Socket } from 'socket.io-client';
 
-type Listener = (...args: any[]) => void;
+type Listener = (event: Event) => void;
 
 function createCloseEvent(code?: number, reason?: string): CloseEvent {
   if (typeof CloseEvent === 'function') {
@@ -49,6 +49,16 @@ function createErrorEvent(error: unknown): Event {
 
   return { type: 'error', error } as Event;
 }
+
+function createEvent(type: string): Event {
+  if (typeof Event === 'function') {
+    return new Event(type);
+  }
+
+  return { type } as Event;
+}
+
+const NATIVE_WEBSOCKET_EVENTS = new Set(['open', 'message', 'error', 'close']);
 
 export default class SocketIOWebSocket implements WebSocket {
   private ioSocket: Socket;
@@ -102,6 +112,7 @@ export default class SocketIOWebSocket implements WebSocket {
       this.readyState = SocketIOWebSocket.OPEN;
       this.closeNotified = false;
       if (this.onopen) this.onopen();
+      this.dispatchListenerEvent('open', createEvent('open'));
     });
 
     this.ioSocket.on('disconnect', (reason?: string) => {
@@ -112,7 +123,9 @@ export default class SocketIOWebSocket implements WebSocket {
 
     const handleMessage = (data: any) => {
       console.log('SocketIOWebSocket.message');
-      if (this.onmessage) this.onmessage({ data } as MessageEvent);
+      const messageEvent = { data } as MessageEvent;
+      if (this.onmessage) this.onmessage(messageEvent);
+      this.dispatchListenerEvent('message', messageEvent as unknown as Event);
     };
 
     this.ioSocket.on('message', handleMessage);
@@ -120,12 +133,16 @@ export default class SocketIOWebSocket implements WebSocket {
 
     this.ioSocket.on('error', (err: any) => {
       console.log('SocketIOWebSocket.error');
-      if (this.onerror) this.onerror(createErrorEvent(err));
+      const errorEvent = createErrorEvent(err);
+      if (this.onerror) this.onerror(errorEvent);
+      this.dispatchListenerEvent('error', errorEvent);
     });
 
     this.ioSocket.on('connect_error', (err: any) => {
       console.log('SocketIOWebSocket.connect_error');
-      if (this.onerror) this.onerror(createErrorEvent(err));
+      const errorEvent = createErrorEvent(err);
+      if (this.onerror) this.onerror(errorEvent);
+      this.dispatchListenerEvent('error', errorEvent);
     });
 
     this.eventListeners = new Map<string, Function[]>();
@@ -153,6 +170,18 @@ export default class SocketIOWebSocket implements WebSocket {
     if (this.closeNotified) return;
     this.closeNotified = true;
     if (this.onclose) this.onclose(event);
+    this.dispatchListenerEvent('close', event as unknown as Event);
+  }
+
+  private dispatchListenerEvent(eventType: string, event: Event): void {
+    const listeners = this.eventListeners.get(eventType);
+    if (!listeners) {
+      return;
+    }
+
+    for (const listener of [...listeners]) {
+      listener(event);
+    }
   }
 
   public send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void {
@@ -191,7 +220,10 @@ export default class SocketIOWebSocket implements WebSocket {
     }
 
     listeners.push(listener);
-    this.ioSocket.on(event, listener);
+
+    if (!NATIVE_WEBSOCKET_EVENTS.has(event)) {
+      this.ioSocket.on(event, listener as (...args: any[]) => void);
+    }
   }
 
   public removeEventListener(event: string, listener: Listener) {
@@ -201,7 +233,10 @@ export default class SocketIOWebSocket implements WebSocket {
       const index = listeners.indexOf(listener);
       if (index !== -1) {
         listeners.splice(index, 1);
-        this.ioSocket.off(event, listener);
+
+        if (!NATIVE_WEBSOCKET_EVENTS.has(event)) {
+          this.ioSocket.off(event, listener as (...args: any[]) => void);
+        }
       }
 
       if (listeners.length === 0) {

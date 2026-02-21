@@ -91,3 +91,9 @@
 - Why: if `close()` is called while still CONNECTING, a delayed transport `connect` callback could reopen the wrapper and fire `onopen` after shutdown.
 - Result: `connect` is now ignored after explicit wrapper `close()` calls, while reconnect behavior after non-client disconnects remains intact.
 - Added regression coverage in `src/trpc-websocket.test.ts` to ensure post-close `connect` events neither reopen state nor fire `onopen`.
+
+## 2026-02-20 slot follow-up (native addEventListener parity)
+- Fixed native WebSocket event-listener behavior for `open`, `message`, `error`, and `close` in `trpc-websocket.ts`.
+- Why: listeners registered via `addEventListener('close' | 'message' | ...)` were previously forwarded to `ioSocket.on(event, ...)`, which does not represent wrapper-native lifecycle events and can drop callbacks.
+- Implementation keeps custom Socket.IO event passthrough, but dispatches native listener callbacks directly from wrapper lifecycle/message/error paths.
+- Added regression tests in `src/trpc-websocket.test.ts` for native close/message listeners and native close-listener removal semantics.

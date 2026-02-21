@@ -29,3 +29,7 @@
 - Why: without the guard, a race where `close()` is called before transport finishes connecting can incorrectly reopen wrapper state and fire `onopen` after shutdown.
 - Guard is scoped to explicit client closes (not transient disconnects), preserving reconnect behavior after network drops.
 - Added regression coverage asserting post-close `connect` events do not reopen state or fire `onopen`.
+- Corrected native WebSocket `addEventListener` semantics in `trpc-websocket.ts` for `open/message/error/close`.
+- Why: native event names were being passed to `ioSocket.on(...)`, which does not represent wrapper lifecycle events and could silently drop consumer listeners.
+- Wrapper now dispatches native listener callbacks from lifecycle/message/error paths directly, while keeping Socket.IO pass-through behavior for custom event names.
+- Added regression tests for native close/message listeners and for native-listener removal behavior (no incorrect `socket.off('close', ...)`).

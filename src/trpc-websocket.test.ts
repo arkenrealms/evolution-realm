@@ -231,4 +231,42 @@ describe('SocketIOWebSocket close lifecycle', () => {
     expect(ws.readyState).toBe(ws.CLOSED);
     expect(onopen).not.toHaveBeenCalled();
   });
+
+  test('native close listener is notified without socket-level registration', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const listener = jest.fn();
+
+    ws.addEventListener('close', listener);
+    ws.close(1000, 'normal');
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(mockOn.mock.calls.filter((call) => call[0] === 'close')).toHaveLength(0);
+  });
+
+  test('native message listener receives trpc payload', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const listener = jest.fn();
+
+    ws.addEventListener('message', listener);
+
+    const trpcListener = mockOn.mock.calls.find((call) => call[0] === 'trpc')?.[1] as
+      | ((data: unknown) => void)
+      | undefined;
+
+    trpcListener?.({ result: 'ok' });
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener.mock.calls[0][0]).toMatchObject({ data: { result: 'ok' } });
+    expect(mockOn.mock.calls.filter((call) => call[0] === 'message')).toHaveLength(1);
+  });
+
+  test('native close listener removal does not call socket off', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const listener = jest.fn();
+
+    ws.addEventListener('close', listener);
+    ws.removeEventListener('close', listener);
+
+    expect(mockOff.mock.calls.filter((call) => call[0] === 'close')).toHaveLength(0);
+  });
 });
