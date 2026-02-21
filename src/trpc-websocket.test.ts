@@ -234,6 +234,7 @@ describe('SocketIOWebSocket close lifecycle', () => {
 
     expect(onmessage).toHaveBeenCalledTimes(1);
     expect(onmessage.mock.calls[0][0]).toMatchObject({
+      type: 'message',
       data: { id: 1, result: { data: 'ok' } },
     });
   });
@@ -304,7 +305,7 @@ describe('SocketIOWebSocket close lifecycle', () => {
     trpcListener?.({ result: 'ok' });
 
     expect(listener).toHaveBeenCalledTimes(1);
-    expect(listener.mock.calls[0][0]).toMatchObject({ data: { result: 'ok' } });
+    expect(listener.mock.calls[0][0]).toMatchObject({ type: 'message', data: { result: 'ok' } });
     expect(mockOn.mock.calls.filter((call) => call[0] === 'message')).toHaveLength(1);
   });
 

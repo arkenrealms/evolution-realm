@@ -58,6 +58,14 @@ function createEvent(type: string): Event {
   return { type } as Event;
 }
 
+function createMessageEvent(data: unknown): MessageEvent {
+  if (typeof MessageEvent === 'function') {
+    return new MessageEvent('message', { data });
+  }
+
+  return { type: 'message', data } as MessageEvent;
+}
+
 const NATIVE_WEBSOCKET_EVENTS = new Set(['open', 'message', 'error', 'close']);
 
 export default class SocketIOWebSocket implements WebSocket {
@@ -124,7 +132,7 @@ export default class SocketIOWebSocket implements WebSocket {
 
     const handleMessage = (data: any) => {
       console.log('SocketIOWebSocket.message');
-      const messageEvent = { data } as MessageEvent;
+      const messageEvent = createMessageEvent(data);
       if (this.onmessage) this.onmessage(messageEvent);
       this.dispatchListenerEvent('message', messageEvent as unknown as Event);
     };

@@ -45,3 +45,5 @@
 - Added explicit terminal-close suppression for `error` and `connect_error` callbacks in `trpc-websocket.ts` when the wrapper was already closed by client intent.
 - Why: delayed transport errors after intentional shutdown can create false-positive error handling in callers even though the socket lifecycle is complete.
 - Added regression coverage proving post-close `error`/`connect_error` signals no longer invoke `onerror`.
+- Normalized inbound message payload construction through `createMessageEvent(...)` so both `onmessage` and native `message` listeners receive a `type: 'message'` event shape in browser and Node runtimes.
+- Added regression expectations in `src/trpc-websocket.test.ts` to assert `type: 'message'` parity for `'trpc'` inbound frames.

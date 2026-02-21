@@ -117,3 +117,8 @@
 - Added terminal-close guards in `trpc-websocket.ts` for `error` and `connect_error` paths when the wrapper is already CLOSED via explicit client `close()`.
 - Why: late transport noise after intentional shutdown should not be surfaced as actionable runtime errors to callers.
 - Expanded `src/trpc-websocket.test.ts` with post-close `error`/`connect_error` assertions to lock this behavior.
+
+## 2026-02-21 slot follow-up (message-event type parity)
+- Normalized inbound payload construction in `trpc-websocket.ts` using `createMessageEvent(...)`.
+- Why: wrapper callbacks previously received `{ data }` without an explicit `type`, which diverged from native `MessageEvent` shape and made event-type based listeners brittle.
+- Expanded `src/trpc-websocket.test.ts` expectations to assert `type: 'message'` parity for inbound `'trpc'` frames.
