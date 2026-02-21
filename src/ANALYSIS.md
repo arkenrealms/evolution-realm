@@ -50,3 +50,6 @@
 - Added explicit constructor-side `ioSocket.connect()` trigger in `trpc-websocket.ts` (guarded via optional chaining).
 - Why: wrapper instances should initiate transport connection like native `WebSocket(url)`; with `autoConnect: false` and no constructor connect call, sessions could remain stuck in CONNECTING unless downstream internals manually called Socket.IO connect.
 - Added regression coverage in `src/trpc-websocket.test.ts` to assert constructor invokes socket `connect()` exactly once.
+- Added a post-close inbound-message guard in `trpc-websocket.ts` for `'message'`/`'trpc'` handlers.
+- Why: explicit client shutdown should be terminal; late frames arriving after `close()` previously still invoked `onmessage` and native listeners, which can re-trigger closed-session logic.
+- Added regression coverage in `src/trpc-websocket.test.ts` to assert message events are ignored after explicit close.

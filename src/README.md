@@ -18,5 +18,6 @@ Focused runtime tests and implementation notes for realm source-adjacent reliabi
 - `dispatchEvent()` now performs EventTarget-style callback routing for native handlers and listeners, enabling explicit event redispatch flows in consumers/tests.
 - `onopen` now receives an Event-like payload (`type: 'open'`) on real connect events, matching WebSocket handler expectations more closely.
 - inbound `onmessage`/`message` listeners now receive MessageEvent-shaped payloads with `type: 'message'` even in Node fallback mode.
+- inbound message/trpc events are ignored after explicit client `close()` so late transport frames do not leak into closed-session handlers.
 - Listener dispatch now isolates per-callback failures: one listener throwing no longer prevents later listeners from receiving the same event.
 - constructor now explicitly calls Socket.IO `connect()` for native `WebSocket(url)` startup parity when `autoConnect: false` is configured.

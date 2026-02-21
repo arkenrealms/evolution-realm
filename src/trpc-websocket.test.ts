@@ -248,6 +248,22 @@ describe('SocketIOWebSocket close lifecycle', () => {
     });
   });
 
+  test('message events after explicit close are ignored', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onmessage = jest.fn();
+
+    ws.onmessage = onmessage;
+
+    const trpcListener = mockOn.mock.calls.find((call) => call[0] === 'trpc')?.[1] as
+      | ((data: unknown) => void)
+      | undefined;
+
+    ws.close(1000, 'normal');
+    trpcListener?.({ id: 1, result: { data: 'late' } });
+
+    expect(onmessage).not.toHaveBeenCalled();
+  });
+
   test('addEventListener ignores duplicate listener registration', () => {
     const ws = new SocketIOWebSocket('http://localhost:1234');
     const listener = jest.fn();

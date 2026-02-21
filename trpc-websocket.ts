@@ -132,6 +132,10 @@ export default class SocketIOWebSocket implements WebSocket {
 
     const handleMessage = (data: any) => {
       console.log('SocketIOWebSocket.message');
+      if (this.closedByClient && this.readyState === SocketIOWebSocket.CLOSED) {
+        return;
+      }
+
       const messageEvent = createMessageEvent(data);
       if (this.onmessage) this.onmessage(messageEvent);
       this.dispatchListenerEvent('message', messageEvent as unknown as Event);
