@@ -163,6 +163,8 @@ export default class SocketIOWebSocket implements WebSocket {
     });
 
     this.eventListeners = new Map<string, Function[]>();
+
+    this.ioSocket.connect?.();
   }
 
   public onopen: ((event: Event) => void) | null = null;

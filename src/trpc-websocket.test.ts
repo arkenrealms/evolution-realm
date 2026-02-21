@@ -4,12 +4,14 @@ const mockOn = jest.fn();
 const mockOff = jest.fn();
 const mockEmit = jest.fn();
 const mockClose = jest.fn();
+const mockConnect = jest.fn();
 
 const mockSocket = {
   on: mockOn,
   off: mockOff,
   emit: mockEmit,
   close: mockClose,
+  connect: mockConnect,
 };
 
 jest.mock('socket.io-client', () => ({
@@ -22,6 +24,13 @@ describe('SocketIOWebSocket close lifecycle', () => {
     mockOff.mockClear();
     mockEmit.mockClear();
     mockClose.mockClear();
+    mockConnect.mockClear();
+  });
+
+  test('constructor triggers socket connect for websocket parity', () => {
+    new SocketIOWebSocket('http://localhost:1234');
+
+    expect(mockConnect).toHaveBeenCalledTimes(1);
   });
 
   test('close() notifies onclose and transitions to CLOSED', () => {

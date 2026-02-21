@@ -19,3 +19,4 @@ Focused runtime tests and implementation notes for realm source-adjacent reliabi
 - `onopen` now receives an Event-like payload (`type: 'open'`) on real connect events, matching WebSocket handler expectations more closely.
 - inbound `onmessage`/`message` listeners now receive MessageEvent-shaped payloads with `type: 'message'` even in Node fallback mode.
 - Listener dispatch now isolates per-callback failures: one listener throwing no longer prevents later listeners from receiving the same event.
+- constructor now explicitly calls Socket.IO `connect()` for native `WebSocket(url)` startup parity when `autoConnect: false` is configured.
