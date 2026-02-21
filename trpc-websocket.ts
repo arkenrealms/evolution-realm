@@ -134,6 +134,10 @@ export default class SocketIOWebSocket implements WebSocket {
 
     this.ioSocket.on('error', (err: any) => {
       console.log('SocketIOWebSocket.error');
+      if (this.closedByClient && this.readyState === SocketIOWebSocket.CLOSED) {
+        return;
+      }
+
       const errorEvent = createErrorEvent(err);
       if (this.onerror) this.onerror(errorEvent);
       this.dispatchListenerEvent('error', errorEvent);
@@ -141,6 +145,10 @@ export default class SocketIOWebSocket implements WebSocket {
 
     this.ioSocket.on('connect_error', (err: any) => {
       console.log('SocketIOWebSocket.connect_error');
+      if (this.closedByClient && this.readyState === SocketIOWebSocket.CLOSED) {
+        return;
+      }
+
       const errorEvent = createErrorEvent(err);
       if (this.onerror) this.onerror(errorEvent);
       this.dispatchListenerEvent('error', errorEvent);

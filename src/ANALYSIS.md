@@ -42,3 +42,6 @@
 - Hardened listener dispatch isolation in `trpc-websocket.ts` by catching per-listener exceptions in `dispatchListenerEvent`.
 - Why: one throwing listener previously aborted the dispatch loop and could starve later listeners on the same event, causing hidden callback-loss in fan-out flows.
 - Added regression coverage proving subsequent listeners still run and the error is logged when an earlier listener throws.
+- Added explicit terminal-close suppression for `error` and `connect_error` callbacks in `trpc-websocket.ts` when the wrapper was already closed by client intent.
+- Why: delayed transport errors after intentional shutdown can create false-positive error handling in callers even though the socket lifecycle is complete.
+- Added regression coverage proving post-close `error`/`connect_error` signals no longer invoke `onerror`.

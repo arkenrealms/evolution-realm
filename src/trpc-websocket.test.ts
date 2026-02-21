@@ -131,6 +131,38 @@ describe('SocketIOWebSocket close lifecycle', () => {
     expect(onerror.mock.calls[0][0]).toMatchObject({ type: 'error' });
   });
 
+  test('error events after explicit close are ignored', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onerror = jest.fn();
+
+    ws.onerror = onerror;
+
+    const errorListener = mockOn.mock.calls.find((call) => call[0] === 'error')?.[1] as
+      | ((err: unknown) => void)
+      | undefined;
+
+    ws.close(1000, 'normal');
+    errorListener?.(new Error('late error'));
+
+    expect(onerror).not.toHaveBeenCalled();
+  });
+
+  test('connect_error events after explicit close are ignored', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onerror = jest.fn();
+
+    ws.onerror = onerror;
+
+    const connectErrorListener = mockOn.mock.calls.find((call) => call[0] === 'connect_error')?.[1] as
+      | ((err: unknown) => void)
+      | undefined;
+
+    ws.close(1000, 'normal');
+    connectErrorListener?.(new Error('late connect error'));
+
+    expect(onerror).not.toHaveBeenCalled();
+  });
+
   test('connect resets close notification state for subsequent disconnects', () => {
     const ws = new SocketIOWebSocket('http://localhost:1234');
     const onclose = jest.fn();

@@ -112,3 +112,8 @@
 - Wrapped per-listener invocation in `dispatchListenerEvent` with try/catch in `trpc-websocket.ts`.
 - Why: one throwing listener previously terminated the dispatch loop, which could silently drop downstream listener callbacks for the same event.
 - Added regression coverage in `src/trpc-websocket.test.ts` proving later listeners still run and the thrown error is surfaced via logging.
+
+## 2026-02-21 slot follow-up (post-close late-error suppression)
+- Added terminal-close guards in `trpc-websocket.ts` for `error` and `connect_error` paths when the wrapper is already CLOSED via explicit client `close()`.
+- Why: late transport noise after intentional shutdown should not be surfaced as actionable runtime errors to callers.
+- Expanded `src/trpc-websocket.test.ts` with post-close `error`/`connect_error` assertions to lock this behavior.
