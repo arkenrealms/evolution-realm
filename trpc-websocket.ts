@@ -132,7 +132,7 @@ export default class SocketIOWebSocket implements WebSocket {
 
     const handleMessage = (data: any) => {
       console.log('SocketIOWebSocket.message');
-      if (this.closedByClient && this.readyState === SocketIOWebSocket.CLOSED) {
+      if (this.readyState !== SocketIOWebSocket.OPEN) {
         return;
       }
 

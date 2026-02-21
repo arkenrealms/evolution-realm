@@ -122,3 +122,8 @@
 - Normalized inbound payload construction in `trpc-websocket.ts` using `createMessageEvent(...)`.
 - Why: wrapper callbacks previously received `{ data }` without an explicit `type`, which diverged from native `MessageEvent` shape and made event-type based listeners brittle.
 - Expanded `src/trpc-websocket.test.ts` expectations to assert `type: 'message'` parity for inbound `'trpc'` frames.
+
+## 2026-02-21 slot follow-up (OPEN-state inbound message guard)
+- Added an OPEN-state check in `trpc-websocket.ts` inbound `message/trpc` handler.
+- Why: inbound frames were previously accepted during CONNECTING and after disconnect, which could leak stale payloads into consumers outside active session state.
+- Expanded `src/trpc-websocket.test.ts` coverage to assert inbound messages are ignored before first connect and after disconnect.

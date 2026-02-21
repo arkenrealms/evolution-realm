@@ -234,11 +234,15 @@ describe('SocketIOWebSocket close lifecycle', () => {
 
     ws.onmessage = onmessage;
 
+    const connectListener = mockOn.mock.calls.find((call) => call[0] === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
     const trpcListener = mockOn.mock.calls.find((call) => call[0] === 'trpc')?.[1] as
       | ((data: unknown) => void)
       | undefined;
 
     expect(trpcListener).toBeDefined();
+    connectListener?.();
     trpcListener?.({ id: 1, result: { data: 'ok' } });
 
     expect(onmessage).toHaveBeenCalledTimes(1);
@@ -246,6 +250,44 @@ describe('SocketIOWebSocket close lifecycle', () => {
       type: 'message',
       data: { id: 1, result: { data: 'ok' } },
     });
+  });
+
+  test('message events are ignored before socket reaches OPEN', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onmessage = jest.fn();
+
+    ws.onmessage = onmessage;
+
+    const trpcListener = mockOn.mock.calls.find((call) => call[0] === 'trpc')?.[1] as
+      | ((data: unknown) => void)
+      | undefined;
+
+    trpcListener?.({ id: 1, result: { data: 'connecting' } });
+
+    expect(onmessage).not.toHaveBeenCalled();
+  });
+
+  test('message events after disconnect are ignored until reconnect', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onmessage = jest.fn();
+
+    ws.onmessage = onmessage;
+
+    const connectListener = mockOn.mock.calls.find((call) => call[0] === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
+    const disconnectListener = mockOn.mock.calls.find((call) => call[0] === 'disconnect')?.[1] as
+      | ((reason?: string) => void)
+      | undefined;
+    const trpcListener = mockOn.mock.calls.find((call) => call[0] === 'trpc')?.[1] as
+      | ((data: unknown) => void)
+      | undefined;
+
+    connectListener?.();
+    disconnectListener?.('transport close');
+    trpcListener?.({ id: 2, result: { data: 'late' } });
+
+    expect(onmessage).not.toHaveBeenCalled();
   });
 
   test('message events after explicit close are ignored', () => {
@@ -323,10 +365,14 @@ describe('SocketIOWebSocket close lifecycle', () => {
 
     ws.addEventListener('message', listener);
 
+    const connectListener = mockOn.mock.calls.find((call) => call[0] === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
     const trpcListener = mockOn.mock.calls.find((call) => call[0] === 'trpc')?.[1] as
       | ((data: unknown) => void)
       | undefined;
 
+    connectListener?.();
     trpcListener?.({ result: 'ok' });
 
     expect(listener).toHaveBeenCalledTimes(1);
@@ -372,12 +418,16 @@ describe('SocketIOWebSocket close lifecycle', () => {
     ws.addEventListener('message', firstListener);
     ws.addEventListener('message', secondListener);
 
+    const connectListener = mockOn.mock.calls.find((call) => call[0] === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
     const messageListener = mockOn.mock.calls.find((call) => call[0] === 'message')?.[1] as
       | ((data: unknown) => void)
       | undefined;
 
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
 
+    connectListener?.();
     messageListener?.({ value: 42 });
 
     expect(firstListener).toHaveBeenCalledTimes(1);

@@ -47,6 +47,9 @@
 - Added regression coverage proving post-close `error`/`connect_error` signals no longer invoke `onerror`.
 - Normalized inbound message payload construction through `createMessageEvent(...)` so both `onmessage` and native `message` listeners receive a `type: 'message'` event shape in browser and Node runtimes.
 - Added regression expectations in `src/trpc-websocket.test.ts` to assert `type: 'message'` parity for `'trpc'` inbound frames.
+- Added OPEN-state gating for inbound `'message'`/`'trpc'` handling in `trpc-websocket.ts`.
+- Why: WebSocket consumers should not receive message callbacks while CONNECTING/CLOSED; previously early or post-disconnect frames could leak into handlers and create state-desync bugs.
+- Added regression tests proving inbound frames are ignored before first connect and after disconnect until reconnect.
 - Added explicit constructor-side `ioSocket.connect()` trigger in `trpc-websocket.ts` (guarded via optional chaining).
 - Why: wrapper instances should initiate transport connection like native `WebSocket(url)`; with `autoConnect: false` and no constructor connect call, sessions could remain stuck in CONNECTING unless downstream internals manually called Socket.IO connect.
 - Added regression coverage in `src/trpc-websocket.test.ts` to assert constructor invokes socket `connect()` exactly once.
