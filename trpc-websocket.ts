@@ -54,6 +54,7 @@ export default class SocketIOWebSocket implements WebSocket {
   private ioSocket: Socket;
   private eventListeners: Map<string, Function[]>;
   private closeNotified = false;
+  private closedByClient = false;
 
   // WebSocket properties
   public readonly url: string;
@@ -94,6 +95,10 @@ export default class SocketIOWebSocket implements WebSocket {
 
     this.ioSocket.on('connect', () => {
       console.log('SocketIOWebSocket.connect');
+      if (this.closedByClient) {
+        return;
+      }
+
       this.readyState = SocketIOWebSocket.OPEN;
       this.closeNotified = false;
       if (this.onopen) this.onopen();
@@ -138,6 +143,7 @@ export default class SocketIOWebSocket implements WebSocket {
     }
 
     this.readyState = SocketIOWebSocket.CLOSING;
+    this.closedByClient = true;
     this.ioSocket.close();
     this.readyState = SocketIOWebSocket.CLOSED;
     this.notifyClose(createCloseEvent(code, reason));

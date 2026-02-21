@@ -214,4 +214,21 @@ describe('SocketIOWebSocket close lifecycle', () => {
 
     expect(mockOff.mock.calls.filter((call) => call[0] === 'custom')).toHaveLength(2);
   });
+
+  test('connect event after close is ignored', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onopen = jest.fn();
+
+    ws.onopen = onopen;
+
+    const connectListener = mockOn.mock.calls.find((call) => call[0] === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
+
+    ws.close(1000, 'normal');
+    connectListener?.();
+
+    expect(ws.readyState).toBe(ws.CLOSED);
+    expect(onopen).not.toHaveBeenCalled();
+  });
 });

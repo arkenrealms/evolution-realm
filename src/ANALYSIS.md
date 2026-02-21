@@ -25,3 +25,7 @@
 - Added shared inbound message handler wiring for both Socket.IO `'message'` and `'trpc'` events.
 - Why: this wrapper emits outbound payloads on `'trpc'`; listening only to `'message'` risked dropping protocol responses in environments that send tRPC frames on `'trpc'`.
 - Added regression coverage asserting `'trpc'` events reach `onmessage` with the original payload envelope.
+- Added a client-close guard in `trpc-websocket.ts` so late Socket.IO `connect` events are ignored after an explicit wrapper `close()`.
+- Why: without the guard, a race where `close()` is called before transport finishes connecting can incorrectly reopen wrapper state and fire `onopen` after shutdown.
+- Guard is scoped to explicit client closes (not transient disconnects), preserving reconnect behavior after network drops.
+- Added regression coverage asserting post-close `connect` events do not reopen state or fire `onopen`.

@@ -85,3 +85,9 @@
 - Added shared inbound message handling for both Socket.IO `'message'` and `'trpc'` events in `trpc-websocket.ts`.
 - Why: outbound traffic already uses `'trpc'`; if server responses arrive on the same event, listening only to `'message'` can silently drop `onmessage` callbacks.
 - Added regression coverage in `src/trpc-websocket.test.ts` to verify `'trpc'` frames are surfaced via `onmessage` without payload mutation.
+
+## 2026-02-20 slot follow-up (late-connect reopen guard)
+- Added an explicit client-close guard in the Socket.IO `connect` handler in `trpc-websocket.ts`.
+- Why: if `close()` is called while still CONNECTING, a delayed transport `connect` callback could reopen the wrapper and fire `onopen` after shutdown.
+- Result: `connect` is now ignored after explicit wrapper `close()` calls, while reconnect behavior after non-client disconnects remains intact.
+- Added regression coverage in `src/trpc-websocket.test.ts` to ensure post-close `connect` events neither reopen state nor fire `onopen`.
