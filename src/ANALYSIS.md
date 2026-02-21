@@ -39,3 +39,6 @@
 - Corrected `connect` lifecycle callback payload parity by passing an Event-like object into `onopen`.
 - Why: invoking `onopen` without an event diverged from native WebSocket semantics and dropped metadata expected by handler code that inspects `event.type`.
 - Added regression coverage proving connect-triggered `onopen` receives `{ type: 'open' }`.
+- Hardened listener dispatch isolation in `trpc-websocket.ts` by catching per-listener exceptions in `dispatchListenerEvent`.
+- Why: one throwing listener previously aborted the dispatch loop and could starve later listeners on the same event, causing hidden callback-loss in fan-out flows.
+- Added regression coverage proving subsequent listeners still run and the error is logged when an earlier listener throws.

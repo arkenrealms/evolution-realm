@@ -181,7 +181,11 @@ export default class SocketIOWebSocket implements WebSocket {
     }
 
     for (const listener of [...listeners]) {
-      listener(event);
+      try {
+        listener(event);
+      } catch (error) {
+        console.error('SocketIOWebSocket listener error', error);
+      }
     }
   }
 

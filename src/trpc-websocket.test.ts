@@ -304,6 +304,34 @@ describe('SocketIOWebSocket close lifecycle', () => {
     expect(listener).toHaveBeenCalledWith(messageEvent);
   });
 
+  test('listener errors do not prevent subsequent listeners from running', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const firstListener = jest.fn(() => {
+      throw new Error('listener boom');
+    });
+    const secondListener = jest.fn();
+
+    ws.addEventListener('message', firstListener);
+    ws.addEventListener('message', secondListener);
+
+    const messageListener = mockOn.mock.calls.find((call) => call[0] === 'message')?.[1] as
+      | ((data: unknown) => void)
+      | undefined;
+
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    messageListener?.({ value: 42 });
+
+    expect(firstListener).toHaveBeenCalledTimes(1);
+    expect(secondListener).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'SocketIOWebSocket listener error',
+      expect.objectContaining({ message: 'listener boom' }),
+    );
+
+    consoleErrorSpy.mockRestore();
+  });
+
   test('dispatchEvent returns false for invalid events', () => {
     const ws = new SocketIOWebSocket('http://localhost:1234');
 

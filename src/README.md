@@ -17,3 +17,4 @@ Focused runtime tests and implementation notes for realm source-adjacent reliabi
 - Native WebSocket events (`open`, `message`, `error`, `close`) registered via `addEventListener()` are now dispatched by the wrapper itself instead of being incorrectly proxied as Socket.IO event subscriptions.
 - `dispatchEvent()` now performs EventTarget-style callback routing for native handlers and listeners, enabling explicit event redispatch flows in consumers/tests.
 - `onopen` now receives an Event-like payload (`type: 'open'`) on real connect events, matching WebSocket handler expectations more closely.
+- Listener dispatch now isolates per-callback failures: one listener throwing no longer prevents later listeners from receiving the same event.

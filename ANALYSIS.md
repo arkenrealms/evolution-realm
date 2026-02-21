@@ -107,3 +107,8 @@
 - Updated `SocketIOWebSocket` connect handling to pass an Event-like payload into `onopen`.
 - Why: `onopen` previously fired with no arguments, diverging from WebSocket handler conventions and making event-shape-dependent callback code brittle.
 - Added regression coverage in `src/trpc-websocket.test.ts` to assert connect-triggered `onopen` receives `{ type: 'open' }`.
+
+## 2026-02-21 slot follow-up (listener dispatch isolation)
+- Wrapped per-listener invocation in `dispatchListenerEvent` with try/catch in `trpc-websocket.ts`.
+- Why: one throwing listener previously terminated the dispatch loop, which could silently drop downstream listener callbacks for the same event.
+- Added regression coverage in `src/trpc-websocket.test.ts` proving later listeners still run and the thrown error is surfaced via logging.
