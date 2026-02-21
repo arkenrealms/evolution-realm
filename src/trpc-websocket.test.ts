@@ -151,6 +151,22 @@ describe('SocketIOWebSocket close lifecycle', () => {
     expect(onclose).toHaveBeenCalledTimes(2);
   });
 
+  test('connect calls onopen with an Event-like payload', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onopen = jest.fn();
+
+    ws.onopen = onopen;
+
+    const connectListener = mockOn.mock.calls.find((call) => call[0] === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
+
+    connectListener?.();
+
+    expect(onopen).toHaveBeenCalledTimes(1);
+    expect(onopen.mock.calls[0][0]).toMatchObject({ type: 'open' });
+  });
+
   test('send throws when socket is not OPEN', () => {
     const ws = new SocketIOWebSocket('http://localhost:1234');
 

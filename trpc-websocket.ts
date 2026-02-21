@@ -111,8 +111,9 @@ export default class SocketIOWebSocket implements WebSocket {
 
       this.readyState = SocketIOWebSocket.OPEN;
       this.closeNotified = false;
-      if (this.onopen) this.onopen();
-      this.dispatchListenerEvent('open', createEvent('open'));
+      const openEvent = createEvent('open');
+      if (this.onopen) this.onopen(openEvent);
+      this.dispatchListenerEvent('open', openEvent);
     });
 
     this.ioSocket.on('disconnect', (reason?: string) => {
@@ -148,7 +149,7 @@ export default class SocketIOWebSocket implements WebSocket {
     this.eventListeners = new Map<string, Function[]>();
   }
 
-  public onopen: (() => void) | null = null;
+  public onopen: ((event: Event) => void) | null = null;
   public onmessage: ((event: MessageEvent) => void) | null = null;
   public onerror: ((event: Event) => void) | null = null;
   public onclose: ((event: CloseEvent) => void) | null = null;
@@ -203,7 +204,7 @@ export default class SocketIOWebSocket implements WebSocket {
 
     switch (event.type) {
       case 'open':
-        if (this.onopen) this.onopen();
+        if (this.onopen) this.onopen(event);
         break;
       case 'message':
         if (this.onmessage) this.onmessage(event as unknown as MessageEvent);

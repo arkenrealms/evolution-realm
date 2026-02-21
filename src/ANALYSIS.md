@@ -36,3 +36,6 @@
 - Implemented `dispatchEvent(event)` compatibility dispatch for wrapper-native handlers (`onopen`, `onmessage`, `onerror`, `onclose`) plus `addEventListener` listeners.
 - Why: returning `false` unconditionally made `dispatchEvent` a no-op and broke EventTarget-style consumer code paths that expect explicit event re-dispatch during tests/reconnect orchestration.
 - Added regression coverage asserting `dispatchEvent` routes message events to both property handlers and native listeners, and rejects invalid payloads with a `false` return.
+- Corrected `connect` lifecycle callback payload parity by passing an Event-like object into `onopen`.
+- Why: invoking `onopen` without an event diverged from native WebSocket semantics and dropped metadata expected by handler code that inspects `event.type`.
+- Added regression coverage proving connect-triggered `onopen` receives `{ type: 'open' }`.

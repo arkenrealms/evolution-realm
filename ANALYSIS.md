@@ -102,3 +102,8 @@
 - Implemented `SocketIOWebSocket.dispatchEvent(event)` so it now routes native event payloads to both property handlers (`onopen`, `onmessage`, `onerror`, `onclose`) and `addEventListener` listeners.
 - Why: previous behavior returned `false` unconditionally and performed no dispatch, which broke EventTarget-style code paths that rely on explicit wrapper event redispatch (notably in tests and adapter-level lifecycle orchestration).
 - Added focused regression tests in `src/trpc-websocket.test.ts` for message redispatch and invalid-event rejection semantics.
+
+## 2026-02-20 slot follow-up (onopen event payload parity)
+- Updated `SocketIOWebSocket` connect handling to pass an Event-like payload into `onopen`.
+- Why: `onopen` previously fired with no arguments, diverging from WebSocket handler conventions and making event-shape-dependent callback code brittle.
+- Added regression coverage in `src/trpc-websocket.test.ts` to assert connect-triggered `onopen` receives `{ type: 'open' }`.
