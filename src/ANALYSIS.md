@@ -10,3 +10,49 @@
 - Hardened `close()` with a CLOSED/CLOSING guard so repeated close attempts become no-ops instead of re-closing the underlying socket.
 - Normalized socket `error` callback delivery through an Event-like wrapper so `onerror` consumers always receive a WebSocket-style event object (`type: 'error'`) even in Node runtimes.
 - Added regression coverage asserting `onerror` receives the normalized Event-like payload.
+- Reset close-notification guard state on reconnect (`connect`) so later disconnects still emit `onclose`; this prevents stale suppression after a prior close cycle.
+- Added regression coverage for disconnect → reconnect → disconnect to verify two distinct `onclose` notifications across connection lifecycles.
+- Forwarded Socket.IO disconnect reason strings into the synthetic close event (`reason`) so disconnect-driven closes preserve actionable context.
+- Added regression coverage asserting disconnect reasons are propagated to `onclose` payloads.
+- Added a send-state guard in `trpc-websocket.ts` to throw when `send()` is called before the wrapper is OPEN; this prevents silent pre-connect emits and aligns behavior with WebSocket invalid-state expectations.
+- Added regression coverage for both send paths: (a) throw + no emit while CONNECTING, (b) successful `trpc` emit after simulated `connect`.
+- Added duplicate-listener registration guard in `addEventListener()` so repeated registrations of the same callback on the same event no longer stack duplicate socket handlers.
+- Added cleanup in `removeEventListener()` to clear empty event buckets after unregistering listeners, preventing stale listener-map growth.
+- Added regression tests confirming duplicate registration suppression and one-time unregister behavior per distinct listener.
+- Added explicit `connect_error` forwarding into the same normalized `onerror` path used by runtime `error` events.
+- Why: connection-establishment failures previously had no wrapper-level delivery path, creating a blind spot where early transport/auth errors were swallowed by the compatibility layer.
+- Added regression coverage asserting `connect_error` events produce Event-like `onerror` payloads.
+- Added shared inbound message handler wiring for both Socket.IO `'message'` and `'trpc'` events.
+- Why: this wrapper emits outbound payloads on `'trpc'`; listening only to `'message'` risked dropping protocol responses in environments that send tRPC frames on `'trpc'`.
+- Added regression coverage asserting `'trpc'` events reach `onmessage` with the original payload envelope.
+- Added a client-close guard in `trpc-websocket.ts` so late Socket.IO `connect` events are ignored after an explicit wrapper `close()`.
+- Why: without the guard, a race where `close()` is called before transport finishes connecting can incorrectly reopen wrapper state and fire `onopen` after shutdown.
+- Guard is scoped to explicit client closes (not transient disconnects), preserving reconnect behavior after network drops.
+- Added regression coverage asserting post-close `connect` events do not reopen state or fire `onopen`.
+- Corrected native WebSocket `addEventListener` semantics in `trpc-websocket.ts` for `open/message/error/close`.
+- Why: native event names were being passed to `ioSocket.on(...)`, which does not represent wrapper lifecycle events and could silently drop consumer listeners.
+- Wrapper now dispatches native listener callbacks from lifecycle/message/error paths directly, while keeping Socket.IO pass-through behavior for custom event names.
+- Added regression tests for native close/message listeners and for native-listener removal behavior (no incorrect `socket.off('close', ...)`).
+- Implemented `dispatchEvent(event)` compatibility dispatch for wrapper-native handlers (`onopen`, `onmessage`, `onerror`, `onclose`) plus `addEventListener` listeners.
+- Why: returning `false` unconditionally made `dispatchEvent` a no-op and broke EventTarget-style consumer code paths that expect explicit event re-dispatch during tests/reconnect orchestration.
+- Added regression coverage asserting `dispatchEvent` routes message events to both property handlers and native listeners, and rejects invalid payloads with a `false` return.
+- Corrected `connect` lifecycle callback payload parity by passing an Event-like object into `onopen`.
+- Why: invoking `onopen` without an event diverged from native WebSocket semantics and dropped metadata expected by handler code that inspects `event.type`.
+- Added regression coverage proving connect-triggered `onopen` receives `{ type: 'open' }`.
+- Hardened listener dispatch isolation in `trpc-websocket.ts` by catching per-listener exceptions in `dispatchListenerEvent`.
+- Why: one throwing listener previously aborted the dispatch loop and could starve later listeners on the same event, causing hidden callback-loss in fan-out flows.
+- Added regression coverage proving subsequent listeners still run and the error is logged when an earlier listener throws.
+- Added explicit terminal-close suppression for `error` and `connect_error` callbacks in `trpc-websocket.ts` when the wrapper was already closed by client intent.
+- Why: delayed transport errors after intentional shutdown can create false-positive error handling in callers even though the socket lifecycle is complete.
+- Added regression coverage proving post-close `error`/`connect_error` signals no longer invoke `onerror`.
+- Normalized inbound message payload construction through `createMessageEvent(...)` so both `onmessage` and native `message` listeners receive a `type: 'message'` event shape in browser and Node runtimes.
+- Added regression expectations in `src/trpc-websocket.test.ts` to assert `type: 'message'` parity for `'trpc'` inbound frames.
+- Added OPEN-state gating for inbound `'message'`/`'trpc'` handling in `trpc-websocket.ts`.
+- Why: WebSocket consumers should not receive message callbacks while CONNECTING/CLOSED; previously early or post-disconnect frames could leak into handlers and create state-desync bugs.
+- Added regression tests proving inbound frames are ignored before first connect and after disconnect until reconnect.
+- Added explicit constructor-side `ioSocket.connect()` trigger in `trpc-websocket.ts` (guarded via optional chaining).
+- Why: wrapper instances should initiate transport connection like native `WebSocket(url)`; with `autoConnect: false` and no constructor connect call, sessions could remain stuck in CONNECTING unless downstream internals manually called Socket.IO connect.
+- Added regression coverage in `src/trpc-websocket.test.ts` to assert constructor invokes socket `connect()` exactly once.
+- Added a post-close inbound-message guard in `trpc-websocket.ts` for `'message'`/`'trpc'` handlers.
+- Why: explicit client shutdown should be terminal; late frames arriving after `close()` previously still invoked `onmessage` and native listeners, which can re-trigger closed-session logic.
+- Added regression coverage in `src/trpc-websocket.test.ts` to assert message events are ignored after explicit close.

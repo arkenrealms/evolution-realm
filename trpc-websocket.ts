@@ -31,7 +31,7 @@
 
 import { io as socketIOClient, Socket } from 'socket.io-client';
 
-type Listener = (...args: any[]) => void;
+type Listener = (event: Event) => void;
 
 function createCloseEvent(code?: number, reason?: string): CloseEvent {
   if (typeof CloseEvent === 'function') {
@@ -50,10 +50,29 @@ function createErrorEvent(error: unknown): Event {
   return { type: 'error', error } as Event;
 }
 
+function createEvent(type: string): Event {
+  if (typeof Event === 'function') {
+    return new Event(type);
+  }
+
+  return { type } as Event;
+}
+
+function createMessageEvent(data: unknown): MessageEvent {
+  if (typeof MessageEvent === 'function') {
+    return new MessageEvent('message', { data });
+  }
+
+  return { type: 'message', data } as MessageEvent;
+}
+
+const NATIVE_WEBSOCKET_EVENTS = new Set(['open', 'message', 'error', 'close']);
+
 export default class SocketIOWebSocket implements WebSocket {
   private ioSocket: Socket;
   private eventListeners: Map<string, Function[]>;
   private closeNotified = false;
+  private closedByClient = false;
 
   // WebSocket properties
   public readonly url: string;
@@ -94,30 +113,65 @@ export default class SocketIOWebSocket implements WebSocket {
 
     this.ioSocket.on('connect', () => {
       console.log('SocketIOWebSocket.connect');
+      if (this.closedByClient) {
+        return;
+      }
+
       this.readyState = SocketIOWebSocket.OPEN;
-      if (this.onopen) this.onopen();
+      this.closeNotified = false;
+      const openEvent = createEvent('open');
+      if (this.onopen) this.onopen(openEvent);
+      this.dispatchListenerEvent('open', openEvent);
     });
 
-    this.ioSocket.on('disconnect', () => {
+    this.ioSocket.on('disconnect', (reason?: string) => {
       console.log('SocketIOWebSocket.disconnect');
       this.readyState = SocketIOWebSocket.CLOSED;
-      this.notifyClose(createCloseEvent());
+      this.notifyClose(createCloseEvent(undefined, reason));
     });
 
-    this.ioSocket.on('message', (data: any) => {
+    const handleMessage = (data: any) => {
       console.log('SocketIOWebSocket.message');
-      if (this.onmessage) this.onmessage({ data } as MessageEvent);
-    });
+      if (this.readyState !== SocketIOWebSocket.OPEN) {
+        return;
+      }
+
+      const messageEvent = createMessageEvent(data);
+      if (this.onmessage) this.onmessage(messageEvent);
+      this.dispatchListenerEvent('message', messageEvent as unknown as Event);
+    };
+
+    this.ioSocket.on('message', handleMessage);
+    this.ioSocket.on('trpc', handleMessage);
 
     this.ioSocket.on('error', (err: any) => {
       console.log('SocketIOWebSocket.error');
-      if (this.onerror) this.onerror(createErrorEvent(err));
+      if (this.closedByClient && this.readyState === SocketIOWebSocket.CLOSED) {
+        return;
+      }
+
+      const errorEvent = createErrorEvent(err);
+      if (this.onerror) this.onerror(errorEvent);
+      this.dispatchListenerEvent('error', errorEvent);
+    });
+
+    this.ioSocket.on('connect_error', (err: any) => {
+      console.log('SocketIOWebSocket.connect_error');
+      if (this.closedByClient && this.readyState === SocketIOWebSocket.CLOSED) {
+        return;
+      }
+
+      const errorEvent = createErrorEvent(err);
+      if (this.onerror) this.onerror(errorEvent);
+      this.dispatchListenerEvent('error', errorEvent);
     });
 
     this.eventListeners = new Map<string, Function[]>();
+
+    this.ioSocket.connect?.();
   }
 
-  public onopen: (() => void) | null = null;
+  public onopen: ((event: Event) => void) | null = null;
   public onmessage: ((event: MessageEvent) => void) | null = null;
   public onerror: ((event: Event) => void) | null = null;
   public onclose: ((event: CloseEvent) => void) | null = null;
@@ -129,6 +183,7 @@ export default class SocketIOWebSocket implements WebSocket {
     }
 
     this.readyState = SocketIOWebSocket.CLOSING;
+    this.closedByClient = true;
     this.ioSocket.close();
     this.readyState = SocketIOWebSocket.CLOSED;
     this.notifyClose(createCloseEvent(code, reason));
@@ -138,17 +193,60 @@ export default class SocketIOWebSocket implements WebSocket {
     if (this.closeNotified) return;
     this.closeNotified = true;
     if (this.onclose) this.onclose(event);
+    this.dispatchListenerEvent('close', event as unknown as Event);
+  }
+
+  private dispatchListenerEvent(eventType: string, event: Event): void {
+    const listeners = this.eventListeners.get(eventType);
+    if (!listeners) {
+      return;
+    }
+
+    for (const listener of [...listeners]) {
+      try {
+        listener(event);
+      } catch (error) {
+        console.error('SocketIOWebSocket listener error', error);
+      }
+    }
   }
 
   public send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void {
     console.log('SocketIOWebSocket.send', data);
+
+    if (this.readyState !== SocketIOWebSocket.OPEN) {
+      throw new Error('SocketIOWebSocket is not open');
+    }
+
     this.ioSocket.emit('trpc', data);
   }
 
   public dispatchEvent(event: Event): boolean {
     console.log('SocketIOWebSocket.dispatchEvent', event);
-    // You can implement custom event handling if necessary
-    return false;
+
+    if (!event || typeof event.type !== 'string') {
+      return false;
+    }
+
+    switch (event.type) {
+      case 'open':
+        if (this.onopen) this.onopen(event);
+        break;
+      case 'message':
+        if (this.onmessage) this.onmessage(event as unknown as MessageEvent);
+        break;
+      case 'error':
+        if (this.onerror) this.onerror(event);
+        break;
+      case 'close':
+        if (this.onclose) this.onclose(event as unknown as CloseEvent);
+        break;
+      default:
+        break;
+    }
+
+    this.dispatchListenerEvent(event.type, event);
+    return true;
   }
   //   // Dispatch event (not part of WebSocket interface, but for internal use)
   //   private dispatchEvent(event: string, ...args: any[]) {
@@ -164,8 +262,17 @@ export default class SocketIOWebSocket implements WebSocket {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }
-    this.eventListeners.get(event)!.push(listener);
-    this.ioSocket.on(event, listener);
+
+    const listeners = this.eventListeners.get(event)!;
+    if (listeners.includes(listener)) {
+      return;
+    }
+
+    listeners.push(listener);
+
+    if (!NATIVE_WEBSOCKET_EVENTS.has(event)) {
+      this.ioSocket.on(event, listener as (...args: any[]) => void);
+    }
   }
 
   public removeEventListener(event: string, listener: Listener) {
@@ -175,7 +282,14 @@ export default class SocketIOWebSocket implements WebSocket {
       const index = listeners.indexOf(listener);
       if (index !== -1) {
         listeners.splice(index, 1);
-        this.ioSocket.off(event, listener);
+
+        if (!NATIVE_WEBSOCKET_EVENTS.has(event)) {
+          this.ioSocket.off(event, listener as (...args: any[]) => void);
+        }
+      }
+
+      if (listeners.length === 0) {
+        this.eventListeners.delete(event);
       }
     }
   }
