@@ -546,6 +546,13 @@ export class RealmServer implements Realm.Service {
       };
 
       client.socket.addEventListener('connect', connect);
+      client.socket.on('connect_error', (error) => {
+        log('Seer connect_error', error?.message || error);
+        reject(new Error(`Seer connect_error: ${error?.message || error}`));
+      });
+      client.socket.on('disconnect', (reason) => {
+        log('Seer disconnect', reason);
+      });
       client.socket.connect();
     });
   }
