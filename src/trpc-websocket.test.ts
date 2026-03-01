@@ -4,12 +4,14 @@ const mockOn = jest.fn();
 const mockOff = jest.fn();
 const mockEmit = jest.fn();
 const mockClose = jest.fn();
+const mockConnect = jest.fn();
 
 const mockSocket = {
   on: mockOn,
   off: mockOff,
   emit: mockEmit,
   close: mockClose,
+  connect: mockConnect,
 };
 
 jest.mock('socket.io-client', () => ({
@@ -22,6 +24,13 @@ describe('SocketIOWebSocket close lifecycle', () => {
     mockOff.mockClear();
     mockEmit.mockClear();
     mockClose.mockClear();
+    mockConnect.mockClear();
+  });
+
+  test('constructor triggers socket connect for websocket parity', () => {
+    new SocketIOWebSocket('http://localhost:1234');
+
+    expect(mockConnect).toHaveBeenCalledTimes(1);
   });
 
   test('close() notifies onclose and transitions to CLOSED', () => {
@@ -37,21 +46,22 @@ describe('SocketIOWebSocket close lifecycle', () => {
     expect(onclose.mock.calls[0][0]).toMatchObject({ code: 1001, reason: 'shutdown' });
   });
 
-  test('disconnect event notifies onclose', () => {
+  test('disconnect event notifies onclose with disconnect reason', () => {
     const ws = new SocketIOWebSocket('http://localhost:1234');
     const onclose = jest.fn();
 
     ws.onclose = onclose;
 
     const disconnectListener = mockOn.mock.calls.find((call) => call[0] === 'disconnect')?.[1] as
-      | (() => void)
+      | ((reason?: string) => void)
       | undefined;
 
     expect(disconnectListener).toBeDefined();
-    disconnectListener?.();
+    disconnectListener?.('transport close');
 
     expect(ws.readyState).toBe(ws.CLOSED);
     expect(onclose).toHaveBeenCalledTimes(1);
+    expect(onclose.mock.calls[0][0]).toMatchObject({ reason: 'transport close' });
   });
 
   test('close() followed by disconnect only notifies onclose once', () => {
@@ -111,5 +121,329 @@ describe('SocketIOWebSocket close lifecycle', () => {
 
     expect(onerror).toHaveBeenCalledTimes(1);
     expect(onerror.mock.calls[0][0]).toMatchObject({ type: 'error' });
+  });
+
+  test('connect_error event is surfaced as Event-like payload', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onerror = jest.fn();
+
+    ws.onerror = onerror;
+
+    const connectErrorListener = mockOn.mock.calls.find((call) => call[0] === 'connect_error')?.[1] as
+      | ((err: unknown) => void)
+      | undefined;
+
+    expect(connectErrorListener).toBeDefined();
+    connectErrorListener?.(new Error('connect boom'));
+
+    expect(onerror).toHaveBeenCalledTimes(1);
+    expect(onerror.mock.calls[0][0]).toMatchObject({ type: 'error' });
+  });
+
+  test('error events after explicit close are ignored', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onerror = jest.fn();
+
+    ws.onerror = onerror;
+
+    const errorListener = mockOn.mock.calls.find((call) => call[0] === 'error')?.[1] as
+      | ((err: unknown) => void)
+      | undefined;
+
+    ws.close(1000, 'normal');
+    errorListener?.(new Error('late error'));
+
+    expect(onerror).not.toHaveBeenCalled();
+  });
+
+  test('connect_error events after explicit close are ignored', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onerror = jest.fn();
+
+    ws.onerror = onerror;
+
+    const connectErrorListener = mockOn.mock.calls.find((call) => call[0] === 'connect_error')?.[1] as
+      | ((err: unknown) => void)
+      | undefined;
+
+    ws.close(1000, 'normal');
+    connectErrorListener?.(new Error('late connect error'));
+
+    expect(onerror).not.toHaveBeenCalled();
+  });
+
+  test('connect resets close notification state for subsequent disconnects', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onclose = jest.fn();
+
+    ws.onclose = onclose;
+
+    const disconnectListener = mockOn.mock.calls.find((call) => call[0] === 'disconnect')?.[1] as
+      | (() => void)
+      | undefined;
+    const connectListener = mockOn.mock.calls.find((call) => call[0] === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
+
+    disconnectListener?.();
+    connectListener?.();
+    disconnectListener?.();
+
+    expect(onclose).toHaveBeenCalledTimes(2);
+  });
+
+  test('connect calls onopen with an Event-like payload', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onopen = jest.fn();
+
+    ws.onopen = onopen;
+
+    const connectListener = mockOn.mock.calls.find((call) => call[0] === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
+
+    connectListener?.();
+
+    expect(onopen).toHaveBeenCalledTimes(1);
+    expect(onopen.mock.calls[0][0]).toMatchObject({ type: 'open' });
+  });
+
+  test('send throws when socket is not OPEN', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+
+    expect(() => ws.send('payload')).toThrow('SocketIOWebSocket is not open');
+    expect(mockEmit).not.toHaveBeenCalled();
+  });
+
+  test('send emits trpc payload when socket is OPEN', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+
+    const connectListener = mockOn.mock.calls.find((call) => call[0] === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
+
+    connectListener?.();
+    ws.send('payload');
+
+    expect(mockEmit).toHaveBeenCalledWith('trpc', 'payload');
+  });
+
+  test('trpc event is surfaced through onmessage payload', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onmessage = jest.fn();
+
+    ws.onmessage = onmessage;
+
+    const connectListener = mockOn.mock.calls.find((call) => call[0] === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
+    const trpcListener = mockOn.mock.calls.find((call) => call[0] === 'trpc')?.[1] as
+      | ((data: unknown) => void)
+      | undefined;
+
+    expect(trpcListener).toBeDefined();
+    connectListener?.();
+    trpcListener?.({ id: 1, result: { data: 'ok' } });
+
+    expect(onmessage).toHaveBeenCalledTimes(1);
+    expect(onmessage.mock.calls[0][0]).toMatchObject({
+      type: 'message',
+      data: { id: 1, result: { data: 'ok' } },
+    });
+  });
+
+  test('message events are ignored before socket reaches OPEN', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onmessage = jest.fn();
+
+    ws.onmessage = onmessage;
+
+    const trpcListener = mockOn.mock.calls.find((call) => call[0] === 'trpc')?.[1] as
+      | ((data: unknown) => void)
+      | undefined;
+
+    trpcListener?.({ id: 1, result: { data: 'connecting' } });
+
+    expect(onmessage).not.toHaveBeenCalled();
+  });
+
+  test('message events after disconnect are ignored until reconnect', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onmessage = jest.fn();
+
+    ws.onmessage = onmessage;
+
+    const connectListener = mockOn.mock.calls.find((call) => call[0] === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
+    const disconnectListener = mockOn.mock.calls.find((call) => call[0] === 'disconnect')?.[1] as
+      | ((reason?: string) => void)
+      | undefined;
+    const trpcListener = mockOn.mock.calls.find((call) => call[0] === 'trpc')?.[1] as
+      | ((data: unknown) => void)
+      | undefined;
+
+    connectListener?.();
+    disconnectListener?.('transport close');
+    trpcListener?.({ id: 2, result: { data: 'late' } });
+
+    expect(onmessage).not.toHaveBeenCalled();
+  });
+
+  test('message events after explicit close are ignored', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onmessage = jest.fn();
+
+    ws.onmessage = onmessage;
+
+    const trpcListener = mockOn.mock.calls.find((call) => call[0] === 'trpc')?.[1] as
+      | ((data: unknown) => void)
+      | undefined;
+
+    ws.close(1000, 'normal');
+    trpcListener?.({ id: 1, result: { data: 'late' } });
+
+    expect(onmessage).not.toHaveBeenCalled();
+  });
+
+  test('addEventListener ignores duplicate listener registration', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const listener = jest.fn();
+
+    ws.addEventListener('custom', listener);
+    ws.addEventListener('custom', listener);
+
+    expect(mockOn.mock.calls.filter((call) => call[0] === 'custom')).toHaveLength(1);
+  });
+
+  test('removeEventListener unregisters each distinct listener exactly once', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const listenerA = jest.fn();
+    const listenerB = jest.fn();
+
+    ws.addEventListener('custom', listenerA);
+    ws.addEventListener('custom', listenerB);
+
+    ws.removeEventListener('custom', listenerA);
+    ws.removeEventListener('custom', listenerA);
+    ws.removeEventListener('custom', listenerB);
+
+    expect(mockOff.mock.calls.filter((call) => call[0] === 'custom')).toHaveLength(2);
+  });
+
+  test('connect event after close is ignored', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onopen = jest.fn();
+
+    ws.onopen = onopen;
+
+    const connectListener = mockOn.mock.calls.find((call) => call[0] === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
+
+    ws.close(1000, 'normal');
+    connectListener?.();
+
+    expect(ws.readyState).toBe(ws.CLOSED);
+    expect(onopen).not.toHaveBeenCalled();
+  });
+
+  test('native close listener is notified without socket-level registration', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const listener = jest.fn();
+
+    ws.addEventListener('close', listener);
+    ws.close(1000, 'normal');
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(mockOn.mock.calls.filter((call) => call[0] === 'close')).toHaveLength(0);
+  });
+
+  test('native message listener receives trpc payload', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const listener = jest.fn();
+
+    ws.addEventListener('message', listener);
+
+    const connectListener = mockOn.mock.calls.find((call) => call[0] === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
+    const trpcListener = mockOn.mock.calls.find((call) => call[0] === 'trpc')?.[1] as
+      | ((data: unknown) => void)
+      | undefined;
+
+    connectListener?.();
+    trpcListener?.({ result: 'ok' });
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener.mock.calls[0][0]).toMatchObject({ type: 'message', data: { result: 'ok' } });
+    expect(mockOn.mock.calls.filter((call) => call[0] === 'message')).toHaveLength(1);
+  });
+
+  test('native close listener removal does not call socket off', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const listener = jest.fn();
+
+    ws.addEventListener('close', listener);
+    ws.removeEventListener('close', listener);
+
+    expect(mockOff.mock.calls.filter((call) => call[0] === 'close')).toHaveLength(0);
+  });
+
+  test('dispatchEvent triggers native handler and listener callbacks', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const onmessage = jest.fn();
+    const listener = jest.fn();
+
+    ws.onmessage = onmessage;
+    ws.addEventListener('message', listener);
+
+    const messageEvent = { type: 'message', data: { id: 99 } } as MessageEvent;
+    const handled = ws.dispatchEvent(messageEvent as unknown as Event);
+
+    expect(handled).toBe(true);
+    expect(onmessage).toHaveBeenCalledTimes(1);
+    expect(onmessage).toHaveBeenCalledWith(messageEvent);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith(messageEvent);
+  });
+
+  test('listener errors do not prevent subsequent listeners from running', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+    const firstListener = jest.fn(() => {
+      throw new Error('listener boom');
+    });
+    const secondListener = jest.fn();
+
+    ws.addEventListener('message', firstListener);
+    ws.addEventListener('message', secondListener);
+
+    const connectListener = mockOn.mock.calls.find((call) => call[0] === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
+    const messageListener = mockOn.mock.calls.find((call) => call[0] === 'message')?.[1] as
+      | ((data: unknown) => void)
+      | undefined;
+
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    connectListener?.();
+    messageListener?.({ value: 42 });
+
+    expect(firstListener).toHaveBeenCalledTimes(1);
+    expect(secondListener).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'SocketIOWebSocket listener error',
+      expect.objectContaining({ message: 'listener boom' }),
+    );
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  test('dispatchEvent returns false for invalid events', () => {
+    const ws = new SocketIOWebSocket('http://localhost:1234');
+
+    expect(ws.dispatchEvent(undefined as unknown as Event)).toBe(false);
+    expect(ws.dispatchEvent({} as Event)).toBe(false);
   });
 });

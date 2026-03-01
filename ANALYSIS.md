@@ -61,3 +61,69 @@
   - close-event construction now has a Node-safe fallback when `CloseEvent` is unavailable.
 - Test result:
   - `rushx test` ✅ (1 suite, 2 tests).
+
+## 2026-02-20 slot follow-up
+- Hardened disconnect close-event parity in `trpc-websocket.ts` by forwarding Socket.IO disconnect reason text into the emitted close event.
+- Why: callers already receive explicit `close(code, reason)` metadata, but disconnect-triggered closes previously dropped reason context and made diagnostics harder.
+- Expanded `src/trpc-websocket.test.ts` to assert reason propagation from disconnect events.
+- Test result:
+  - `rushx test` ✅ (1 suite, 7 tests).
+
+## 2026-02-20 slot follow-up (send state guard)
+- Added an OPEN-state guard in `trpc-websocket.ts#send`.
+- Why: pre-connect `send()` calls were being emitted while CONNECTING, which can hide race conditions and diverges from standard WebSocket invalid-state behavior.
+- Added focused tests in `src/trpc-websocket.test.ts` to verify both failure and success paths.
+
+## 2026-02-20 slot follow-up (listener dedupe + cleanup)
+- Added duplicate-listener suppression in `trpc-websocket.ts#addEventListener` for the same event+callback pair.
+- Why: duplicate registrations can cause repeated callback execution and noisy side effects during reconnect/rebind flows.
+- Added empty-bucket cleanup in `trpc-websocket.ts#removeEventListener` after last listener removal.
+- Why: keeps internal listener bookkeeping bounded and avoids stale map entries across long-lived sessions.
+- Added regression tests in `src/trpc-websocket.test.ts` to validate dedupe and one-time unregister behavior.
+
+## 2026-02-20 slot follow-up (inbound trpc parity)
+- Added shared inbound message handling for both Socket.IO `'message'` and `'trpc'` events in `trpc-websocket.ts`.
+- Why: outbound traffic already uses `'trpc'`; if server responses arrive on the same event, listening only to `'message'` can silently drop `onmessage` callbacks.
+- Added regression coverage in `src/trpc-websocket.test.ts` to verify `'trpc'` frames are surfaced via `onmessage` without payload mutation.
+
+## 2026-02-20 slot follow-up (late-connect reopen guard)
+- Added an explicit client-close guard in the Socket.IO `connect` handler in `trpc-websocket.ts`.
+- Why: if `close()` is called while still CONNECTING, a delayed transport `connect` callback could reopen the wrapper and fire `onopen` after shutdown.
+- Result: `connect` is now ignored after explicit wrapper `close()` calls, while reconnect behavior after non-client disconnects remains intact.
+- Added regression coverage in `src/trpc-websocket.test.ts` to ensure post-close `connect` events neither reopen state nor fire `onopen`.
+
+## 2026-02-20 slot follow-up (native addEventListener parity)
+- Fixed native WebSocket event-listener behavior for `open`, `message`, `error`, and `close` in `trpc-websocket.ts`.
+- Why: listeners registered via `addEventListener('close' | 'message' | ...)` were previously forwarded to `ioSocket.on(event, ...)`, which does not represent wrapper-native lifecycle events and can drop callbacks.
+- Implementation keeps custom Socket.IO event passthrough, but dispatches native listener callbacks directly from wrapper lifecycle/message/error paths.
+- Added regression tests in `src/trpc-websocket.test.ts` for native close/message listeners and native close-listener removal semantics.
+
+## 2026-02-20 slot follow-up (dispatchEvent compatibility)
+- Implemented `SocketIOWebSocket.dispatchEvent(event)` so it now routes native event payloads to both property handlers (`onopen`, `onmessage`, `onerror`, `onclose`) and `addEventListener` listeners.
+- Why: previous behavior returned `false` unconditionally and performed no dispatch, which broke EventTarget-style code paths that rely on explicit wrapper event redispatch (notably in tests and adapter-level lifecycle orchestration).
+- Added focused regression tests in `src/trpc-websocket.test.ts` for message redispatch and invalid-event rejection semantics.
+
+## 2026-02-20 slot follow-up (onopen event payload parity)
+- Updated `SocketIOWebSocket` connect handling to pass an Event-like payload into `onopen`.
+- Why: `onopen` previously fired with no arguments, diverging from WebSocket handler conventions and making event-shape-dependent callback code brittle.
+- Added regression coverage in `src/trpc-websocket.test.ts` to assert connect-triggered `onopen` receives `{ type: 'open' }`.
+
+## 2026-02-21 slot follow-up (listener dispatch isolation)
+- Wrapped per-listener invocation in `dispatchListenerEvent` with try/catch in `trpc-websocket.ts`.
+- Why: one throwing listener previously terminated the dispatch loop, which could silently drop downstream listener callbacks for the same event.
+- Added regression coverage in `src/trpc-websocket.test.ts` proving later listeners still run and the thrown error is surfaced via logging.
+
+## 2026-02-21 slot follow-up (post-close late-error suppression)
+- Added terminal-close guards in `trpc-websocket.ts` for `error` and `connect_error` paths when the wrapper is already CLOSED via explicit client `close()`.
+- Why: late transport noise after intentional shutdown should not be surfaced as actionable runtime errors to callers.
+- Expanded `src/trpc-websocket.test.ts` with post-close `error`/`connect_error` assertions to lock this behavior.
+
+## 2026-02-21 slot follow-up (message-event type parity)
+- Normalized inbound payload construction in `trpc-websocket.ts` using `createMessageEvent(...)`.
+- Why: wrapper callbacks previously received `{ data }` without an explicit `type`, which diverged from native `MessageEvent` shape and made event-type based listeners brittle.
+- Expanded `src/trpc-websocket.test.ts` expectations to assert `type: 'message'` parity for inbound `'trpc'` frames.
+
+## 2026-02-21 slot follow-up (OPEN-state inbound message guard)
+- Added an OPEN-state check in `trpc-websocket.ts` inbound `message/trpc` handler.
+- Why: inbound frames were previously accepted during CONNECTING and after disconnect, which could leak stale payloads into consumers outside active session state.
+- Expanded `src/trpc-websocket.test.ts` coverage to assert inbound messages are ignored before first connect and after disconnect.
